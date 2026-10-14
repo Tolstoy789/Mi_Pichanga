@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b7a3b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pichanga">
 <title>Pichanga.app</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
@@ -312,6 +317,15 @@
       <ul class="list hist" id="historial"></ul>
     </div>
     <button class="btn green block" id="waStats">💬 Compartir tabla del mes</button>
+
+    <div class="card" style="margin-top:14px">
+      <h2>💾 Respaldo</h2>
+      <p style="margin:0 0 10px;font-size:13px;color:var(--muted)">Los datos viven en este teléfono. Guarda un respaldo para no perder el historial o para pasarlo a otro celular.</p>
+      <div class="row">
+        <button class="btn ghost" id="exportar">⬇️ Guardar respaldo</button>
+        <label class="btn ghost" style="margin:0;color:var(--ink);font-size:15px">⬆️ Restaurar<input type="file" id="importar" accept="application/json,.json" hidden></label>
+      </div>
+    </div>
   </section>
 
 </main>
@@ -873,6 +887,32 @@ $("waStats").addEventListener("click", () => {
   msg += `\n\n*Últimos partidos:*\n` + ps.slice(-5).reverse().map((p) => `• ${p.fecha.slice(8)}/${p.fecha.slice(5, 7)}: A ${p.golesA} – ${p.golesB} B`).join("\n");
   openWhatsApp(msg);
 });
+
+/* ---------- Respaldo ---------- */
+$("exportar").addEventListener("click", async () => {
+  const blob = new Blob([JSON.stringify({ app: "pichanga", version: 1, fecha: new Date().toISOString(), datos: S }, null, 1)], { type: "application/json" });
+  const nombre = `pichanga-respaldo-${hoyISO()}.json`;
+  const file = new File([blob], nombre, { type: "application/json" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: "Respaldo Pichanga" }); return; } catch (e) { if (e.name === "AbortError") return; }
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; a.click();
+  toast("💾 Respaldo descargado");
+});
+$("importar").addEventListener("change", async () => {
+  const f = $("importar").files[0]; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (j.app !== "pichanga" || !j.datos) throw new Error();
+    if (!confirm("¿Reemplazar los datos de este teléfono con el respaldo?")) return;
+    S = Object.assign(defaults(), j.datos); save(); location.reload();
+  } catch { toast("⚠️ Ese archivo no es un respaldo de Pichanga"); }
+  $("importar").value = "";
+});
+
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
 
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
