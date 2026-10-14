@@ -20,6 +20,7 @@
     --bg: linear-gradient(180deg, #0d47a1 0%, #1976d2 40%, #0b7a3b 100%);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
   html, body { margin: 0; height: 100%; }
   body {
     font-family: Nunito, system-ui, sans-serif; color: var(--ink);
@@ -38,9 +39,10 @@
   label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
   input, select { width: 100%; font: inherit; padding: 11px 12px; border: 2px solid var(--line); border-radius: 12px; background: #fafcfd; color: var(--ink); }
   input:focus, select:focus { outline: none; border-color: var(--sky2); }
+  input[type=date], input[type=time] { padding-left: 10px; padding-right: 8px; min-height: 48px; }
   .row { display: flex; gap: 8px; align-items: center; }
-  .row > * { flex: 1; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 14px; padding: 12px 14px; font: 800 15px Nunito, sans-serif; cursor: pointer; color: #fff; background: var(--sky); box-shadow: 0 4px 0 rgba(0,0,0,.25); }
+  .row > * { flex: 1; min-width: 0; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border: 0; border-radius: 14px; padding: 12px 14px; font: 800 15px Nunito, sans-serif; cursor: pointer; color: #fff; background: var(--sky); box-shadow: 0 4px 0 rgba(0,0,0,.25); }
   .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.25); }
   .btn.small { padding: 8px 10px; font-size: 13px; border-radius: 10px; }
   .btn.ghost { background: #eef3f7; color: var(--ink); box-shadow: 0 3px 0 #cfd8df; }
@@ -52,14 +54,19 @@
   .stepper .val { font-family: "Lilita One"; font-size: 30px; min-width: 120px; text-align: center; }
   .stepper .btn { width: 52px; height: 52px; font-size: 26px; border-radius: 50%; padding: 0; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .chip { border: 2px solid var(--line); background: #f5f8fa; border-radius: 999px; padding: 6px 10px; font-weight: 800; font-size: 13px; cursor: pointer; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; border: 2px solid var(--line); background: #f5f8fa; color: var(--ink); border-radius: 999px; padding: 6px 12px; font: 800 13px Nunito, sans-serif; cursor: pointer; }
   .chip.in { opacity: .4; pointer-events: none; }
+  .tag { display: inline-block; border-radius: 999px; padding: 1px 7px; font-size: 12px; font-weight: 800; white-space: nowrap; vertical-align: 1px; }
+  .tag.debt { background: #ffebee; color: #b71c1c; }
+  .tag.favor { background: #e8f5e9; color: #1b5e20; }
+  .chip .tag { padding: 0 6px; }
   .list { list-style: none; padding: 0; margin: 0; }
   .list li { display: flex; align-items: center; gap: 8px; padding: 9px 4px; border-bottom: 1px solid var(--line); }
   .list li:last-child { border-bottom: 0; }
   .list .num { width: 24px; color: var(--muted); font-weight: 800; }
-  .list .name { flex: 1; font-weight: 800; }
-  .x { background: none; border: 0; font-size: 18px; cursor: pointer; color: var(--muted); padding: 4px 8px; }
+  .list .name { flex: 1; font-weight: 800; min-width: 0; overflow-wrap: break-word; }
+  .x { background: none; border: 0; font-size: 18px; cursor: pointer; color: var(--muted); min-width: 44px; min-height: 44px; margin: -6px -4px -6px 0; border-radius: 12px; }
+  .x:active { background: #eef3f7; }
   .pill { font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: #eef3f7; }
   .badge { display: inline-block; background: var(--gold); color: #3a2a00; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 800; margin-left: 6px; }
   .subs { background: #fff8e1; border-radius: 12px; padding: 4px 10px; margin-top: 10px; }
@@ -69,8 +76,30 @@
   nav.tabs button { flex: 1; border: 0; background: none; font: 800 11px Nunito, sans-serif; color: var(--muted); padding: 6px 2px; border-radius: 12px; cursor: pointer; }
   nav.tabs button .ico { display: block; font-size: 24px; }
   nav.tabs button.active { background: #e8f5e9; color: var(--grass); }
-  .toast { position: fixed; left: 50%; top: 14px; transform: translateX(-50%) translateY(-120px); background: #14212b; color: #fff; padding: 12px 16px; border-radius: 14px; font-weight: 800; z-index: 20; transition: transform .25s; max-width: 90vw; text-align: center; }
+  .toast { position: fixed; left: 50%; top: 14px; transform: translateX(-50%) translateY(calc(-100% - 30px)); background: #14212b; color: #fff; padding: 12px 16px; border-radius: 14px; font-weight: 800; z-index: 20; transition: transform .25s; pointer-events: none; width: max-content; max-width: min(90vw, 440px); text-align: center; }
   .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast .tbtn { pointer-events: auto; display: block; margin: 8px auto 0; min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--gold); color: #3a2a00; font: 800 15px Nunito, sans-serif; cursor: pointer; }
+  .btn.done { background: #e8f5e9; color: var(--ok); box-shadow: 0 3px 0 #b7dcb9; }
+
+  /* Hoja inferior (cerrar pichanga, saldar deuda) */
+  dialog.sheet { position: fixed; inset: auto 0 0 0; z-index: 30; border: 0; padding: 0; width: 100%; max-width: 480px; max-height: 90vh; margin: auto auto 0; border-radius: 22px 22px 0 0; background: var(--card); color: var(--ink); box-shadow: 0 -8px 30px rgba(0,0,0,.3); }
+  dialog.sheet::backdrop { background: rgba(5,20,12,.55); }
+  .sheet .in { padding: 16px 16px calc(18px + env(safe-area-inset-bottom)); }
+  .sheet h2 { margin: 0 0 2px; font-size: 22px; outline: none; }
+  .sheet h3 { margin: 16px 0 6px; font: 800 15px Nunito, sans-serif; }
+  .sheet .sub { margin: 0 0 6px; color: var(--muted); font-size: 14px; }
+  .sheet .box { background: #f5f8fa; border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+  .sheet .box + .box { margin-top: 6px; }
+  .sheet .res { font-family: "Lilita One"; font-size: 22px; text-align: center; }
+  .sheet .warnbox { background: #fff3e0; color: #8a4b00; border-radius: 12px; padding: 8px 12px; font-size: 13px; font-weight: 800; margin-top: 6px; }
+  .sheet .okbox { background: #e8f5e9; color: var(--ok); border-radius: 12px; padding: 8px 12px; font-size: 14px; font-weight: 800; }
+  .sheet .btn.block { margin-top: 10px; }
+  .sheet .linkbtn { background: none; border: 0; color: var(--sky); font: 800 14px Nunito, sans-serif; min-height: 44px; padding: 0 4px; cursor: pointer; }
+  .mini { list-style: none; margin: 4px 0 0; padding: 0; font-size: 14px; }
+  .mini li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+  .mini li:last-child { border-bottom: 0; }
+  .check { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 6px 0 0; color: var(--ink); font-size: 15px; font-weight: 800; cursor: pointer; }
+  .check input { width: 24px; height: 24px; flex: none; accent-color: var(--grass); }
 
   /* Cancha */
   .board { background: linear-gradient(180deg, #102a43, #0b1d2e); color: #fff; border-radius: 18px; padding: 12px; box-shadow: 0 6px 0 rgba(0,0,0,.25); }
@@ -116,7 +145,11 @@
   .score .side { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .score .goals { display: flex; align-items: center; gap: 8px; }
   .score .goals b { font-family: "Lilita One"; font-weight: 400; font-size: 44px; min-width: 40px; color: #fff; }
-  .score .goals .btn { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 20px; }
+  .score .goals .btn { width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 22px; }
+  @media (max-width: 380px) {
+    .score .goals { flex-wrap: wrap; justify-content: center; width: 100px; gap: 4px 8px; }
+    .score .goals b { order: -1; flex-basis: 100%; line-height: 1; }
+  }
   .score .dash { font-family: "Lilita One"; font-size: 30px; color: var(--gold); }
   .award { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .award:last-child { border-bottom: 0; }
@@ -130,24 +163,38 @@
   .kpis b { display: block; font-family: "Lilita One"; font-weight: 400; font-size: 26px; color: var(--ink); }
   .rank li .count { font-family: "Lilita One"; font-size: 18px; }
   .hist li { font-size: 14px; }
-  .hist .res { font-family: "Lilita One"; font-size: 18px; min-width: 64px; text-align: center; }
+  .hist .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist .res { font-family: "Lilita One"; font-size: 18px; min-width: 54px; text-align: center; }
   .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
   .month-nav b { font-family: "Lilita One"; font-weight: 400; font-size: 18px; }
 
   /* Pagos */
   .bank { background: #f1f7ff; border-radius: 12px; padding: 10px; font-weight: 800; white-space: pre-line; font-size: 14px; }
   .qr { max-width: 160px; display: block; margin: 10px auto 0; border-radius: 10px; }
-  .pay li { border-radius: 12px; margin-bottom: 6px; border: 0 !important; padding: 10px; }
+  .pay li { border-radius: 12px; margin-bottom: 6px; border: 0 !important; padding: 4px 4px 4px 10px; gap: 4px; }
   .pay li.paid { background: #e8f5e9; }
   .pay li.pending { background: #fff8e1; }
-  .pay .state { font-size: 13px; font-weight: 800; min-width: 104px; text-align: right; }
-  .beer { font-size: 20px; background: none; border: 0; cursor: pointer; filter: grayscale(1); opacity: .35; }
+  .pay li.partial { background: #fff3e0; }
+  .pay .pname { flex: 1; min-width: 0; min-height: 44px; background: none; border: 0; padding: 4px 0; text-align: left; font: 800 15px Nunito, sans-serif; color: var(--ink); cursor: pointer; overflow-wrap: anywhere; }
+  .pay .pname .tag { margin-top: 2px; }
+  .pay .state { min-width: 96px; min-height: 44px; background: none; border: 0; padding: 4px 6px; font: 800 13px Nunito, sans-serif; color: var(--ink); text-align: right; cursor: pointer; line-height: 1.25; }
+  .pay .state small { display: block; font-size: 11.5px; color: var(--muted); }
+  .beer { font-size: 20px; width: 44px; height: 44px; flex: none; background: none; border: 0; border-radius: 12px; cursor: pointer; filter: grayscale(1); opacity: .35; }
   .beer.on { filter: none; opacity: 1; }
-  .warn { cursor: pointer; font-size: 18px; filter: grayscale(1); opacity: .25; background: none; border: 0; padding: 0; }
-  .warn.on { filter: none; opacity: 1; }
   .totals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
   .totals div { background: #f5f8fa; border-radius: 12px; padding: 8px; text-align: center; font-size: 12px; color: var(--muted); }
   .totals b { display: block; font-family: "Lilita One"; font-weight: 400; color: var(--ink); font-size: 20px; }
+  .note { margin: 8px 0 0; font-size: 13px; font-weight: 800; border-radius: 12px; padding: 8px 10px; }
+  .note.recaudado { background: #f1f7ff; color: var(--ink); }
+  .note.alerta { background: #fff3e0; color: #8a4b00; }
+  .debts li { flex-wrap: wrap; }
+  .debts li { align-items: center; row-gap: 2px; }
+  .debts .det { flex-basis: 100%; order: 3; font-size: 12px; font-weight: 600; color: var(--muted); line-height: 1.45; }
+  .debts .amt { font-family: "Lilita One"; font-weight: 400; font-size: 18px; }
+  .debts li.favor .amt { color: var(--ok); }
+  .debts .btn.small { min-height: 44px; min-width: 78px; }
+  .manual { margin-top: 10px; }
+  .manual summary { min-height: 44px; display: flex; align-items: center; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -160,8 +207,8 @@
     <h2 class="title">📅 NUEVA PICHANGA ⚽</h2>
     <div class="card">
       <div class="row">
-        <div><label>📆 Fecha</label><input type="date" id="fecha"></div>
-        <div><label>⏰ Hora</label><input type="time" id="hora"></div>
+        <div style="flex:1.35"><label for="fecha">📆 Fecha</label><input type="date" id="fecha"></div>
+        <div><label for="hora">⏰ Hora</label><input type="time" id="hora"></div>
       </div>
       <label>📍 Lugar</label>
       <div class="row">
@@ -180,8 +227,9 @@
       <h2>🏃 Inscritos <span class="badge" id="cupos"></span></h2>
       <div class="row">
         <input id="nuevo" placeholder="Nombre del jugador" style="flex:3" autocomplete="off">
-        <button class="btn" id="agregar" style="flex:1">➕</button>
+        <button class="btn" id="agregar" style="flex:1" aria-label="Agregar jugador">➕</button>
       </div>
+      <button class="btn ghost" id="mismaLista" style="width:100%;margin-top:10px" hidden>🔁 Misma lista que la semana pasada</button>
       <label>🏠 Caseros (toca para sumar)</label>
       <div class="chips" id="caseros"></div>
       <ul class="list" id="titulares" style="margin-top:10px"></ul>
@@ -264,23 +312,41 @@
 
     <div class="card">
       <h2>🧮 División</h2>
-      <div class="row">
-        <div><label>🏟️ Cancha (total $)</label><input type="number" inputmode="numeric" id="costoCancha" placeholder="49000"></div>
-        <div><label>🍻 Tercer tiempo ($)</label><input type="number" inputmode="numeric" id="costoTercer" placeholder="0"></div>
+      <div class="row" style="align-items:flex-end">
+        <div><label for="costoCancha">🏟️ Cancha (total $)</label><input type="text" inputmode="numeric" autocomplete="off" id="costoCancha" placeholder="49.000"></div>
+        <div><label for="costoTercer">🍻 Tercer tiempo ($)</label><input type="text" inputmode="numeric" autocomplete="off" id="costoTercer" placeholder="0"></div>
       </div>
       <div class="totals">
         <div>Cancha por persona<b id="porCancha">$0</b></div>
         <div>🍻 Por persona extra<b id="porTercer">$0</b></div>
       </div>
+      <p class="note alerta" id="avisoTercer" hidden></p>
+      <p class="note recaudado" id="recaudado" hidden></p>
     </div>
 
     <div class="card">
       <h2>📋 Estado de pago</h2>
-      <p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Toca el nombre para marcar ✅ pagado. 🍻 = se queda al tercer tiempo. ⚠️ = debe partidos anteriores.</p>
+      <p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Toca el nombre para marcar ✅ pagado (se guarda cuánto pagó). 🍻 = se queda al tercer tiempo.</p>
       <ul class="list pay" id="pagos"></ul>
     </div>
+
+    <div class="card">
+      <h2>⚠️ Deudas pendientes <span class="badge" id="deudaTotal" hidden></span></h2>
+      <p style="margin:0 0 4px;font-size:13px;color:var(--muted)">Lo que quedó debiendo cada uno de fechas anteriores, juegue o no esta semana.</p>
+      <ul class="list debts" id="deudas"></ul>
+      <details class="manual">
+        <summary>➕ Anotar deuda a mano</summary>
+        <div class="row">
+          <div><label for="mNombre">Nombre</label><input id="mNombre" list="listaNombres" autocomplete="off" placeholder="Ana"></div>
+          <div><label for="mMonto">Monto ($)</label><input id="mMonto" type="text" inputmode="numeric" autocomplete="off" placeholder="5.000"></div>
+        </div>
+        <label for="mConcepto">Concepto (opcional)</label><input id="mConcepto" autocomplete="off" placeholder="Cancha del 3/10">
+        <datalist id="listaNombres"></datalist>
+        <button class="btn" id="mAnotar" style="width:100%;margin-top:10px">📒 Anotar deuda</button>
+      </details>
+    </div>
     <button class="btn green block" id="waCobrar">💬 Cobrar por WhatsApp</button>
-    <button class="btn ghost block" id="nuevaPichanga" style="margin-top:12px;font-size:14px">🔄 Nueva pichanga (los que no pagaron quedan ⚠️)</button>
+    <button class="btn ghost block" data-cerrar style="margin-top:12px">🏁 Cerrar pichanga</button>
   </section>
   <!-- PANTALLA 4 -->
   <section class="screen" id="s-post">
@@ -304,6 +370,7 @@
       <div class="award"><span class="ic">🪓</span><span class="lb">El Rústico</span><select id="aRus"></select></div>
     </div>
     <button class="btn orange block" id="guardarPartido">💾 Guardar partido</button>
+    <button class="btn ghost block" data-cerrar style="margin-top:12px">🏁 Cerrar pichanga y preparar la próxima</button>
 
     <div class="card" style="margin-top:14px">
       <div class="month-nav"><button class="btn small ghost" id="mesAnt">◀</button><b id="mesTxt"></b><button class="btn small ghost" id="mesSig">▶</button></div>
@@ -337,6 +404,8 @@
   <button data-go="s-post"><span class="ico">🏆</span>Post-Partido</button>
 </div></nav>
 
+<dialog class="sheet" id="sheet" aria-labelledby="sheetTitulo"><div class="in" id="sheetBody"></div></dialog>
+
 <script>
 const COLORS = {
   "🟢 Peto Flúor": ["#c6ff00", "#1b1b1b"],
@@ -348,9 +417,12 @@ const COLORS = {
   "🟠 Naranjo": ["#ff7a00", "#ffffff"],
 };
 const KEY = "pichanga-v1";
+const SCHEMA = 2;           // versión de la forma de los datos (ver migrar)
 const $ = (id) => document.getElementById(id);
 
+const postVacio = () => ({ golesA: 0, golesB: 0, mvp: "", goleador: "", rustico: "", guardadoId: null });
 const defaults = () => ({
+  v: SCHEMA,
   fecha: "", hora: "20:00", lugar: "", porLado: 7,
   inscritos: [],            // orden de llegada; los primeros 2*porLado son titulares
   caseros: ["Carlos", "Seba", "Nico", "Mati", "Mako"],
@@ -358,86 +430,314 @@ const defaults = () => ({
   equipos: { A: [], B: [] },
   colorA: "⚫ Negro", colorB: "🟢 Peto Flúor",
   banco: { nombre: "", rut: "", banco: "", tipo: "", cuenta: "", mail: "", link: "", qr: "" },
-  costoCancha: "", costoTercer: "",
-  pagado: {}, tercer: {}, morosos: {},
-  post: { golesA: 0, golesB: 0 }, historial: [],
+  costoCancha: "", costoTercer: "", // solo dígitos, en pesos
+  pagos: {},                // pichanga actual: nombre -> { monto, fecha }
+  tercer: {},               // nombre -> true si se queda al 🍻
+  deudas: {},               // libreta: nombre -> [{ fecha, concepto, monto }] (monto > 0 debe, < 0 abono o a favor, null = sin monto)
+  ultimaLista: [],          // inscritos de la pichanga anterior (🔁 Misma lista)
+  post: postVacio(), historial: [],
 });
 
-let S;
-try { S = Object.assign(defaults(), JSON.parse(localStorage.getItem(KEY) || "{}")); } catch { S = defaults(); }
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
-
-function toast(msg) {
-  const t = $("toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 2600);
+// Pesos desde lo que haya escrito la persona: "49.000", "49,000" o "$49 000" -> 49000
+function pesos(v) {
+  if (typeof v === "number") return isFinite(v) ? Math.max(0, Math.round(v)) : 0;
+  const s = String(v ?? "").trim();
+  if (/^\d+[.,]\d{1,2}$/.test(s)) return Math.round(parseFloat(s.replace(",", "."))); // decimal antiguo (input number)
+  return parseInt(s.replace(/\D/g, ""), 10) || 0;
 }
+
+// Lleva datos guardados con cualquier versión anterior a la forma actual, sin perder nada.
+function migrar(o) {
+  o = o && typeof o === "object" && !Array.isArray(o) ? o : {};
+  const d = defaults(), S = Object.assign(defaults(), o);
+  const obj = (x) => (x && typeof x === "object" && !Array.isArray(x) ? x : {});
+  const nombres = (x, def = []) => (Array.isArray(x) ? [...new Set(x.filter((n) => typeof n === "string" && n.trim()))] : def);
+  S.inscritos = nombres(S.inscritos);
+  S.caseros = nombres(S.caseros, d.caseros);
+  S.ultimaLista = nombres(S.ultimaLista);
+  S.niveles = obj(S.niveles);
+  const eq = obj(S.equipos);
+  S.equipos = { A: nombres(eq.A), B: nombres(eq.B) };
+  S.banco = Object.assign(d.banco, obj(S.banco));
+  if (!COLORS[S.colorA]) S.colorA = d.colorA;
+  if (!COLORS[S.colorB]) S.colorB = d.colorB;
+  const pl = parseInt(S.porLado, 10); S.porLado = pl >= 3 && pl <= 11 ? pl : d.porLado;
+  ["fecha", "hora", "lugar"].forEach((k) => { if (typeof S[k] !== "string") S[k] = d[k]; });
+  ["costoCancha", "costoTercer"].forEach((k) => { const n = pesos(S[k]); S[k] = n ? String(n) : ""; });
+  S.tercer = obj(S.tercer);
+  S.post = Object.assign(postVacio(), obj(S.post));
+  ["golesA", "golesB"].forEach((k) => { S.post[k] = Math.max(0, parseInt(S.post[k], 10) || 0); });
+  ["mvp", "goleador", "rustico"].forEach((k) => { if (typeof S.post[k] !== "string") S.post[k] = ""; });
+  S.historial = (Array.isArray(S.historial) ? S.historial : []).filter((p) => p && typeof p === "object").map((p, i) => Object.assign(p, {
+    id: p.id || Date.now() + i, fecha: typeof p.fecha === "string" ? p.fecha : "",
+    golesA: +p.golesA || 0, golesB: +p.golesB || 0, A: nombres(p.A), B: nombres(p.B),
+  }));
+  S.deudas = obj(S.deudas);
+  Object.keys(S.deudas).forEach((n) => {
+    const es = (Array.isArray(S.deudas[n]) ? S.deudas[n] : []).filter((e) => e && typeof e === "object")
+      .map((e) => ({ fecha: typeof e.fecha === "string" ? e.fecha : "", concepto: String(e.concepto || "Deuda"), monto: e.monto == null || e.monto === "" ? null : Math.round(+e.monto) || 0 }));
+    if (es.length) S.deudas[n] = es; else delete S.deudas[n];
+  });
+  // v1: morosos {nombre: true} -> libreta con monto desconocido
+  const morosos = obj(o.morosos);
+  Object.keys(morosos).forEach((n) => {
+    if (morosos[n] && !S.deudas[n]) S.deudas[n] = [{ fecha: "", concepto: "Deuda anterior (monto por confirmar)", monto: null }];
+  });
+  // v1: pagado {nombre: true} -> lo que debía pagar ese titular con la cuota guardada
+  S.pagos = obj(S.pagos);
+  const pagado = obj(o.pagado), t = S.inscritos.slice(0, S.porLado * 2), q = t.filter((n) => S.tercer[n]);
+  const cc = t.length ? pesos(S.costoCancha) / t.length : 0, ct = q.length ? pesos(S.costoTercer) / q.length : 0;
+  t.forEach((n) => { if (pagado[n] === true && !S.pagos[n]) S.pagos[n] = { monto: Math.round(cc + (S.tercer[n] ? ct : 0)), fecha: "" }; });
+  Object.keys(S.pagos).forEach((n) => {
+    const p = S.pagos[n], m = p && typeof p === "object" ? +p.monto : NaN;
+    if (!(m >= 0)) delete S.pagos[n]; else S.pagos[n] = { monto: Math.round(m), fecha: typeof p.fecha === "string" ? p.fecha : "" };
+  });
+  delete S.morosos; delete S.pagado;
+  S.v = SCHEMA;
+  return S;
+}
+
+let S;
+{
+  let raw = null;
+  try {
+    raw = localStorage.getItem(KEY);
+    const o = raw ? JSON.parse(raw) : {};
+    // Copia intacta de los datos antiguos antes de cambiarles la forma
+    if (raw && !(o.v >= SCHEMA)) { try { localStorage.setItem(`${KEY}-antes-v${SCHEMA}`, raw); } catch {} }
+    S = migrar(o);
+  } catch {
+    if (raw) { try { localStorage.setItem(`${KEY}-danado`, raw); } catch {} }
+    S = defaults();
+  }
+}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+save();
+
+// Aviso flotante; con `accion` muestra un botón (ej. ↩️ Deshacer)
+function toast(msg, accion) {
+  const t = $("toast");
+  t.innerHTML = `<span>${esc(msg)}</span>` + (accion ? `<button class="tbtn" type="button">${esc(accion.label)}</button>` : "");
+  if (accion) t.querySelector(".tbtn").onclick = () => { clearTimeout(toast.h); t.classList.remove("show"); accion.fn(); };
+  t.classList.add("show");
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), accion ? 6000 : 2600);
+}
+// Aviso con ↩️ Deshacer. Solo deshace si lo que tocó la acción no cambió después,
+// para no pisar cambios más nuevos (ej. alguien inscrito justo después).
+function conDeshacer(msg, huella, deshacer) {
+  const despues = huella();
+  toast(msg, { label: "↩️ Deshacer", fn: () => {
+    if (huella() !== despues) return toast("⚠️ Ya hubo otros cambios: no se puede deshacer");
+    deshacer();
+  } });
+}
+const huellaLibreta = () => JSON.stringify(S.deudas);
 const cupo = () => S.porLado * 2;
 const titulares = () => S.inscritos.slice(0, cupo());
 const suplentes = () => S.inscritos.slice(cupo());
 const plata = (n) => "$" + Math.round(n).toLocaleString("es-CL");
+const miles = (v) => { const n = +v || 0; return n ? n.toLocaleString("es-CL") : ""; };
+const digitos = (s) => String(s ?? "").replace(/\D/g, "").replace(/^0+/, "");
 const nivel = (n) => S.niveles[n] || 3;
+const hoyISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const masDias = (iso, n) => { const d = new Date((iso || hoyISO()) + "T12:00:00"); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const fechaCorta = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : "antes");
+
+// Campo de plata: acepta "49.000", guarda solo dígitos y muestra con punto de miles
+function campoPlata(el, alCambiar) {
+  el.addEventListener("input", () => {
+    const pos = el.selectionStart ?? el.value.length;
+    const antes = (el.value.slice(0, pos).match(/\d/g) || []).length;
+    const v = digitos(el.value);
+    el.value = miles(v);
+    let i = 0, c = 0; while (i < el.value.length && c < antes) { if (/\d/.test(el.value[i])) c++; i++; }
+    try { el.setSelectionRange(i, i); } catch {}
+    alCambiar(v);
+  });
+}
+
+/* ---------- Libreta de deudas ---------- */
+const movs = (n) => S.deudas[n] || [];
+const saldo = (n) => movs(n).reduce((s, e) => s + (typeof e.monto === "number" ? e.monto : 0), 0); // > 0 debe, < 0 a favor
+const sinMonto = (n) => movs(n).some((e) => e.monto == null);
+const debe = (n) => saldo(n) > 0 || sinMonto(n);
+const deudores = () => Object.keys(S.deudas).filter(debe).sort((a, b) => saldo(b) - saldo(a));
+const conSaldoAFavor = () => Object.keys(S.deudas).filter((n) => !debe(n) && saldo(n) < 0);
+const deudaCorta = (n) => (saldo(n) > 0 ? plata(saldo(n)) + (sinMonto(n) ? " + ?" : "") : "sin monto");
+const deudaLarga = (n) => (saldo(n) > 0 ? plata(saldo(n)) + (sinMonto(n) ? " (más una deuda sin monto)" : "") : "una deuda anterior (monto por confirmar)");
+function anotar(n, e) {
+  (S.deudas[n] = S.deudas[n] || []).push(e);
+  if (!sinMonto(n) && saldo(n) === 0) delete S.deudas[n];
+}
+// Deudas que siguen abiertas, descontando abonos y saldos a favor (las más antiguas primero)
+function pendientesDe(n) {
+  let credito = -movs(n).reduce((s, e) => s + (e.monto < 0 ? e.monto : 0), 0);
+  const out = [];
+  movs(n).forEach((e) => {
+    if (e.monto == null) return out.push(e);
+    if (e.monto <= 0) return;
+    const usa = Math.min(credito, e.monto); credito -= usa;
+    if (e.monto - usa > 0) out.push({ ...e, monto: e.monto - usa });
+  });
+  return out;
+}
+function saldarTodo(n) { delete S.deudas[n]; }
+function abonar(n, monto) { anotar(n, { fecha: hoyISO(), concepto: "Abono", monto: -monto }); }
+// Si alguien que ya pagó deja de ser titular, su pago queda como saldo a favor en la libreta
+function liberarPago(n, fecha) {
+  const m = (S.pagos[n] && +S.pagos[n].monto) || 0;
+  delete S.pagos[n]; delete S.tercer[n];
+  if (m > 0) anotar(n, { fecha: fecha || hoyISO(), concepto: "Pagó y no jugó (a favor)", monto: -m });
+  return m;
+}
+const tagDeuda = (n) => (debe(n) ? ` <span class="tag debt">⚠️ ${saldo(n) > 0 ? deudaCorta(n) : "debe"}</span>` : "");
 
 function openWhatsApp(text) {
   window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
 }
 
-/* ---------- Navegación ---------- */
-document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => {
-  document.querySelectorAll("nav.tabs button").forEach((x) => x.classList.toggle("active", x === b));
-  document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === b.dataset.go));
-  if (b.dataset.go === "s-equipos") { syncEquipos(); renderEquipos(); }
-  if (b.dataset.go === "s-pagos") renderPagos();
-  if (b.dataset.go === "s-post") { syncEquipos(); renderPost(); }
+/* ---------- Navegación: Atrás vuelve a la pestaña anterior y, desde Convocatoria, sale ----------
+   `pila` son las pestañas abiertas en el historial (sin repetir, máximo 4): volver a una que ya
+   está en la pila retrocede hasta ella en vez de sumar entradas, así Atrás nunca da 20 vueltas. */
+const TABS = ["s-convocatoria", "s-equipos", "s-pagos", "s-post"];
+let tab = TABS[0], pila = [TABS[0]];
+const tabDeHash = () => { const t = "s-" + location.hash.slice(1); return TABS.includes(t) ? t : TABS[0]; };
+const pilaValida = (p) => Array.isArray(p) && p.length && p.every((t) => TABS.includes(t)) && new Set(p).size === p.length;
+function show(id) {
+  tab = TABS.includes(id) ? id : TABS[0];
+  document.querySelectorAll("nav.tabs button").forEach((x) => x.classList.toggle("active", x.dataset.go === tab));
+  document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === tab));
+  renderTab();
   window.scrollTo(0, 0);
-}));
+}
+function renderTab() {
+  if (tab === "s-convocatoria") renderConvocatoria();
+  if (tab === "s-equipos") { syncEquipos(); renderEquipos(); }
+  if (tab === "s-pagos") renderPagos();
+  if (tab === "s-post") { syncEquipos(); renderPost(); }
+}
+function goTab(id) {
+  if (id === tab) return;
+  const i = pila.indexOf(id);
+  if (i >= 0) { // ya está atrás en el historial: se retrocede hasta ella
+    const pasos = pila.length - 1 - i;
+    pila = pila.slice(0, i + 1);
+    show(id);
+    history.go(-pasos);
+    return;
+  }
+  pila = pila.concat(id);
+  history.pushState({ tab: id, pila }, "", "#" + id.slice(2));
+  show(id);
+}
+document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => goTab(b.dataset.go)));
+window.addEventListener("popstate", (e) => {
+  // Atrás con una hoja abierta solo la cierra (navegadores sin CloseWatcher)
+  if ($("sheet").open) { cerrarSheet(); history.pushState({ tab, pila }, "", "#" + tab.slice(2)); return; }
+  const st = e.state || {};
+  const id = TABS.includes(st.tab) ? st.tab : tabDeHash();
+  pila = pilaValida(st.pila) && st.pila[st.pila.length - 1] === id ? st.pila : [TABS[0]].concat(id === TABS[0] ? [] : id);
+  if (id !== tab) show(id);
+});
+
+/* ---------- Hoja inferior ---------- */
+function sheet(html) {
+  $("sheetBody").innerHTML = html;
+  const d = $("sheet");
+  if (!d.open) { if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
+  $("sheetBody").scrollTop = 0;
+}
+function cerrarSheet() { const d = $("sheet"); if (d.open) { if (d.close) d.close(); else d.removeAttribute("open"); } }
+$("sheet").addEventListener("click", (e) => { if (e.target === $("sheet") || e.target.closest("[data-cerrar-sheet]")) cerrarSheet(); });
 
 /* ---------- Pantalla 1: Convocatoria ---------- */
 ["fecha", "hora", "lugar"].forEach((k) => {
-  $(k).value = S[k];
   $(k).addEventListener("input", () => { S[k] = $(k).value; save(); updateMap(); });
 });
+function cargarCampos() {
+  ["fecha", "hora", "lugar"].forEach((k) => ($(k).value = S[k]));
+  ["costoCancha", "costoTercer"].forEach((k) => ($(k).value = miles(S[k])));
+  Object.entries(bankMap).forEach(([id, k]) => ($(id).value = S.banco[k] || ""));
+  $("colorA").value = S.colorA; $("colorB").value = S.colorB;
+  updateMap();
+}
 function updateMap() {
   $("mapLink").href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(S.lugar || "cancha de fútbol");
 }
 
-function addPlayer(name) {
+function addPlayer(name, callado) {
   name = name.trim();
-  if (!name) return;
-  if (S.inscritos.some((n) => n.toLowerCase() === name.toLowerCase())) return toast("Ya está inscrito 😉");
+  if (!name) return false;
+  if (S.inscritos.some((n) => n.toLowerCase() === name.toLowerCase())) { if (!callado) toast("Ya está inscrito 😉"); return false; }
   S.inscritos.push(name);
   if (!S.caseros.some((n) => n.toLowerCase() === name.toLowerCase())) S.caseros.push(name);
-  if (S.inscritos.length > cupo()) toast(`⏳ ${name} quedó de suplente`);
+  if (!callado) {
+    const d = debe(name) ? `⚠️ ${name} debe ${deudaLarga(name)}` : "";
+    if (S.inscritos.length > cupo()) toast(`⏳ ${name} quedó de suplente` + (d ? ` · ${d}` : ""));
+    else if (d) toast(d);
+  }
   save(); renderConvocatoria();
+  return true;
 }
+// Foto de lo que cambia al bajar a alguien, para poder deshacer
+const foto = () => JSON.stringify({ inscritos: S.inscritos, pagos: S.pagos, tercer: S.tercer, deudas: S.deudas, equipos: S.equipos, porLado: S.porLado });
+const huellaLista = () => JSON.stringify([S.inscritos, S.pagos, S.tercer, S.deudas, S.porLado]);
+function restaurar(f) { Object.assign(S, JSON.parse(f)); save(); renderTab(); }
+let ultimaBaja = 0;
 function removePlayer(name) {
   const idx = S.inscritos.indexOf(name);
-  const wasTitular = idx < cupo();
+  if (idx < 0) return;
+  const antes = foto(), eraTitular = idx < cupo();
   S.inscritos.splice(idx, 1);
-  if (wasTitular && S.inscritos.length >= cupo()) toast(`🔼 ${S.inscritos[cupo() - 1]} sube de suplente a titular`);
+  const favor = liberarPago(name);
+  let msg = `✖ ${name} se bajó`;
+  if (eraTitular && S.inscritos.length >= cupo()) msg += ` · 🔼 ${S.inscritos[cupo() - 1]} sube a titular`;
+  if (favor) msg += ` · 💚 su pago de ${plata(favor)} queda a favor`;
+  ultimaBaja = Date.now();
   save(); renderConvocatoria();
+  conDeshacer(msg, huellaLista, () => { restaurar(antes); toast(`↩️ ${name} volvió a su lugar`); });
 }
 $("agregar").addEventListener("click", () => { addPlayer($("nuevo").value); $("nuevo").value = ""; $("nuevo").focus(); });
 $("nuevo").addEventListener("keydown", (e) => { if (e.key === "Enter") $("agregar").click(); });
 $("mas").addEventListener("click", () => { if (S.porLado < 11) { S.porLado++; save(); renderConvocatoria(); } });
-$("menos").addEventListener("click", () => { if (S.porLado > 3) { S.porLado--; save(); renderConvocatoria(); } });
+$("menos").addEventListener("click", () => {
+  if (S.porLado <= 3) return;
+  const bajan = S.inscritos.slice(cupo() - 2, cupo()), pagaron = bajan.filter((n) => S.pagos[n] && S.pagos[n].monto > 0);
+  if (pagaron.length && !confirm(pagaron.length === 1
+    ? `${pagaron[0]} ya pagó y pasaría a suplente. Su pago queda como saldo a favor 💚. ¿Seguir?`
+    : `${pagaron.join(" y ")} ya pagaron y pasarían a suplentes. Sus pagos quedan como saldo a favor 💚. ¿Seguir?`)) return;
+  S.porLado--;
+  bajan.forEach((n) => liberarPago(n));
+  save(); renderConvocatoria();
+  if (bajan.length) toast(`⏳ ${bajan.join(" y ")} ${bajan.length > 1 ? "pasan" : "pasa"} a suplente`);
+});
 
 function renderConvocatoria() {
   $("porLado").textContent = `${S.porLado} vs ${S.porLado}`;
   const libres = Math.max(0, cupo() - S.inscritos.length);
   $("cupos").textContent = libres ? `${libres} cupos libres` : "¡Completo!";
-  const li = (n, i) => `<li><span class="num">${i}.</span><span class="name">🏃 ${esc(n)}</span><button class="x" data-del="${esc(n)}" aria-label="Bajar">✖</button></li>`;
+  const li = (n, i) => `<li><span class="num">${i}.</span><span class="name">🏃 ${esc(n)}${tagDeuda(n)}</span><button class="x" data-del="${esc(n)}" aria-label="Bajar a ${esc(n)}">✖</button></li>`;
   const t = titulares(), s = suplentes();
   $("titulares").innerHTML = t.length ? t.map((n, i) => li(n, i + 1)).join("") : `<li class="empty">Nadie inscrito todavía. ¡Suma a los caseros! 👇👆</li>`;
   $("suplentes").innerHTML = s.length ? s.map((n, i) => li(n, i + 1)).join("") : `<li class="empty">Sin suplentes</li>`;
   $("caseros").innerHTML = S.caseros.map((n) => {
     const dentro = S.inscritos.includes(n);
-    return `<span class="chip ${dentro ? "in" : ""}" data-add="${esc(n)}">${dentro ? "✓" : "+"} ${esc(n)}</span>`;
+    return `<button type="button" class="chip ${dentro ? "in" : ""}" data-add="${esc(n)}">${dentro ? "✓" : "+"} ${esc(n)}${tagDeuda(n)}</button>`;
   }).join("");
+  const rep = S.ultimaLista.filter((n) => !S.inscritos.includes(n));
+  $("mismaLista").hidden = !rep.length;
+  $("mismaLista").textContent = `🔁 Misma lista que la semana pasada (${rep.length})`;
   updateMap();
 }
 document.addEventListener("click", (e) => {
-  const d = e.target.closest("[data-del]"); if (d) removePlayer(d.dataset.del);
+  // Un doble toque en ✖ no debe bajar también al que sube a esa fila
+  const d = e.target.closest("[data-del]"); if (d) { if (Date.now() - ultimaBaja > 450) removePlayer(d.dataset.del); return; }
   const a = e.target.closest("[data-add]"); if (a) addPlayer(a.dataset.add);
+});
+$("mismaLista").addEventListener("click", () => {
+  const rep = S.ultimaLista.filter((n) => !S.inscritos.includes(n));
+  const sumados = rep.filter((n) => addPlayer(n, true)), conDeuda = sumados.filter(debe);
+  toast(`🔁 ${sumados.length} inscritos como la semana pasada` + (conDeuda.length ? ` · ⚠️ ${conDeuda.length} con deuda` : ""));
 });
 
 function fechaBonita() {
@@ -508,32 +808,60 @@ function crestSVG(bg, fg, letter) {
     <text x="32" y="42" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="26" fill="${fg}">${letter}</text>`;
 }
 
-function syncEquipos() {
-  const t = titulares();
-  S.equipos.A = S.equipos.A.filter((n) => t.includes(n));
-  S.equipos.B = S.equipos.B.filter((n) => t.includes(n));
-  t.forEach((n) => {
-    if (!S.equipos.A.includes(n) && !S.equipos.B.includes(n)) {
-      (S.equipos.A.length <= S.equipos.B.length ? S.equipos.A : S.equipos.B).push(n);
-    }
-  });
+// Deja en los equipos solo a los titulares, suma a los nuevos en el equipo más corto y,
+// si se bajó alguien, reacomoda para que no quede 7 vs 3.
+function syncEquipos(avisar = true) {
+  const t = titulares(), E = S.equipos, antes = E.A.length + E.B.length;
+  E.A = E.A.filter((n, i) => t.includes(n) && E.A.indexOf(n) === i);
+  E.B = E.B.filter((n, i) => t.includes(n) && E.B.indexOf(n) === i && !E.A.includes(n));
+  const salieron = E.A.length + E.B.length < antes;
+  t.forEach((n) => { if (!E.A.includes(n) && !E.B.includes(n)) (E.A.length <= E.B.length ? E.A : E.B).push(n); });
+  let movidos = 0;
+  while (salieron && Math.abs(E.A.length - E.B.length) > 1) {
+    const [big, small] = E.A.length > E.B.length ? [E.A, E.B] : [E.B, E.A];
+    const sb = suma(big), ss = suma(small);
+    // Pasa al jugador de campo que más empareja la fuerza (el arquero, índice 0, se queda)
+    const cand = big.slice(1).sort((a, b) => Math.abs(sb - 2 * nivel(a) - ss) - Math.abs(sb - 2 * nivel(b) - ss))[0];
+    big.splice(big.indexOf(cand), 1); small.push(cand); movidos++;
+  }
+  if (movidos && avisar) toast(`⚖️ Equipos reajustados a ${E.A.length} vs ${E.B.length}. Revisa o pulsa Equilibrar`);
   save();
 }
+const suma = (names) => names.reduce((s, n) => s + nivel(n), 0);
 const shuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 $("azar").addEventListener("click", () => {
   const t = shuffle(titulares()); const h = Math.ceil(t.length / 2);
   S.equipos = { A: t.slice(0, h), B: t.slice(h) }; save(); renderEquipos(); toast("🎲 ¡Equipos mezclados!");
 });
+// Reparto exacto de menor diferencia: R[i][k] = sumas posibles eligiendo k de los primeros i jugadores.
+// Entre los repartos óptimos se elige uno al azar, así cada toque puede dar equipos distintos.
+function repartoParejo(names) {
+  const t = shuffle(names), n = t.length, k = Math.ceil(n / 2), lv = t.map(nivel), total = lv.reduce((a, b) => a + b, 0);
+  const R = [[new Set([0])]];
+  for (let i = 1; i <= n; i++) {
+    R[i] = [];
+    for (let j = 0; j <= Math.min(i, k); j++) {
+      const s = new Set(R[i - 1][j] || []);
+      if (j > 0) R[i - 1][j - 1].forEach((x) => s.add(x + lv[i - 1]));
+      R[i][j] = s;
+    }
+  }
+  const sumas = [...R[n][k]], mejor = Math.min(...sumas.map((s) => Math.abs(total - 2 * s)));
+  const opciones = sumas.filter((s) => Math.abs(total - 2 * s) === mejor);
+  let s = opciones[Math.floor(Math.random() * opciones.length)], j = k;
+  const A = [], B = [];
+  for (let i = n; i >= 1; i--) {
+    const sinEl = R[i - 1][j] && R[i - 1][j].has(s), conEl = j > 0 && R[i - 1][j - 1].has(s - lv[i - 1]);
+    if (conEl && (!sinEl || Math.random() < 0.5)) { A.push(t[i - 1]); s -= lv[i - 1]; j--; } else B.push(t[i - 1]);
+  }
+  // Orden al azar dentro de cada equipo: el arco (índice 0) no depende del nivel
+  return { A: shuffle(A), B: shuffle(B) };
+}
 $("equilibrar").addEventListener("click", () => {
-  // Orden por nivel (con desempate aleatorio) y reparto al equipo con menos puntos que aún tenga cupo
-  const t = shuffle(titulares()).sort((a, b) => nivel(b) - nivel(a));
-  const max = Math.ceil(t.length / 2);
-  const A = [], B = []; let sa = 0, sb = 0;
-  t.forEach((n) => {
-    if ((sa <= sb && A.length < max) || B.length >= max) { A.push(n); sa += nivel(n); }
-    else { B.push(n); sb += nivel(n); }
-  });
-  S.equipos = { A, B }; save(); renderEquipos(); toast("⚖️ Equipos parejos armados");
+  if (!titulares().length) return toast("Primero inscribe jugadores 🏃");
+  S.equipos = repartoParejo(titulares()); save(); renderEquipos();
+  const d = Math.abs(suma(S.equipos.A) - suma(S.equipos.B));
+  toast(d <= 1 ? "⚖️ Equipos parejos armados · 🧤 arqueros al azar" : `⚖️ Lo más parejo posible (diferencia ${d}) · 🧤 arqueros al azar`);
 });
 
 // Coordenadas en pantalla de cada jugador: A arriba, B abajo (espejado)
@@ -550,6 +878,7 @@ function layout() {
 }
 
 function renderEquipos() {
+  selected = null; // al redibujar no queda ninguna selección "fantasma"
   const [bgA, fgA] = COLORS[S.colorA], [bgB, fgB] = COLORS[S.colorB];
   $("crestA").innerHTML = crestSVG(bgA, fgA, "A");
   $("crestB").innerHTML = crestSVG(bgB, fgB, "B");
@@ -580,17 +909,21 @@ $("niveles").addEventListener("click", (e) => {
   S.niveles[b.dataset.n] = +b.dataset.lvl; save(); renderEquipos();
 });
 
-const teamOf = (n) => (S.equipos.A.includes(n) ? "A" : "B");
+const teamOf = (n) => (S.equipos.A.includes(n) ? "A" : S.equipos.B.includes(n) ? "B" : null);
 function move(name, to) {
   const from = teamOf(name);
-  if (from === to) return;
+  if (!from || from === to) return;
   S.equipos[from] = S.equipos[from].filter((n) => n !== name);
   S.equipos[to].push(name); save();
 }
 function swap(a, b) {
-  const ta = teamOf(a), tb = teamOf(b), ia = S.equipos[ta].indexOf(a), ib = S.equipos[tb].indexOf(b);
+  const ta = teamOf(a), tb = teamOf(b);
+  if (!ta || !tb || a === b) return false; // alguien que ya no está en la cancha no se intercambia
+  const ia = S.equipos[ta].indexOf(a), ib = S.equipos[tb].indexOf(b);
   S.equipos[ta][ia] = b; S.equipos[tb][ib] = a; save();
+  return true;
 }
+function deseleccionar() { selected = null; document.querySelectorAll(".player.sel").forEach((x) => x.classList.remove("sel")); }
 
 // Drag & drop con pointer events (funciona con el dedo). Toque simple: selecciona, segundo toque: intercambia.
 let drag = null, selected = null;
@@ -598,7 +931,7 @@ function targetAt(x, y, self) {
   return document.elementsFromPoint(x, y).map((el) => el.closest && el.closest(".player")).find((el) => el && el !== self) || null;
 }
 $("pitch").addEventListener("pointerdown", (e) => {
-  const p = e.target.closest(".player"); if (!p) return;
+  const p = e.target.closest(".player"); if (!p) return deseleccionar(); // tocar el pasto cancela la selección
   drag = { name: p.dataset.p, el: p, x: e.clientX, y: e.clientY, moved: false, over: null };
   p.setPointerCapture(e.pointerId);
 });
@@ -619,17 +952,19 @@ $("pitch").addEventListener("pointerup", (e) => {
   const d = drag; drag = null;
   $("zoneA").classList.remove("drop"); $("zoneB").classList.remove("drop");
   if (d.moved) {
-    if (d.over) { swap(d.name, d.over.dataset.p); toast(`🔁 ${d.name} ⇄ ${d.over.dataset.p}`); }
+    if (d.over) { if (swap(d.name, d.over.dataset.p)) toast(`🔁 ${d.name} ⇄ ${d.over.dataset.p}`); }
     else {
       const r = $("pitch").getBoundingClientRect();
       move(d.name, e.clientY < r.top + r.height / 2 ? "A" : "B");
     }
     selected = null; renderEquipos(); return;
   }
-  if (!selected) { selected = d.name; d.el.classList.add("sel"); return; }
-  if (selected !== d.name) { swap(selected, d.name); toast(`🔁 ${selected} ⇄ ${d.name}`); }
-  selected = null; renderEquipos();
+  if (!selected || !teamOf(selected)) { deseleccionar(); selected = d.name; d.el.classList.add("sel"); return; }
+  if (selected !== d.name && swap(selected, d.name)) toast(`🔁 ${selected} ⇄ ${d.name}`);
+  renderEquipos();
 });
+// Si el arrastre se interrumpe (segundo dedo, llamada), el jugador vuelve a su lugar
+$("pitch").addEventListener("pointercancel", () => { if (drag) { drag = null; $("zoneA").classList.remove("drop"); $("zoneB").classList.remove("drop"); renderEquipos(); } });
 
 // Exportar imagen de la cancha (mismo diseño que la pantalla)
 function cancha() {
@@ -705,7 +1040,7 @@ function cancha() {
   return c;
 }
 $("compartirCancha").addEventListener("click", async () => {
-  syncEquipos();
+  syncEquipos(); renderEquipos(); // la imagen debe coincidir con lo que se ve
   if (!titulares().length) return toast("Primero inscribe jugadores 🏃");
   try { await document.fonts.ready; } catch {}
   const blob = await new Promise((r) => cancha().toBlob(r, "image/png"));
@@ -720,7 +1055,6 @@ $("compartirCancha").addEventListener("click", async () => {
 /* ---------- Pantalla 3: Pagos ---------- */
 const bankMap = { bNombre: "nombre", bRut: "rut", bBanco: "banco", bTipo: "tipo", bCuenta: "cuenta", bMail: "mail", bLink: "link" };
 Object.entries(bankMap).forEach(([id, k]) => {
-  $(id).value = S.banco[k] || "";
   $(id).addEventListener("input", () => { S.banco[k] = $(id).value; save(); renderBank(); });
 });
 $("bQr").addEventListener("change", () => {
@@ -747,67 +1081,175 @@ function renderBank() {
 $("copiarBanco").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText(bankText()); toast("📋 Datos copiados"); } catch { toast("No se pudo copiar"); }
 });
-["costoCancha", "costoTercer"].forEach((k) => {
-  $(k).value = S[k];
-  $(k).addEventListener("input", () => { S[k] = $(k).value; save(); renderPagos(); });
-});
+["costoCancha", "costoTercer"].forEach((k) => campoPlata($(k), (v) => { S[k] = v; save(); renderPagos(); }));
+const costo = (k) => +S[k] || 0;
 const quedan = () => titulares().filter((n) => S.tercer[n]);
-const cuotaCancha = () => titulares().length ? (+S.costoCancha || 0) / titulares().length : 0;
-const cuotaTercer = () => quedan().length ? (+S.costoTercer || 0) / quedan().length : 0;
-const deuda = (n) => cuotaCancha() + (S.tercer[n] ? cuotaTercer() : 0);
+const cuotaCancha = () => titulares().length ? costo("costoCancha") / titulares().length : 0;
+const cuotaTercer = () => quedan().length ? costo("costoTercer") / quedan().length : 0;
+const deuda = (n) => Math.round(cuotaCancha() + (S.tercer[n] ? cuotaTercer() : 0)); // lo que le toca hoy
+const pagoDe = (n) => (S.pagos[n] && +S.pagos[n].monto) || 0;
+const falta = (n) => Math.max(0, deuda(n) - pagoDe(n));
+const sobra = (n) => Math.max(0, pagoDe(n) - deuda(n));
+const sinRepartir = () => (costo("costoTercer") > 0 && !quedan().length ? costo("costoTercer") : 0);
 
 function renderPagos() {
+  const t = titulares();
   $("porCancha").textContent = plata(cuotaCancha());
   $("porTercer").textContent = plata(cuotaTercer());
-  $("pagos").innerHTML = titulares().map((n, i) => {
-    const ok = S.pagado[n];
-    return `<li class="${ok ? "paid" : "pending"}">
-      <button class="warn ${S.morosos[n] ? "on" : ""}" data-moroso="${esc(n)}" title="Debe partidos anteriores">⚠️</button>
-      <span class="name" data-pay="${esc(n)}" style="cursor:pointer">${i + 1}. ${esc(n)}</span>
-      <button class="beer ${S.tercer[n] ? "on" : ""}" data-beer="${esc(n)}" title="Se queda al tercer tiempo">🍻</button>
-      <span class="state" data-pay="${esc(n)}" style="cursor:pointer">${ok ? "✅ PAGADO" : `⏳ ${plata(deuda(n))}`}</span>
+  const sr = sinRepartir();
+  $("avisoTercer").hidden = !sr;
+  $("avisoTercer").textContent = `⚠️ Nadie está marcado 🍻: ${plata(sr)} del tercer tiempo sin repartir`;
+  const total = t.reduce((s, n) => s + deuda(n), 0), rec = t.reduce((s, n) => s + pagoDe(n), 0);
+  $("recaudado").hidden = !total;
+  $("recaudado").textContent = `💵 Recaudado ${plata(rec)} de ${plata(total)}` + (rec < total ? ` · falta ${plata(total - rec)}` : " 🎉");
+  $("pagos").innerHTML = t.map((n, i) => {
+    const d = deuda(n), p = pagoDe(n), f = falta(n);
+    let cls = "pending", st;
+    if (!d && !p) st = `<small>sin costo</small>`;
+    else if (!f) { cls = "paid"; st = "✅ PAGADO" + (p > d ? `<small>a favor ${plata(p - d)}</small>` : ""); }
+    else if (p) { cls = "partial"; st = `<small>pagó ${plata(p)}</small>falta ${plata(f)}`; }
+    else st = `⏳ ${plata(f)}`;
+    const tag = debe(n) ? `<span class="tag debt">⚠️ ${saldo(n) > 0 ? "debe " + deudaCorta(n) : "deuda anterior"}</span>` : saldo(n) < 0 ? `<span class="tag favor">💚 ${plata(-saldo(n))} a favor</span>` : "";
+    return `<li class="${cls}">
+      <button class="pname" data-pay="${esc(n)}">${i + 1}. ${esc(n)}${tag ? "<br>" + tag : ""}</button>
+      <button class="beer ${S.tercer[n] ? "on" : ""}" data-beer="${esc(n)}" aria-pressed="${!!S.tercer[n]}" aria-label="${esc(n)} se queda al tercer tiempo">🍻</button>
+      <button class="state" data-pay="${esc(n)}">${st}</button>
     </li>`;
   }).join("") || `<li class="empty">Sin jugadores inscritos</li>`;
+  renderDeudas();
   renderBank();
 }
+function togglePago(n) {
+  const f = falta(n);
+  if (f > 0) {
+    S.pagos[n] = { monto: pagoDe(n) + f, fecha: hoyISO() };
+    // Pagar la cuota de hoy no borra solo la deuda anterior: se pregunta
+    if (debe(n) && confirm(`${n} también debe ${deudaLarga(n)} de fechas anteriores. ¿Pagó eso también?`)) {
+      saldarTodo(n); toast(`✅ ${n} quedó al día`);
+    }
+  } else if (S.pagos[n]) delete S.pagos[n];
+  else toast("🏟️ Primero escribe el costo de la cancha");
+}
 $("pagos").addEventListener("click", (e) => {
-  const p = e.target.closest("[data-pay]"), b = e.target.closest("[data-beer]"), m = e.target.closest("[data-moroso]");
-  if (p) S.pagado[p.dataset.pay] = !S.pagado[p.dataset.pay];
-  if (b) S.tercer[b.dataset.beer] = !S.tercer[b.dataset.beer];
-  if (m) S.morosos[m.dataset.moroso] = !S.morosos[m.dataset.moroso];
-  if (p || b || m) { save(); renderPagos(); }
+  const p = e.target.closest("[data-pay]"), b = e.target.closest("[data-beer]");
+  if (p) togglePago(p.dataset.pay);
+  if (b) { const n = b.dataset.beer; if (S.tercer[n]) delete S.tercer[n]; else S.tercer[n] = true; }
+  if (p || b) { save(); renderPagos(); }
 });
+
+/* Libreta: ⚠️ Deudas pendientes */
+function lineaDeuda(n) {
+  const abiertas = pendientesDe(n).filter((e) => e.monto != null);
+  if (saldo(n) <= 0) return `• ${n}: deuda anterior, monto por confirmar`;
+  const det = abiertas.length > 1 ? abiertas.map((e) => `${fechaCorta(e.fecha)} ${plata(e.monto)}`).join(" · ") : abiertas.map((e) => fechaCorta(e.fecha)).join("");
+  return `• ${n}: ${plata(saldo(n))}` + (det ? ` (${det})` : "") + (sinMonto(n) ? " + deuda anterior por confirmar" : "");
+}
+function renderDeudas() {
+  const ds = deudores(), fs = conSaldoAFavor(), tot = ds.reduce((s, n) => s + Math.max(0, saldo(n)), 0);
+  $("deudaTotal").hidden = !ds.length;
+  $("deudaTotal").textContent = `${ds.length} · ${plata(tot)}`;
+  const det = (n) => pendientesDe(n).map((e) => `${e.fecha ? fechaCorta(e.fecha) + " · " : ""}${esc(e.concepto)}${e.monto == null ? "" : " · " + plata(e.monto)}`).join("<br>");
+  $("deudas").innerHTML = ds.map((n) => `<li>
+      <span class="name">⚠️ ${esc(n)}</span>
+      <b class="amt">${saldo(n) > 0 ? plata(saldo(n)) + (sinMonto(n) ? "+?" : "") : "?"}</b>
+      <button class="btn small" data-saldar="${esc(n)}">Saldar</button>
+      <span class="det">${det(n)}</span></li>`).join("")
+    + fs.map((n) => `<li class="favor">
+      <span class="name">💚 ${esc(n)}</span>
+      <b class="amt">${plata(-saldo(n))}</b>
+      <button class="btn small ghost" data-devuelto="${esc(n)}">Devuelto</button>
+      <span class="det">Saldo a favor: se descuenta de su próxima deuda</span></li>`).join("")
+    || `<li class="empty">🎉 Nadie debe nada</li>`;
+  $("listaNombres").innerHTML = [...new Set(S.caseros.concat(S.inscritos))].map((n) => `<option value="${esc(n)}">`).join("");
+}
+$("deudas").addEventListener("click", (e) => {
+  const s = e.target.closest("[data-saldar]"), d = e.target.closest("[data-devuelto]");
+  if (s) abrirSaldar(s.dataset.saldar);
+  if (d) {
+    const n = d.dataset.devuelto;
+    if (!confirm(`¿Le devolviste ${plata(-saldo(n))} a ${n}? Se borra su saldo a favor.`)) return;
+    const antes = JSON.stringify(S.deudas);
+    saldarTodo(n); save(); renderTab();
+    conDeshacer(`💚 Saldo de ${n} devuelto`, huellaLibreta, () => { S.deudas = JSON.parse(antes); save(); renderTab(); });
+  }
+});
+function abrirSaldar(n) {
+  const s = Math.max(0, saldo(n));
+  sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>💵 Saldar deuda</h2>
+    <p class="sub"><b>${esc(n)}</b> debe ${esc(deudaLarga(n))}</p>
+    <ul class="mini box">${pendientesDe(n).map((e) => `<li><span>${e.fecha ? fechaCorta(e.fecha) + " · " : ""}${esc(e.concepto)}</span><b>${e.monto == null ? "?" : plata(e.monto)}</b></li>`).join("")}</ul>
+    <label for="sMonto">¿Cuánto pagó? ($)</label>
+    <input id="sMonto" type="text" inputmode="numeric" autocomplete="off" value="${miles(s)}" placeholder="${s ? miles(s) : "Todo"}">
+    <button class="btn green block" id="sOk">✅ Saldar todo</button>
+    <button class="btn ghost block" id="sRecordar">💬 Recordarle por WhatsApp</button>
+    <button class="btn ghost block" data-cerrar-sheet>Cancelar</button>`);
+  const monto = () => +digitos($("sMonto").value) || 0;
+  const parcial = () => monto() > 0 && monto() < s;
+  const extra = () => (s > 0 && !sinMonto(n) ? Math.max(0, monto() - s) : 0); // pagó de más: queda a favor
+  const etiqueta = () => {
+    $("sOk").textContent = parcial() ? `💵 Abonar ${plata(monto())} · queda ${plata(s - monto())}`
+      : extra() ? `✅ Saldar · ${plata(extra())} a favor` : "✅ Saldar todo";
+  };
+  campoPlata($("sMonto"), etiqueta);
+  $("sRecordar").addEventListener("click", () => openWhatsApp(recordatorio(n)));
+  $("sOk").addEventListener("click", () => {
+    const antes = JSON.stringify(S.deudas), m = monto(), p = parcial(), x = extra();
+    if (p) abonar(n, m);
+    else { saldarTodo(n); if (x) anotar(n, { fecha: hoyISO(), concepto: "Pagó de más (a favor)", monto: -x }); }
+    save(); cerrarSheet(); renderTab();
+    conDeshacer(p ? `💵 Abono de ${plata(m)} anotado · ${n} debe ${deudaCorta(n)}` : `✅ ${n} quedó al día` + (x ? ` · 💚 ${plata(x)} a favor` : ""),
+      huellaLibreta, () => { S.deudas = JSON.parse(antes); save(); renderTab(); });
+  });
+}
+// Mensaje de cobro para una sola persona (se elige el contacto en WhatsApp)
+function recordatorio(n) {
+  const det = pendientesDe(n).map((e) => `• ${e.fecha ? fechaCorta(e.fecha) + " · " : ""}${e.concepto}${e.monto == null ? " (monto por confirmar)" : ": " + plata(e.monto)}`).join("\n");
+  let msg = `Hola ${n} 👋 Te escribo por la pichanga ⚽\n\nTienes pendiente ${deudaLarga(n)}:\n${det}`;
+  const bt = bankText(); if (bt) msg += `\n\n*Datos para transferir:*\n${bt}`;
+  return msg + `\n\n¡Gracias, crack! 🙌`;
+}
+campoPlata($("mMonto"), () => {});
+$("mAnotar").addEventListener("click", () => {
+  let n = $("mNombre").value.trim().replace(/\s+/g, " ");
+  const m = +digitos($("mMonto").value) || 0;
+  if (!n) return toast("Escribe el nombre de quien debe ✍️");
+  if (!m) return toast("Escribe el monto 💵");
+  n = S.caseros.concat(S.inscritos, Object.keys(S.deudas)).find((x) => x.toLowerCase() === n.toLowerCase()) || n;
+  anotar(n, { fecha: hoyISO(), concepto: $("mConcepto").value.trim() || "Anotada a mano", monto: m });
+  ["mNombre", "mMonto", "mConcepto"].forEach((id) => ($(id).value = ""));
+  save(); renderPagos(); toast(`📒 Anotado: ${n} debe ${deudaCorta(n)}`);
+});
+
 $("waCobrar").addEventListener("click", () => {
-  const faltan = titulares().filter((n) => !S.pagado[n]);
-  const morosos = Object.keys(S.morosos).filter((n) => S.morosos[n]);
-  if (!faltan.length && !morosos.length) return toast("🎉 ¡Todos pagaron!");
+  const t = titulares(), faltan = t.filter((n) => falta(n) > 0), ds = deudores();
+  if (!faltan.length && !ds.length) {
+    if (t.length && !costo("costoCancha") && !costo("costoTercer")) return toast("🏟️ Primero escribe el costo de la cancha");
+    return toast("🎉 ¡Todos pagaron!");
+  }
+  const sr = sinRepartir();
+  if (sr && !confirm(`Hay ${plata(sr)} de tercer tiempo sin repartir: nadie está marcado 🍻. ¿Enviar el cobro igual?`)) return;
   let msg = `💰 *COBRANZA PICHANGA* 💸\n📅 ${fechaBonita()}\n\nCracks, la cancha no se paga sola 😅⚽\n`;
-  if (faltan.length) msg += `\n*Faltan por pagar:*\n` + faltan.map((n) => `⏳ ${n}: ${plata(deuda(n))}${S.tercer[n] ? " (incluye 🍻)" : ""}`).join("\n");
-  if (morosos.length) msg += `\n\n⚠️ *Deudas de partidos anteriores:* ${morosos.join(", ")}`;
+  if (faltan.length) msg += `\n*Faltan por pagar:*\n` + faltan.map((n) => {
+    const extra = [pagoDe(n) && `ya pagó ${plata(pagoDe(n))}`, S.tercer[n] && "incluye 🍻", saldo(n) < 0 && `tiene ${plata(-saldo(n))} a favor`].filter(Boolean);
+    return `⏳ ${n}: ${plata(falta(n))}` + (extra.length ? ` (${extra.join(", ")})` : "");
+  }).join("\n");
+  if (ds.length) msg += `\n\n⚠️ *Deudas de fechas anteriores:*\n` + ds.map(lineaDeuda).join("\n");
   const bt = bankText(); if (bt) msg += `\n\n*Datos para transferir:*\n${bt}`;
   if (S.banco.qr) msg += `\n\n📲 (Te mando el QR en el próximo mensaje)`;
   msg += `\n\n¡Gracias! 🙌`;
   openWhatsApp(msg);
 });
-$("nuevaPichanga").addEventListener("click", () => {
-  if (!confirm("¿Empezar una nueva pichanga? Se limpia la lista y los que no pagaron quedan marcados ⚠️")) return;
-  titulares().forEach((n) => { if (!S.pagado[n]) S.morosos[n] = true; });
-  Object.assign(S, { fecha: "", inscritos: [], equipos: { A: [], B: [] }, pagado: {}, tercer: {}, costoTercer: "" });
-  ["fecha", "costoTercer"].forEach((k) => ($(k).value = ""));
-  save(); renderConvocatoria(); renderPagos(); toast("🔄 ¡Lista limpia para la próxima!");
-});
 
 /* ---------- Pantalla 4: Post-partido ---------- */
 let mesVista = new Date(); mesVista.setDate(1);
 const mesKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-const hoyISO = () => { const d = new Date(); return `${mesKey(d)}-${String(d.getDate()).padStart(2, "0")}`; };
 
 document.querySelectorAll("[data-gol]").forEach((b) => b.addEventListener("click", () => {
   const [t, d] = b.dataset.gol.split(","); const k = "goles" + t;
   S.post[k] = Math.max(0, (S.post[k] || 0) + +d); save(); renderPost();
 }));
 const AWARDS = [["aMvp", "mvp"], ["aGol", "goleador"], ["aRus", "rustico"]];
-AWARDS.forEach(([id, k]) => $(id).addEventListener("change", () => { S.post[k] = $(id).value; save(); }));
+AWARDS.forEach(([id, k]) => $(id).addEventListener("change", () => { S.post[k] = $(id).value; save(); estadoGuardar(); }));
 
 $("waVotar").addEventListener("click", () => {
   const t = titulares(); if (!t.length) return toast("Primero inscribe jugadores 🏃");
@@ -817,19 +1259,60 @@ $("waVotar").addEventListener("click", () => {
   openWhatsApp(msg);
 });
 
-$("guardarPartido").addEventListener("click", () => {
-  if (!S.equipos.A.length && !S.equipos.B.length) return toast("Arma los equipos antes de guardar 👕");
-  const p = {
-    id: Date.now(), fecha: S.fecha || hoyISO(), lugar: S.lugar,
+// Un partido por pichanga: se guarda una vez y después solo se actualiza (nunca se duplica)
+const enCancha = () => S.equipos.A.concat(S.equipos.B);
+const guardado = () => (S.post.guardadoId && S.historial.find((p) => p.id === S.post.guardadoId)) || null;
+function partidoActual() {
+  const g = guardado(), premio = (k) => (enCancha().includes(S.post[k]) ? S.post[k] : "");
+  return {
+    fecha: S.fecha || (g && g.fecha) || hoyISO(), lugar: S.lugar,
     golesA: S.post.golesA || 0, golesB: S.post.golesB || 0,
     colorA: S.colorA, colorB: S.colorB, A: S.equipos.A.slice(), B: S.equipos.B.slice(),
-    mvp: S.post.mvp || "", goleador: S.post.goleador || "", rustico: S.post.rustico || "",
+    mvp: premio("mvp"), goleador: premio("goleador"), rustico: premio("rustico"),
   };
-  S.historial.push(p); S.post = { golesA: 0, golesB: 0 };
-  mesVista = new Date(p.fecha + "T12:00:00"); mesVista.setDate(1);
-  save(); renderPost();
-  const r = p.golesA === p.golesB ? "🤝 ¡Empate!" : `🏆 ¡Ganó el Equipo ${p.golesA > p.golesB ? "A" : "B"}!`;
-  toast(`${r} Partido guardado`);
+}
+const firma = (p) => JSON.stringify([p.fecha, p.golesA, p.golesB, p.A, p.B, p.mvp || "", p.goleador || "", p.rustico || "", p.colorA, p.colorB]);
+function estadoPartido() { // "sin-equipos" | "nuevo" | "guardado" | "cambiado"
+  const g = guardado();
+  if (!enCancha().length) return g ? "guardado" : "sin-equipos";
+  if (!g) return "nuevo";
+  return firma(g) === firma(partidoActual()) ? "guardado" : "cambiado";
+}
+function guardarPartido() {
+  const est = estadoPartido();
+  if (est === "sin-equipos") { toast("Arma los equipos antes de guardar 👕"); return null; }
+  if (est === "guardado") { toast("✅ Este partido ya está guardado"); return null; }
+  const p = partidoActual();
+  let g = guardado();
+  if (!g) {
+    // Partido igual guardado antes (misma fecha y mismos equipos): se reemplaza en vez de duplicar
+    const igual = S.historial.find((h) => h.fecha === p.fecha && JSON.stringify([h.A, h.B]) === JSON.stringify([p.A, p.B]));
+    if (igual) {
+      if (!confirm(`Ya hay un partido del ${fechaCorta(p.fecha)} con estos mismos equipos (${igual.golesA}–${igual.golesB}). ¿Reemplazarlo con ${p.golesA}–${p.golesB}?`)) return null;
+      g = igual;
+    }
+  }
+  const accion = g ? "actualizado" : "guardado";
+  if (g) Object.assign(g, p); else { g = Object.assign({ id: Date.now() }, p); S.historial.push(g); }
+  S.post.guardadoId = g.id;
+  mesVista = new Date(g.fecha + "T12:00:00"); mesVista.setDate(1);
+  save();
+  return { p: g, accion };
+}
+function estadoGuardar() {
+  const est = estadoPartido(), b = $("guardarPartido");
+  b.textContent = est === "guardado" ? "✅ Partido guardado" : est === "cambiado" ? "💾 Actualizar partido guardado" : "💾 Guardar partido";
+  b.classList.toggle("done", est === "guardado"); b.classList.toggle("orange", est !== "guardado");
+  b.setAttribute("aria-disabled", est === "guardado");
+}
+$("guardarPartido").addEventListener("click", () => {
+  const act = partidoActual();
+  if (estadoPartido() === "nuevo" && !act.golesA && !act.golesB && !act.mvp && !act.goleador && !act.rustico &&
+    !confirm(`¿Guardar un 0–0 sin premios del ${fechaCorta(act.fecha)}?`)) return;
+  const r = guardarPartido(); if (!r) return;
+  renderPost();
+  const { p } = r, res = p.golesA === p.golesB ? "🤝 ¡Empate!" : `🏆 ¡Ganó el Equipo ${p.golesA > p.golesB ? "A" : "B"}!`;
+  toast(r.accion === "guardado" ? `${res} Partido guardado` : `✏️ Partido actualizado: ${p.golesA}–${p.golesB}`);
 });
 $("mesAnt").addEventListener("click", () => { mesVista.setMonth(mesVista.getMonth() - 1); renderPost(); });
 $("mesSig").addEventListener("click", () => { mesVista.setMonth(mesVista.getMonth() + 1); renderPost(); });
@@ -849,8 +1332,16 @@ function renderPost() {
   const [bgA, fgA] = COLORS[S.colorA], [bgB, fgB] = COLORS[S.colorB];
   $("pCrestA").innerHTML = crestSVG(bgA, fgA, "A"); $("pCrestB").innerHTML = crestSVG(bgB, fgB, "B");
   $("golesA").textContent = S.post.golesA || 0; $("golesB").textContent = S.post.golesB || 0;
+  // Premio para alguien que ya no está en la cancha: se borra (y se avisa) en vez de guardarse escondido
+  const fuera = AWARDS.map(([, k]) => k).filter((k) => S.post[k] && !enCancha().includes(S.post[k]));
+  if (fuera.length) {
+    const quienes = [...new Set(fuera.map((k) => S.post[k]))];
+    fuera.forEach((k) => (S.post[k] = "")); save();
+    toast(`🗑️ Premio borrado: ${quienes.join(", ")} ya no está en la cancha`);
+  }
   const opts = `<option value="">— Elegir —</option>` + titulares().map((n) => `<option>${esc(n)}</option>`).join("");
   AWARDS.forEach(([id, k]) => { $(id).innerHTML = opts; $(id).value = S.post[k] || ""; });
+  estadoGuardar();
 
   const mtxt = mesVista.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
   $("mesTxt").textContent = mtxt.charAt(0).toUpperCase() + mtxt.slice(1);
@@ -868,7 +1359,7 @@ function renderPost() {
   $("historial").innerHTML = ps.slice().reverse().map((p) => {
     const d = new Date(p.fecha + "T12:00:00").toLocaleDateString("es-CL", { weekday: "short", day: "numeric" });
     const w = p.golesA === p.golesB ? "🤝" : p.golesA > p.golesB ? "🅰️" : "🅱️";
-    return `<li><span style="width:64px;color:var(--muted);font-weight:800;font-size:13px">${d}</span><span class="res">${p.golesA} – ${p.golesB}</span><span class="name" style="font-size:12px;color:var(--muted)">${p.mvp ? "⭐ " + esc(p.mvp) : ""}</span><span>${w}</span><button class="x" data-delpartido="${p.id}" aria-label="Borrar">✖</button></li>`;
+    return `<li><span style="width:56px;flex:none;color:var(--muted);font-weight:800;font-size:13px">${d}</span><span class="res">${p.golesA} – ${p.golesB}</span><span class="name" style="font-size:12px;color:var(--muted)">${p.mvp ? "⭐ " + esc(p.mvp) : ""}</span><span>${w}</span><button class="x" data-delpartido="${p.id}" aria-label="Borrar">✖</button></li>`;
   }).join("") || `<li class="empty">—</li>`;
 }
 $("historial").addEventListener("click", (e) => {
@@ -888,9 +1379,70 @@ $("waStats").addEventListener("click", () => {
   openWhatsApp(msg);
 });
 
+/* ---------- 🏁 Cerrar pichanga: resultado → cuentas → próxima fecha ---------- */
+document.querySelectorAll("[data-cerrar]").forEach((b) => b.addEventListener("click", abrirCierre));
+function abrirCierre() {
+  syncEquipos(false);
+  if (!S.inscritos.length) return toast("No hay nada que cerrar: inscribe jugadores 🏃");
+  const t = titulares(), est = estadoPartido(), p = partidoActual(), fecha = S.fecha || hoyISO();
+  const sinResultado = !p.golesA && !p.golesB && !p.mvp && !p.goleador && !p.rustico;
+  const deben = t.filter((n) => falta(n) > 0), aFavor = t.filter((n) => sobra(n) > 0);
+  const totDeben = deben.reduce((s, n) => s + falta(n), 0), sr = sinRepartir();
+  const premios = [["⭐", p.mvp], ["👟", p.goleador], ["🪓", p.rustico]].map(([i, n]) => `${i} ${n ? esc(n) : "—"}`).join(" · ");
+  let paso1;
+  if (est === "sin-equipos") paso1 = `<p class="sub">Sin equipos armados: no hay partido que guardar.</p>`;
+  else {
+    paso1 = `<div class="box"><div class="res">A ${p.golesA} – ${p.golesB} B</div><div style="text-align:center;font-size:13px;margin-top:2px">${premios}</div></div>`;
+    if (est === "guardado") paso1 += `<p class="okbox" style="margin-top:6px">✅ Ya está guardado en el historial</p>`;
+    else {
+      paso1 += `<label class="check"><input type="checkbox" id="cGuardar" ${sinResultado ? "" : "checked"}> ${est === "cambiado" ? "💾 Actualizar el partido guardado" : "💾 Guardar en el historial"}</label>`;
+      if (sinResultado) paso1 += `<p class="warnbox">Está 0–0 y sin premios. Si se jugó, corrige el resultado o marca la casilla.</p>`;
+    }
+    paso1 += `<button class="linkbtn" id="cEditar">✏️ Corregir resultado y premios</button>`;
+  }
+  let paso2 = deben.length
+    ? `<ul class="mini box">${deben.map((n) => `<li><span>⏳ ${esc(n)}${pagoDe(n) ? ` (pagó ${plata(pagoDe(n))})` : ""}</span><b>${plata(falta(n))}</b></li>`).join("")}</ul>
+       <label class="check"><input type="checkbox" id="cDeudas" checked> 📒 Anotar ${deben.length === 1 ? "1 deuda" : deben.length + " deudas"} por ${plata(totDeben)} en la libreta</label>`
+    : `<p class="okbox">${!costo("costoCancha") && !costo("costoTercer") ? "Sin costo de cancha: nadie queda debiendo." : "✅ Todos pagaron. ¡Bien ahí!"}</p>`;
+  if (aFavor.length) paso2 += `<p class="sub" style="margin-top:6px">💚 Pagaron de más (queda a favor): ${aFavor.map((n) => `${esc(n)} ${plata(sobra(n))}`).join(", ")}</p>`;
+  if (sr) paso2 += `<p class="warnbox">⚠️ ${plata(sr)} de tercer tiempo sin repartir: nadie está marcado 🍻. Márcalos en Pagos antes de cerrar.</p>`;
+  sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>🏁 Cerrar pichanga</h2>
+    <p class="sub">📅 ${esc(fechaBonita())}</p>
+    <h3>1️⃣ Resultado</h3>${paso1}
+    <h3>2️⃣ Cuentas</h3>${paso2}
+    <h3>3️⃣ Próxima fecha</h3>
+    <input type="date" id="cFecha" value="${masDias(fecha, 7)}" aria-label="Fecha de la próxima pichanga">
+    <p class="sub" style="margin-top:6px">Se mantienen ⏰ ${esc(S.hora || "hora por definir")} · 📍 ${esc(S.lugar || "lugar por definir")}${costo("costoCancha") ? ` · 🏟️ ${plata(costo("costoCancha"))}` : ""}. La lista queda vacía: usa <b>🔁 Misma lista</b> en Convocatoria para repetirla.</p>
+    <button class="btn orange block" id="cOk">🏁 Cerrar y preparar la próxima</button>
+    <button class="btn ghost block" data-cerrar-sheet>Cancelar</button>`);
+  if ($("cEditar")) $("cEditar").addEventListener("click", () => { cerrarSheet(); goTab("s-post"); });
+  $("cOk").addEventListener("click", () => cerrarPichanga({
+    guardar: !!($("cGuardar") && $("cGuardar").checked),
+    deudas: !$("cDeudas") || $("cDeudas").checked,
+    prox: $("cFecha").value,
+  }));
+}
+function cerrarPichanga({ guardar, deudas, prox }) {
+  const antes = JSON.stringify(S), fecha = S.fecha || hoyISO(), t = titulares();
+  if (guardar && !guardarPartido()) return; // canceló el reemplazo: no se cierra nada
+  let anotadas = 0;
+  t.forEach((n) => {
+    const f = falta(n), s = sobra(n);
+    if (deudas && f > 0) { anotar(n, { fecha, concepto: (S.tercer[n] ? "Cancha + 🍻" : "Cancha") + (pagoDe(n) ? " (saldo)" : ""), monto: f }); anotadas++; }
+    if (s > 0) anotar(n, { fecha, concepto: "Pagó de más (a favor)", monto: -s });
+  });
+  Object.keys(S.pagos).forEach((n) => { if (!t.includes(n)) liberarPago(n, fecha); });
+  S.ultimaLista = S.inscritos.slice();
+  Object.assign(S, { fecha: prox || masDias(fecha, 7), inscritos: [], equipos: { A: [], B: [] }, pagos: {}, tercer: {}, costoTercer: "", post: postVacio() });
+  save(); cargarCampos(); cerrarSheet();
+  if (tab === "s-convocatoria") renderConvocatoria(); else goTab("s-convocatoria");
+  conDeshacer(`🏁 Pichanga cerrada` + (anotadas ? ` · 📒 ${anotadas} ${anotadas === 1 ? "deuda anotada" : "deudas anotadas"}` : "") + ` · Próxima: ${fechaCorta(S.fecha)}`,
+    () => JSON.stringify(S), () => { S = migrar(JSON.parse(antes)); save(); cargarCampos(); renderTab(); toast("↩️ Pichanga reabierta"); });
+}
+
 /* ---------- Respaldo ---------- */
 $("exportar").addEventListener("click", async () => {
-  const blob = new Blob([JSON.stringify({ app: "pichanga", version: 1, fecha: new Date().toISOString(), datos: S }, null, 1)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify({ app: "pichanga", version: SCHEMA, fecha: new Date().toISOString(), datos: S }, null, 1)], { type: "application/json" });
   const nombre = `pichanga-respaldo-${hoyISO()}.json`;
   const file = new File([blob], nombre, { type: "application/json" });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -905,7 +1457,7 @@ $("importar").addEventListener("change", async () => {
     const j = JSON.parse(await f.text());
     if (j.app !== "pichanga" || !j.datos) throw new Error();
     if (!confirm("¿Reemplazar los datos de este teléfono con el respaldo?")) return;
-    S = Object.assign(defaults(), j.datos); save(); location.reload();
+    S = migrar(j.datos); save(); location.reload();
   } catch { toast("⚠️ Ese archivo no es un respaldo de Pichanga"); }
   $("importar").value = "";
 });
@@ -916,7 +1468,19 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
 
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
-renderConvocatoria();
+cargarCampos();
+{
+  // Abre en la pestaña de la URL (al recargar) y deja la entrada actual marcada para el botón Atrás
+  const t0 = tabDeHash(), st = history.state || {}, raiz = location.pathname + location.search;
+  if (pilaValida(st.pila) && st.pila[st.pila.length - 1] === t0) pila = st.pila; // recarga: se mantiene
+  else if (t0 !== TABS[0]) { // entrada directa a otra pestaña: Atrás pasa primero por Convocatoria
+    history.replaceState({ tab: TABS[0], pila: [TABS[0]] }, "", raiz);
+    pila = [TABS[0], t0];
+    history.pushState({ tab: t0, pila }, "", "#" + t0.slice(2));
+  } else pila = [t0];
+  history.replaceState({ tab: t0, pila }, "", t0 === TABS[0] ? raiz : "#" + t0.slice(2));
+  show(t0);
+}
 </script>
 </body>
 </html>
