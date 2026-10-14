@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b7a3b">
+<title>Pichanga.app</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --grass: #0b7a3b; --grass2: #12a150; --sky: #1565c0; --sky2: #42a5f5;
+    --gold: #ffc107; --orange: #ff7a00; --red: #e53935; --ok: #2e7d32;
+    --card: #ffffff; --ink: #14212b; --muted: #5f6f7a; --line: #e3e8ec;
+    --bg: linear-gradient(180deg, #0d47a1 0%, #1976d2 40%, #0b7a3b 100%);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: Nunito, system-ui, sans-serif; color: var(--ink);
+    background: #0b3d1f; background-image: var(--bg); background-attachment: fixed;
+  }
+  h1, h2, .display { font-family: "Lilita One", Nunito, sans-serif; font-weight: 400; letter-spacing: .5px; }
+  header.top { text-align: center; color: #fff; padding: 14px 16px 6px; }
+  header.top h1 { margin: 0; font-size: 26px; text-shadow: 0 2px 0 rgba(0,0,0,.25); }
+  main { max-width: 480px; margin: 0 auto; padding: 8px 16px 120px; }
+  .screen { display: none; }
+  .screen.active { display: block; animation: pop .2s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .title { color: #fff; font-size: 22px; text-align: center; margin: 4px 0 12px; text-shadow: 0 2px 0 rgba(0,0,0,.25); }
+  .card { background: var(--card); border-radius: 18px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 0 rgba(0,0,0,.18); }
+  .card h2 { margin: 0 0 10px; font-size: 18px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
+  input, select { width: 100%; font: inherit; padding: 11px 12px; border: 2px solid var(--line); border-radius: 12px; background: #fafcfd; color: var(--ink); }
+  input:focus, select:focus { outline: none; border-color: var(--sky2); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > * { flex: 1; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 14px; padding: 12px 14px; font: 800 15px Nunito, sans-serif; cursor: pointer; color: #fff; background: var(--sky); box-shadow: 0 4px 0 rgba(0,0,0,.25); }
+  .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+  .btn.small { padding: 8px 10px; font-size: 13px; border-radius: 10px; }
+  .btn.ghost { background: #eef3f7; color: var(--ink); box-shadow: 0 3px 0 #cfd8df; }
+  .btn.orange { background: var(--orange); }
+  .btn.green { background: #25d366; color: #073b1c; }
+  .btn.gold { background: var(--gold); color: #3a2a00; }
+  .btn.block { width: 100%; font-size: 17px; padding: 16px; font-family: "Lilita One", sans-serif; font-weight: 400; letter-spacing: .5px; }
+  .stepper { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 4px; }
+  .stepper .val { font-family: "Lilita One"; font-size: 30px; min-width: 120px; text-align: center; }
+  .stepper .btn { width: 52px; height: 52px; font-size: 26px; border-radius: 50%; padding: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { border: 2px solid var(--line); background: #f5f8fa; border-radius: 999px; padding: 6px 10px; font-weight: 800; font-size: 13px; cursor: pointer; }
+  .chip.in { opacity: .4; pointer-events: none; }
+  .list { list-style: none; padding: 0; margin: 0; }
+  .list li { display: flex; align-items: center; gap: 8px; padding: 9px 4px; border-bottom: 1px solid var(--line); }
+  .list li:last-child { border-bottom: 0; }
+  .list .num { width: 24px; color: var(--muted); font-weight: 800; }
+  .list .name { flex: 1; font-weight: 800; }
+  .x { background: none; border: 0; font-size: 18px; cursor: pointer; color: var(--muted); padding: 4px 8px; }
+  .pill { font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: #eef3f7; }
+  .badge { display: inline-block; background: var(--gold); color: #3a2a00; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 800; margin-left: 6px; }
+  .subs { background: #fff8e1; border-radius: 12px; padding: 4px 10px; margin-top: 10px; }
+  .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 10px; }
+  nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; background: #fff; box-shadow: 0 -4px 14px rgba(0,0,0,.2); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); z-index: 10; }
+  nav.tabs .wrap { display: flex; max-width: 480px; width: 100%; }
+  nav.tabs button { flex: 1; border: 0; background: none; font: 800 11px Nunito, sans-serif; color: var(--muted); padding: 6px 2px; border-radius: 12px; cursor: pointer; }
+  nav.tabs button .ico { display: block; font-size: 24px; }
+  nav.tabs button.active { background: #e8f5e9; color: var(--grass); }
+  .toast { position: fixed; left: 50%; top: 14px; transform: translateX(-50%) translateY(-120px); background: #14212b; color: #fff; padding: 12px 16px; border-radius: 14px; font-weight: 800; z-index: 20; transition: transform .25s; max-width: 90vw; text-align: center; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Cancha */
+  .board { background: linear-gradient(180deg, #102a43, #0b1d2e); color: #fff; border-radius: 18px; padding: 12px; box-shadow: 0 6px 0 rgba(0,0,0,.25); }
+  .board .teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+  .board .team { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .board .crest { width: 44px; height: 44px; }
+  .board .tname { font-family: "Lilita One"; font-size: 16px; letter-spacing: 1px; }
+  .board .vs { font-family: "Lilita One"; font-size: 22px; color: var(--gold); text-align: center; line-height: 1; }
+  .board .vs small { display: block; font: 800 11px Nunito; color: #9fb3c8; margin-top: 4px; letter-spacing: 1px; }
+  .board select { width: 100%; padding: 6px 8px; font: 800 12px Nunito; border-radius: 10px; border: 1px solid #334e68; background: #1b3550; color: #fff; }
+  .meter { margin-top: 12px; }
+  .meter .bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: #334e68; }
+  .meter .bar span { transition: width .35s ease; }
+  .meter .lbl { display: flex; justify-content: space-between; font: 800 11px Nunito; color: #9fb3c8; margin-top: 5px; letter-spacing: .5px; text-transform: uppercase; }
+  .meter .lbl b { color: #fff; }
+  .toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+  .pitch { position: relative; margin: 0; border-radius: 14px; aspect-ratio: 68 / 108; overflow: hidden; box-shadow: 0 8px 0 rgba(0,0,0,.25), inset 0 0 60px rgba(0,0,0,.35);
+    background: repeating-linear-gradient(180deg, #2e9e4f 0 6.25%, #279046 6.25% 12.5%); }
+  .pitch svg.marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .pitch .zone { position: absolute; left: 0; right: 0; height: 50%; transition: background .15s; }
+  .pitch .zone.a { top: 0; } .pitch .zone.b { bottom: 0; }
+  .pitch .zone.drop { background: rgba(255,255,255,.14); }
+  .player { position: absolute; width: 22%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; cursor: grab; user-select: none; touch-action: none; transition: left .35s ease, top .35s ease; z-index: 2; }
+  .player.dragging { transition: none; z-index: 6; cursor: grabbing; }
+  .player.dragging .kit { transform: scale(1.15); }
+  .player.target .kit, .player.sel .kit { filter: drop-shadow(0 0 0 #ffc107) drop-shadow(0 0 6px #ffc107); }
+  .kit { width: 40px; height: 40px; filter: drop-shadow(0 3px 2px rgba(0,0,0,.45)); transition: transform .15s; }
+  .plate { margin-top: 1px; display: flex; align-items: stretch; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 3px rgba(0,0,0,.35); max-width: 100%; }
+  .plate .pos { font: 800 9px Nunito; padding: 2px 4px; display: grid; place-items: center; }
+  .plate .nm { background: rgba(10,22,34,.85); color: #fff; font: 800 10.5px Nunito; padding: 1px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 74px; }
+  .pitch .empty-msg { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-weight: 800; text-align: center; padding: 20px; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+  .bench { display: flex; align-items: center; gap: 8px; margin-top: 14px; background: rgba(10,22,34,.55); color: #fff; padding: 8px 10px; border-radius: 12px; font: 800 12px Nunito; overflow-x: auto; }
+  .bench .tag { color: var(--gold); white-space: nowrap; }
+  .bench span.b { background: rgba(255,255,255,.12); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .hint { color: #fff; font-size: 12px; text-align: center; opacity: .85; margin: 10px 0; }
+  .levels .list li .seg { display: flex; border: 2px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .levels .list li .seg button { border: 0; background: #fff; font: 800 13px Nunito; width: 30px; height: 30px; cursor: pointer; color: var(--muted); border-left: 1px solid var(--line); }
+  .levels .list li .seg button:first-child { border-left: 0; }
+  .levels .list li .seg button.on { background: var(--sky); color: #fff; }
+  details summary { cursor: pointer; font-weight: 800; }
+  /* Pagos */
+  .bank { background: #f1f7ff; border-radius: 12px; padding: 10px; font-weight: 800; white-space: pre-line; font-size: 14px; }
+  .qr { max-width: 160px; display: block; margin: 10px auto 0; border-radius: 10px; }
+  .pay li { border-radius: 12px; margin-bottom: 6px; border: 0 !important; padding: 10px; }
+  .pay li.paid { background: #e8f5e9; }
+  .pay li.pending { background: #fff8e1; }
+  .pay .state { font-size: 13px; font-weight: 800; min-width: 104px; text-align: right; }
+  .beer { font-size: 20px; background: none; border: 0; cursor: pointer; filter: grayscale(1); opacity: .35; }
+  .beer.on { filter: none; opacity: 1; }
+  .warn { cursor: pointer; font-size: 18px; filter: grayscale(1); opacity: .25; background: none; border: 0; padding: 0; }
+  .warn.on { filter: none; opacity: 1; }
+  .totals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .totals div { background: #f5f8fa; border-radius: 12px; padding: 8px; text-align: center; font-size: 12px; color: var(--muted); }
+  .totals b { display: block; font-family: "Lilita One"; font-weight: 400; color: var(--ink); font-size: 20px; }
+</style>
+</head>
+<body>
+<header class="top"><h1>⚽ pichanga.app ⚽</h1></header>
+<div class="toast" id="toast"></div>
+
+<main>
+  <!-- PANTALLA 1 -->
+  <section class="screen active" id="s-convocatoria">
+    <h2 class="title">📅 NUEVA PICHANGA ⚽</h2>
+    <div class="card">
+      <div class="row">
+        <div><label>📆 Fecha</label><input type="date" id="fecha"></div>
+        <div><label>⏰ Hora</label><input type="time" id="hora"></div>
+      </div>
+      <label>📍 Lugar</label>
+      <div class="row">
+        <input id="lugar" placeholder="Complejo El Campito, Cancha 3" style="flex:3">
+        <a class="btn small ghost" id="mapLink" target="_blank" rel="noopener" style="flex:1;text-decoration:none">🗺️ Mapa</a>
+      </div>
+      <label style="text-align:center;margin-top:14px">¿Cuántos por lado? 👥</label>
+      <div class="stepper">
+        <button class="btn orange" id="menos" aria-label="Menos">−</button>
+        <div class="val" id="porLado">7 vs 7</div>
+        <button class="btn" id="mas" aria-label="Más">+</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🏃 Inscritos <span class="badge" id="cupos"></span></h2>
+      <div class="row">
+        <input id="nuevo" placeholder="Nombre del jugador" style="flex:3" autocomplete="off">
+        <button class="btn" id="agregar" style="flex:1">➕</button>
+      </div>
+      <label>🏠 Caseros (toca para sumar)</label>
+      <div class="chips" id="caseros"></div>
+      <ul class="list" id="titulares" style="margin-top:10px"></ul>
+      <div class="subs" id="subsBox">
+        <h2 style="margin:8px 0 2px;font-size:16px">⏳ Suplentes</h2>
+        <ul class="list" id="suplentes"></ul>
+      </div>
+    </div>
+    <button class="btn green block" id="waConvocar">📲 Enviar Convocatoria a WhatsApp</button>
+  </section>
+
+  <!-- PANTALLA 2 -->
+  <section class="screen" id="s-equipos">
+    <h2 class="title">Formación de Equipos</h2>
+    <div class="board">
+      <div class="teams">
+        <div class="team"><svg class="crest" id="crestA" viewBox="0 0 64 64"></svg><div class="tname">EQUIPO A</div><select id="colorA" aria-label="Color equipo A"></select></div>
+        <div class="vs"><span id="vsTxt">7 vs 7</span><small id="formTxt">3-2-1</small></div>
+        <div class="team"><svg class="crest" id="crestB" viewBox="0 0 64 64"></svg><div class="tname">EQUIPO B</div><select id="colorB" aria-label="Color equipo B"></select></div>
+      </div>
+      <div class="meter">
+        <div class="bar"><span id="barA"></span><span id="barB"></span></div>
+        <div class="lbl"><span>Fuerza A</span><b id="balance"></b><span>Fuerza B</span></div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn gold" id="azar">🎲 Mezclar al Azar</button>
+      <button class="btn" id="equilibrar">⚖️ Armado Equilibrado</button>
+    </div>
+    <div class="pitch" id="pitch">
+      <svg class="marks" viewBox="0 0 68 100" preserveAspectRatio="none" aria-hidden="true">
+        <g fill="none" stroke="rgba(255,255,255,.9)" stroke-width=".45">
+          <rect x="2" y="2" width="64" height="96"/>
+          <line x1="2" y1="50" x2="66" y2="50"/>
+          <circle cx="34" cy="50" r="8.5"/>
+          <rect x="15" y="2" width="38" height="15"/><rect x="25" y="2" width="18" height="5.5"/>
+          <path d="M27.5 17 A8.5 8.5 0 0 0 40.5 17"/>
+          <rect x="15" y="83" width="38" height="15"/><rect x="25" y="92.5" width="18" height="5.5"/>
+          <path d="M27.5 83 A8.5 8.5 0 0 1 40.5 83"/>
+          <path d="M2 3.5 A1.5 1.5 0 0 0 3.5 2 M64.5 2 A1.5 1.5 0 0 0 66 3.5 M2 96.5 A1.5 1.5 0 0 1 3.5 98 M64.5 98 A1.5 1.5 0 0 1 66 96.5"/>
+        </g>
+        <g fill="rgba(255,255,255,.9)"><circle cx="34" cy="50" r=".7"/><circle cx="34" cy="12" r=".5"/><circle cx="34" cy="88" r=".5"/></g>
+        <g fill="rgba(255,255,255,.25)" stroke="rgba(255,255,255,.9)" stroke-width=".4"><rect x="30" y=".3" width="8" height="1.7"/><rect x="30" y="98" width="8" height="1.7"/></g>
+      </svg>
+      <div class="zone a" id="zoneA"></div><div class="zone b" id="zoneB"></div>
+      <div id="players"></div>
+    </div>
+    <div class="bench" id="bench"></div>
+    <p class="hint">Arrastra un jugador sobre otro para intercambiarlos, o a la otra mitad para cambiarlo de equipo. El primero de cada equipo va al arco 🧤.</p>
+    <div class="card levels">
+      <details>
+        <summary>🔒 Niveles ocultos (1 a 5)</summary>
+        <ul class="list" id="niveles" style="margin-top:8px"></ul>
+      </details>
+    </div>
+    <button class="btn orange block" id="compartirCancha">📸 Compartir Planteamiento</button>
+  </section>
+  <!-- PANTALLA 3 -->
+  <section class="screen" id="s-pagos">
+    <h2 class="title">💰 Cuota y Transferencia 💸</h2>
+    <div class="card">
+      <h2>🏦 Datos de pago</h2>
+      <div class="bank" id="bankView"></div>
+      <button class="btn small ghost" id="copiarBanco" style="margin-top:8px">📋 Copiar datos</button>
+      <details style="margin-top:10px">
+        <summary>✏️ Editar datos</summary>
+        <label>Nombre</label><input id="bNombre" placeholder="Juan Pérez">
+        <label>RUT</label><input id="bRut" placeholder="12.345.678-9">
+        <div class="row">
+          <div><label>Banco</label><input id="bBanco" placeholder="BancoEstado"></div>
+          <div><label>Tipo</label><input id="bTipo" placeholder="CuentaRUT"></div>
+        </div>
+        <label>N° de cuenta</label><input id="bCuenta" placeholder="12345678">
+        <label>Correo</label><input id="bMail" placeholder="pagos@correo.cl">
+        <label>Link de cobro (MercadoPago, etc.)</label><input id="bLink" placeholder="https://link.mercadopago.cl/...">
+        <label>Código QR (imagen)</label><input type="file" id="bQr" accept="image/*">
+      </details>
+      <img class="qr" id="qrView" alt="QR de pago" hidden>
+    </div>
+
+    <div class="card">
+      <h2>🧮 División</h2>
+      <div class="row">
+        <div><label>🏟️ Cancha (total $)</label><input type="number" inputmode="numeric" id="costoCancha" placeholder="49000"></div>
+        <div><label>🍻 Tercer tiempo ($)</label><input type="number" inputmode="numeric" id="costoTercer" placeholder="0"></div>
+      </div>
+      <div class="totals">
+        <div>Cancha por persona<b id="porCancha">$0</b></div>
+        <div>🍻 Por persona extra<b id="porTercer">$0</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Estado de pago</h2>
+      <p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Toca el nombre para marcar ✅ pagado. 🍻 = se queda al tercer tiempo. ⚠️ = debe partidos anteriores.</p>
+      <ul class="list pay" id="pagos"></ul>
+    </div>
+    <button class="btn green block" id="waCobrar">💬 Cobrar por WhatsApp</button>
+    <button class="btn ghost block" id="nuevaPichanga" style="margin-top:12px;font-size:14px">🔄 Nueva pichanga (los que no pagaron quedan ⚠️)</button>
+  </section>
+</main>
+
+<nav class="tabs"><div class="wrap">
+  <button data-go="s-convocatoria" class="active"><span class="ico">📅</span>Convocatoria</button>
+  <button data-go="s-equipos"><span class="ico">👕</span>Equipos</button>
+  <button data-go="s-pagos"><span class="ico">💰</span>Pagos</button>
+</div></nav>
+
+<script>
+const COLORS = {
+  "🟢 Peto Flúor": ["#c6ff00", "#1b1b1b"],
+  "⚫ Negro": ["#1b1b1b", "#ffffff"],
+  "⚪ Blanco": ["#f5f5f5", "#1b1b1b"],
+  "🔴 Rojo": ["#e53935", "#ffffff"],
+  "🔵 Azul": ["#1e63d6", "#ffffff"],
+  "🟡 Amarillo": ["#ffd600", "#1b1b1b"],
+  "🟠 Naranjo": ["#ff7a00", "#ffffff"],
+};
+const KEY = "pichanga-v1";
+const $ = (id) => document.getElementById(id);
+
+const defaults = () => ({
+  fecha: "", hora: "20:00", lugar: "", porLado: 7,
+  inscritos: [],            // orden de llegada; los primeros 2*porLado son titulares
+  caseros: ["Carlos", "Seba", "Nico", "Mati", "Mako"],
+  niveles: {},              // nombre -> 1..5
+  equipos: { A: [], B: [] },
+  colorA: "⚫ Negro", colorB: "🟢 Peto Flúor",
+  banco: { nombre: "", rut: "", banco: "", tipo: "", cuenta: "", mail: "", link: "", qr: "" },
+  costoCancha: "", costoTercer: "",
+  pagado: {}, tercer: {}, morosos: {},
+});
+
+let S;
+try { S = Object.assign(defaults(), JSON.parse(localStorage.getItem(KEY) || "{}")); } catch { S = defaults(); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+const cupo = () => S.porLado * 2;
+const titulares = () => S.inscritos.slice(0, cupo());
+const suplentes = () => S.inscritos.slice(cupo());
+const plata = (n) => "$" + Math.round(n).toLocaleString("es-CL");
+const nivel = (n) => S.niveles[n] || 3;
+
+function openWhatsApp(text) {
+  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+}
+
+/* ---------- Navegación ---------- */
+document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll("nav.tabs button").forEach((x) => x.classList.toggle("active", x === b));
+  document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === b.dataset.go));
+  if (b.dataset.go === "s-equipos") { syncEquipos(); renderEquipos(); }
+  if (b.dataset.go === "s-pagos") renderPagos();
+  window.scrollTo(0, 0);
+}));
+
+/* ---------- Pantalla 1: Convocatoria ---------- */
+["fecha", "hora", "lugar"].forEach((k) => {
+  $(k).value = S[k];
+  $(k).addEventListener("input", () => { S[k] = $(k).value; save(); updateMap(); });
+});
+function updateMap() {
+  $("mapLink").href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(S.lugar || "cancha de fútbol");
+}
+
+function addPlayer(name) {
+  name = name.trim();
+  if (!name) return;
+  if (S.inscritos.some((n) => n.toLowerCase() === name.toLowerCase())) return toast("Ya está inscrito 😉");
+  S.inscritos.push(name);
+  if (!S.caseros.some((n) => n.toLowerCase() === name.toLowerCase())) S.caseros.push(name);
+  if (S.inscritos.length > cupo()) toast(`⏳ ${name} quedó de suplente`);
+  save(); renderConvocatoria();
+}
+function removePlayer(name) {
+  const idx = S.inscritos.indexOf(name);
+  const wasTitular = idx < cupo();
+  S.inscritos.splice(idx, 1);
+  if (wasTitular && S.inscritos.length >= cupo()) toast(`🔼 ${S.inscritos[cupo() - 1]} sube de suplente a titular`);
+  save(); renderConvocatoria();
+}
+$("agregar").addEventListener("click", () => { addPlayer($("nuevo").value); $("nuevo").value = ""; $("nuevo").focus(); });
+$("nuevo").addEventListener("keydown", (e) => { if (e.key === "Enter") $("agregar").click(); });
+$("mas").addEventListener("click", () => { if (S.porLado < 11) { S.porLado++; save(); renderConvocatoria(); } });
+$("menos").addEventListener("click", () => { if (S.porLado > 3) { S.porLado--; save(); renderConvocatoria(); } });
+
+function renderConvocatoria() {
+  $("porLado").textContent = `${S.porLado} vs ${S.porLado}`;
+  const libres = Math.max(0, cupo() - S.inscritos.length);
+  $("cupos").textContent = libres ? `${libres} cupos libres` : "¡Completo!";
+  const li = (n, i) => `<li><span class="num">${i}.</span><span class="name">🏃 ${esc(n)}</span><button class="x" data-del="${esc(n)}" aria-label="Bajar">✖</button></li>`;
+  const t = titulares(), s = suplentes();
+  $("titulares").innerHTML = t.length ? t.map((n, i) => li(n, i + 1)).join("") : `<li class="empty">Nadie inscrito todavía. ¡Suma a los caseros! 👇👆</li>`;
+  $("suplentes").innerHTML = s.length ? s.map((n, i) => li(n, i + 1)).join("") : `<li class="empty">Sin suplentes</li>`;
+  $("caseros").innerHTML = S.caseros.map((n) => {
+    const dentro = S.inscritos.includes(n);
+    return `<span class="chip ${dentro ? "in" : ""}" data-add="${esc(n)}">${dentro ? "✓" : "+"} ${esc(n)}</span>`;
+  }).join("");
+  updateMap();
+}
+document.addEventListener("click", (e) => {
+  const d = e.target.closest("[data-del]"); if (d) removePlayer(d.dataset.del);
+  const a = e.target.closest("[data-add]"); if (a) addPlayer(a.dataset.add);
+});
+
+function fechaBonita() {
+  if (!S.fecha) return "Por definir";
+  const d = new Date(S.fecha + "T12:00:00");
+  const txt = d.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
+  return txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+$("waConvocar").addEventListener("click", () => {
+  const t = titulares(), s = suplentes();
+  const libres = cupo() - t.length;
+  let msg = `⚽ *NUEVA PICHANGA* ⚽\n\n📅 ${fechaBonita()}\n⏰ ${S.hora || "Por definir"} hrs\n📍 ${S.lugar || "Por definir"}\n`;
+  if (S.lugar) msg += `🗺️ ${$("mapLink").href}\n`;
+  msg += `👥 ${S.porLado} vs ${S.porLado}\n\n*Inscritos (${t.length}/${cupo()}):*\n`;
+  msg += t.map((n, i) => `${i + 1}. ${n}`).join("\n") || "_(nadie aún)_";
+  if (libres > 0) msg += `\n\n🔥 *Quedan ${libres} cupos.* ¡Anótate!`;
+  else msg += `\n\n✅ *¡Cupos completos!*`;
+  if (s.length) msg += `\n\n⏳ *Suplentes:*\n` + s.map((n, i) => `${i + 1}. ${n}`).join("\n");
+  openWhatsApp(msg);
+});
+
+/* ---------- Pantalla 2: Equipos ---------- */
+const colorOpts = Object.keys(COLORS).map((c) => `<option>${c}</option>`).join("");
+$("colorA").innerHTML = colorOpts; $("colorB").innerHTML = colorOpts;
+$("colorA").value = S.colorA; $("colorB").value = S.colorB;
+$("colorA").addEventListener("change", () => { S.colorA = $("colorA").value; save(); renderEquipos(); });
+$("colorB").addEventListener("change", () => { S.colorB = $("colorB").value; save(); renderEquipos(); });
+
+// Camiseta: misma silueta para la pantalla y para la imagen exportada
+const SHIRT = "M21 6 L27 3 Q32 9 37 3 L43 6 L58 14 L53 27 L46 24 L46 60 L18 60 L18 24 L11 27 L6 14 Z";
+const GK = ["#ffb300", "#1b1b1b"];
+// Líneas de campo según jugadores por equipo (sin contar arquero)
+const LINES = { 1: [], 2: [1], 3: [2], 4: [2, 1], 5: [2, 2], 6: [2, 2, 1], 7: [3, 2, 1], 8: [3, 3, 1], 9: [3, 3, 2], 10: [4, 3, 2], 11: [4, 4, 2] };
+function lines(n) {
+  if (LINES[n]) return LINES[n];
+  const out = n - 1, l = []; let r = out; while (r > 0) { const k = Math.min(4, r); l.push(k); r -= k; } return l;
+}
+// Posiciones en coordenadas de cancha (x 0-100, y 0-100) para un equipo que defiende el arco de arriba
+function slots(n) {
+  if (!n) return [];
+  const pos = [{ x: 50, y: 5.5, gk: true }];
+  const ls = lines(n);
+  ls.forEach((cnt, i) => {
+    const y = ls.length === 1 ? 24 : 17 + (22 * i) / (ls.length - 1);
+    for (let k = 0; k < cnt; k++) pos.push({ x: (100 / (cnt + 1)) * (k + 1), y });
+  });
+  return pos;
+}
+function posLabel(i, n) {
+  if (i === 0) return "ARQ";
+  const ls = lines(n); let acc = 1;
+  for (let li = 0; li < ls.length; li++) {
+    if (i < acc + ls[li]) return li === 0 ? "DEF" : li === ls.length - 1 ? "DEL" : "MED";
+    acc += ls[li];
+  }
+  return "";
+}
+function kitSVG(bg, fg, num) {
+  return `<svg class="kit" viewBox="0 0 64 64"><defs><linearGradient id="sh" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".18"/><stop offset=".5" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient></defs>
+    <path d="${SHIRT}" fill="${bg}" stroke="rgba(0,0,0,.45)" stroke-width="1.5"/>
+    <path d="${SHIRT}" fill="url(#sh)"/>
+    <path d="M27 3 Q32 9 37 3" fill="none" stroke="${fg}" stroke-width="2.4"/>
+    <path d="M11 27 L6 14 M53 27 L58 14" stroke="${fg}" stroke-width="2.4" opacity=".7"/>
+    <text x="32" y="46" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="22" fill="${fg}">${num}</text></svg>`;
+}
+function crestSVG(bg, fg, letter) {
+  return `<path d="M32 3 L57 11 L55 36 Q52 52 32 61 Q12 52 9 36 L7 11 Z" fill="${bg}" stroke="${fg}" stroke-width="3"/>
+    <text x="32" y="42" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="26" fill="${fg}">${letter}</text>`;
+}
+
+function syncEquipos() {
+  const t = titulares();
+  S.equipos.A = S.equipos.A.filter((n) => t.includes(n));
+  S.equipos.B = S.equipos.B.filter((n) => t.includes(n));
+  t.forEach((n) => {
+    if (!S.equipos.A.includes(n) && !S.equipos.B.includes(n)) {
+      (S.equipos.A.length <= S.equipos.B.length ? S.equipos.A : S.equipos.B).push(n);
+    }
+  });
+  save();
+}
+const shuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+$("azar").addEventListener("click", () => {
+  const t = shuffle(titulares()); const h = Math.ceil(t.length / 2);
+  S.equipos = { A: t.slice(0, h), B: t.slice(h) }; save(); renderEquipos(); toast("🎲 ¡Equipos mezclados!");
+});
+$("equilibrar").addEventListener("click", () => {
+  // Orden por nivel (con desempate aleatorio) y reparto al equipo con menos puntos que aún tenga cupo
+  const t = shuffle(titulares()).sort((a, b) => nivel(b) - nivel(a));
+  const max = Math.ceil(t.length / 2);
+  const A = [], B = []; let sa = 0, sb = 0;
+  t.forEach((n) => {
+    if ((sa <= sb && A.length < max) || B.length >= max) { A.push(n); sa += nivel(n); }
+    else { B.push(n); sb += nivel(n); }
+  });
+  S.equipos = { A, B }; save(); renderEquipos(); toast("⚖️ Equipos parejos armados");
+});
+
+// Coordenadas en pantalla de cada jugador: A arriba, B abajo (espejado)
+function layout() {
+  const out = [];
+  ["A", "B"].forEach((team) => {
+    const names = S.equipos[team], sl = slots(names.length);
+    names.forEach((n, i) => {
+      const p = sl[i] || { x: 50, y: 30 };
+      out.push({ n, team, i, gk: i === 0, x: team === "A" ? p.x : 100 - p.x, y: team === "A" ? p.y * 0.98 + 1 : 99 - p.y * 0.98 });
+    });
+  });
+  return out;
+}
+
+function renderEquipos() {
+  const [bgA, fgA] = COLORS[S.colorA], [bgB, fgB] = COLORS[S.colorB];
+  $("crestA").innerHTML = crestSVG(bgA, fgA, "A");
+  $("crestB").innerHTML = crestSVG(bgB, fgB, "B");
+  const nA = S.equipos.A.length, nB = S.equipos.B.length;
+  $("vsTxt").textContent = `${nA} vs ${nB}`;
+  $("formTxt").textContent = nA ? lines(nA).join("-") : "";
+  const ps = layout();
+  $("players").innerHTML = ps.length ? ps.map((p) => {
+    const [bg, fg] = p.gk ? GK : COLORS[p.team === "A" ? S.colorA : S.colorB];
+    const [tb, tf] = COLORS[p.team === "A" ? S.colorA : S.colorB];
+    return `<div class="player" data-p="${esc(p.n)}" style="left:${p.x}%;top:${p.y}%">${kitSVG(bg, fg, p.i + 1)}
+      <div class="plate"><span class="pos" style="background:${tb};color:${tf}">${posLabel(p.i, p.team === "A" ? nA : nB)}</span><span class="nm">${esc(p.n)}</span></div></div>`;
+  }).join("") : `<div class="empty-msg">Inscribe jugadores en 📅 Convocatoria para armar los equipos</div>`;
+  const sum = (t) => S.equipos[t].reduce((s, n) => s + nivel(n), 0);
+  const a = sum("A"), b = sum("B"), tot = a + b || 1;
+  $("barA").style.cssText = `width:${(a / tot) * 100}%;background:${bgA}`;
+  $("barB").style.cssText = `width:${(b / tot) * 100}%;background:${bgB}`;
+  const diff = a - b;
+  $("balance").textContent = !a && !b ? "—" : Math.abs(diff) <= 1 ? "✔ Parejo" : `Ventaja ${diff > 0 ? "A" : "B"} +${Math.abs(diff)}`;
+  const s = suplentes();
+  $("bench").innerHTML = `<span class="tag">🪑 BANCA</span>` + (s.length ? s.map((n) => `<span class="b">${esc(n)}</span>`).join("") : `<span style="opacity:.7">Sin suplentes</span>`);
+  $("niveles").innerHTML = titulares().map((n) => `<li><span class="name">${esc(n)}</span><span class="seg">${
+    [1,2,3,4,5].map((k) => `<button data-lvl="${k}" data-n="${esc(n)}" class="${k === nivel(n) ? "on" : ""}">${k}</button>`).join("")
+  }</span></li>`).join("") || `<li class="empty">Sin jugadores</li>`;
+}
+$("niveles").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-lvl]"); if (!b) return;
+  S.niveles[b.dataset.n] = +b.dataset.lvl; save(); renderEquipos();
+});
+
+const teamOf = (n) => (S.equipos.A.includes(n) ? "A" : "B");
+function move(name, to) {
+  const from = teamOf(name);
+  if (from === to) return;
+  S.equipos[from] = S.equipos[from].filter((n) => n !== name);
+  S.equipos[to].push(name); save();
+}
+function swap(a, b) {
+  const ta = teamOf(a), tb = teamOf(b), ia = S.equipos[ta].indexOf(a), ib = S.equipos[tb].indexOf(b);
+  S.equipos[ta][ia] = b; S.equipos[tb][ib] = a; save();
+}
+
+// Drag & drop con pointer events (funciona con el dedo). Toque simple: selecciona, segundo toque: intercambia.
+let drag = null, selected = null;
+function targetAt(x, y, self) {
+  return document.elementsFromPoint(x, y).map((el) => el.closest && el.closest(".player")).find((el) => el && el !== self) || null;
+}
+$("pitch").addEventListener("pointerdown", (e) => {
+  const p = e.target.closest(".player"); if (!p) return;
+  drag = { name: p.dataset.p, el: p, x: e.clientX, y: e.clientY, moved: false, over: null };
+  p.setPointerCapture(e.pointerId);
+});
+$("pitch").addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.moved && Math.hypot(dx, dy) < 8) return;
+  drag.moved = true; drag.el.classList.add("dragging");
+  drag.el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  const over = targetAt(e.clientX, e.clientY, drag.el);
+  if (drag.over && drag.over !== over) drag.over.classList.remove("target");
+  drag.over = over; if (over) over.classList.add("target");
+  const r = $("pitch").getBoundingClientRect(), top = e.clientY < r.top + r.height / 2;
+  $("zoneA").classList.toggle("drop", !over && top); $("zoneB").classList.toggle("drop", !over && !top);
+});
+$("pitch").addEventListener("pointerup", (e) => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  $("zoneA").classList.remove("drop"); $("zoneB").classList.remove("drop");
+  if (d.moved) {
+    if (d.over) { swap(d.name, d.over.dataset.p); toast(`🔁 ${d.name} ⇄ ${d.over.dataset.p}`); }
+    else {
+      const r = $("pitch").getBoundingClientRect();
+      move(d.name, e.clientY < r.top + r.height / 2 ? "A" : "B");
+    }
+    selected = null; renderEquipos(); return;
+  }
+  if (!selected) { selected = d.name; d.el.classList.add("sel"); return; }
+  if (selected !== d.name) { swap(selected, d.name); toast(`🔁 ${selected} ⇄ ${d.name}`); }
+  selected = null; renderEquipos();
+});
+
+// Exportar imagen de la cancha (mismo diseño que la pantalla)
+function cancha() {
+  const W = 1080, px = 70, py = 280, pw = W - 140, ph = pw * 108 / 68, H = py + ph + 150;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const ctx = c.getContext("2d");
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#102a43"); g.addColorStop(1, "#0b1d2e");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  // Marcador superior
+  const [bgA, fgA] = COLORS[S.colorA], [bgB, fgB] = COLORS[S.colorB];
+  const crest = (x, y, bg, fg, l) => {
+    ctx.save(); ctx.translate(x - 48, y - 48); ctx.scale(1.5, 1.5);
+    const p = new Path2D("M32 3 L57 11 L55 36 Q52 52 32 61 Q12 52 9 36 L7 11 Z");
+    ctx.fillStyle = bg; ctx.fill(p); ctx.lineWidth = 3; ctx.strokeStyle = fg; ctx.stroke(p);
+    ctx.fillStyle = fg; ctx.font = "26px 'Lilita One'"; ctx.fillText(l, 32, 42); ctx.restore();
+  };
+  crest(170, 110, bgA, fgA, "A"); crest(W - 170, 110, bgB, fgB, "B");
+  ctx.fillStyle = "#fff"; ctx.font = "34px 'Lilita One'";
+  ctx.fillText("EQUIPO A", 170, 200); ctx.fillText("EQUIPO B", W - 170, 200);
+  ctx.font = "800 24px Nunito"; ctx.fillStyle = "#9fb3c8";
+  ctx.fillText(S.colorA.replace(/^\S+\s/, ""), 170, 234); ctx.fillText(S.colorB.replace(/^\S+\s/, ""), W - 170, 234);
+  ctx.fillStyle = "#ffc107"; ctx.font = "64px 'Lilita One'";
+  ctx.fillText(`${S.equipos.A.length} vs ${S.equipos.B.length}`, W / 2, 130);
+  ctx.fillStyle = "#fff"; ctx.font = "800 26px Nunito";
+  ctx.fillText(fechaBonita() + (S.hora ? ` · ${S.hora}` : ""), W / 2, 180);
+  ctx.fillStyle = "#9fb3c8"; ctx.font = "800 22px Nunito";
+  ctx.fillText((S.lugar || "").slice(0, 40), W / 2, 214);
+  // Cancha
+  ctx.save(); ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 22); ctx.clip();
+  for (let i = 0; i < 16; i++) { ctx.fillStyle = i % 2 ? "#279046" : "#2e9e4f"; ctx.fillRect(px, py + (ph / 16) * i, pw, ph / 16 + 1); }
+  const vg = ctx.createRadialGradient(W / 2, py + ph / 2, ph * .3, W / 2, py + ph / 2, ph * .75);
+  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.35)"); ctx.fillStyle = vg; ctx.fillRect(px, py, pw, ph);
+  ctx.restore();
+  const sx = pw / 68, sy = ph / 100, X = (v) => px + v * sx, Y = (v) => py + v * sy;
+  ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 4;
+  ctx.strokeRect(X(2), Y(2), 64 * sx, 96 * sy);
+  ctx.beginPath(); ctx.moveTo(X(2), Y(50)); ctx.lineTo(X(66), Y(50)); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(X(34), Y(50), 8.5 * sx, 8.5 * sy, 0, 0, Math.PI * 2); ctx.stroke();
+  [[2, 15], [83, 15]].forEach(([y, h]) => ctx.strokeRect(X(15), Y(y), 38 * sx, h * sy));
+  [[2, 5.5], [92.5, 5.5]].forEach(([y, h]) => ctx.strokeRect(X(25), Y(y), 18 * sx, h * sy));
+  ctx.beginPath(); ctx.ellipse(X(34), Y(12), 8.5 * sx, 8.5 * sy, 0, Math.PI * .2, Math.PI * .8); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(X(34), Y(88), 8.5 * sx, 8.5 * sy, 0, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke();
+  ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(X(34), Y(50), 6, 0, Math.PI * 2); ctx.fill();
+  // Jugadores
+  const nA = S.equipos.A.length, nB = S.equipos.B.length;
+  layout().forEach((p) => {
+    const x = X(p.x * 0.68), y = Y(p.y);
+    const [bg, fg] = p.gk ? GK : COLORS[p.team === "A" ? S.colorA : S.colorB];
+    const [tb, tf] = COLORS[p.team === "A" ? S.colorA : S.colorB];
+    ctx.save(); ctx.translate(x - 48, y - 70); ctx.scale(1.5, 1.5);
+    ctx.shadowColor = "rgba(0,0,0,.45)"; ctx.shadowBlur = 6; ctx.shadowOffsetY = 4;
+    const sp = new Path2D(SHIRT); ctx.fillStyle = bg; ctx.fill(sp);
+    ctx.shadowColor = "transparent"; ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.stroke(sp);
+    ctx.lineWidth = 2.4; ctx.strokeStyle = fg; ctx.stroke(new Path2D("M27 3 Q32 9 37 3"));
+    ctx.fillStyle = fg; ctx.font = "22px 'Lilita One'"; ctx.fillText(String(p.i + 1), 32, 46);
+    ctx.restore();
+    const pos = posLabel(p.i, p.team === "A" ? nA : nB);
+    ctx.font = "800 24px Nunito"; const nw = Math.min(ctx.measureText(p.n).width, 170) + 20;
+    ctx.font = "800 18px Nunito"; const pw2 = ctx.measureText(pos).width + 14;
+    const tw = nw + pw2, bx = x - tw / 2, by = y + 26;
+    ctx.save(); ctx.beginPath(); ctx.roundRect(bx, by, tw, 36, 8); ctx.clip();
+    ctx.fillStyle = tb; ctx.fillRect(bx, by, pw2, 36);
+    ctx.fillStyle = "rgba(10,22,34,.9)"; ctx.fillRect(bx + pw2, by, nw, 36); ctx.restore();
+    ctx.fillStyle = tf; ctx.fillText(pos, bx + pw2 / 2, by + 25);
+    ctx.fillStyle = "#fff"; ctx.font = "800 24px Nunito"; ctx.fillText(p.n, bx + pw2 + nw / 2, by + 26, 170);
+  });
+  // Pie
+  const s = suplentes();
+  ctx.fillStyle = "#9fb3c8"; ctx.font = "800 24px Nunito";
+  if (s.length) ctx.fillText("🪑 Banca: " + s.join(", "), W / 2, py + ph + 50, W - 100);
+  ctx.fillStyle = "#fff"; ctx.font = "30px 'Lilita One'"; ctx.fillText("⚽ pichanga.app", W / 2, H - 30);
+  return c;
+}
+$("compartirCancha").addEventListener("click", async () => {
+  syncEquipos();
+  if (!titulares().length) return toast("Primero inscribe jugadores 🏃");
+  try { await document.fonts.ready; } catch {}
+  const blob = await new Promise((r) => cancha().toBlob(r, "image/png"));
+  const file = new File([blob], "planteamiento.png", { type: "image/png" });
+  const texto = `⚽ Equipos para la pichanga\n${S.colorA}: ${S.equipos.A.join(", ")}\n${S.colorB}: ${S.equipos.B.join(", ")}`;
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], text: texto }); return; } catch (e) { if (e.name === "AbortError") return; }
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "planteamiento.png"; a.click();
+  toast("📸 Imagen descargada. Súbela al grupo");
+});
+/* ---------- Pantalla 3: Pagos ---------- */
+const bankMap = { bNombre: "nombre", bRut: "rut", bBanco: "banco", bTipo: "tipo", bCuenta: "cuenta", bMail: "mail", bLink: "link" };
+Object.entries(bankMap).forEach(([id, k]) => {
+  $(id).value = S.banco[k] || "";
+  $(id).addEventListener("input", () => { S.banco[k] = $(id).value; save(); renderBank(); });
+});
+$("bQr").addEventListener("change", () => {
+  const f = $("bQr").files[0]; if (!f) return;
+  const img = new Image(); const url = URL.createObjectURL(f);
+  img.onload = () => {
+    // Reducimos el QR para que quepa en el almacenamiento del teléfono
+    const s = Math.min(1, 400 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas"); c.width = img.width * s; c.height = img.height * s;
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    S.banco.qr = c.toDataURL("image/png"); save(); renderBank();
+  };
+  img.src = url;
+});
+function bankText() {
+  const b = S.banco;
+  return [b.nombre && `👤 ${b.nombre}`, b.rut && `🪪 RUT: ${b.rut}`, (b.banco || b.tipo) && `🏦 ${[b.banco, b.tipo].filter(Boolean).join(" · ")}`,
+    b.cuenta && `🔢 Cuenta: ${b.cuenta}`, b.mail && `📧 ${b.mail}`, b.link && `🔗 ${b.link}`].filter(Boolean).join("\n");
+}
+function renderBank() {
+  $("bankView").textContent = bankText() || "Agrega tus datos en ✏️ Editar datos";
+  $("qrView").hidden = !S.banco.qr; if (S.banco.qr) $("qrView").src = S.banco.qr;
+}
+$("copiarBanco").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(bankText()); toast("📋 Datos copiados"); } catch { toast("No se pudo copiar"); }
+});
+["costoCancha", "costoTercer"].forEach((k) => {
+  $(k).value = S[k];
+  $(k).addEventListener("input", () => { S[k] = $(k).value; save(); renderPagos(); });
+});
+const quedan = () => titulares().filter((n) => S.tercer[n]);
+const cuotaCancha = () => titulares().length ? (+S.costoCancha || 0) / titulares().length : 0;
+const cuotaTercer = () => quedan().length ? (+S.costoTercer || 0) / quedan().length : 0;
+const deuda = (n) => cuotaCancha() + (S.tercer[n] ? cuotaTercer() : 0);
+
+function renderPagos() {
+  $("porCancha").textContent = plata(cuotaCancha());
+  $("porTercer").textContent = plata(cuotaTercer());
+  $("pagos").innerHTML = titulares().map((n, i) => {
+    const ok = S.pagado[n];
+    return `<li class="${ok ? "paid" : "pending"}">
+      <button class="warn ${S.morosos[n] ? "on" : ""}" data-moroso="${esc(n)}" title="Debe partidos anteriores">⚠️</button>
+      <span class="name" data-pay="${esc(n)}" style="cursor:pointer">${i + 1}. ${esc(n)}</span>
+      <button class="beer ${S.tercer[n] ? "on" : ""}" data-beer="${esc(n)}" title="Se queda al tercer tiempo">🍻</button>
+      <span class="state" data-pay="${esc(n)}" style="cursor:pointer">${ok ? "✅ PAGADO" : `⏳ ${plata(deuda(n))}`}</span>
+    </li>`;
+  }).join("") || `<li class="empty">Sin jugadores inscritos</li>`;
+  renderBank();
+}
+$("pagos").addEventListener("click", (e) => {
+  const p = e.target.closest("[data-pay]"), b = e.target.closest("[data-beer]"), m = e.target.closest("[data-moroso]");
+  if (p) S.pagado[p.dataset.pay] = !S.pagado[p.dataset.pay];
+  if (b) S.tercer[b.dataset.beer] = !S.tercer[b.dataset.beer];
+  if (m) S.morosos[m.dataset.moroso] = !S.morosos[m.dataset.moroso];
+  if (p || b || m) { save(); renderPagos(); }
+});
+$("waCobrar").addEventListener("click", () => {
+  const faltan = titulares().filter((n) => !S.pagado[n]);
+  const morosos = Object.keys(S.morosos).filter((n) => S.morosos[n]);
+  if (!faltan.length && !morosos.length) return toast("🎉 ¡Todos pagaron!");
+  let msg = `💰 *COBRANZA PICHANGA* 💸\n📅 ${fechaBonita()}\n\nCracks, la cancha no se paga sola 😅⚽\n`;
+  if (faltan.length) msg += `\n*Faltan por pagar:*\n` + faltan.map((n) => `⏳ ${n}: ${plata(deuda(n))}${S.tercer[n] ? " (incluye 🍻)" : ""}`).join("\n");
+  if (morosos.length) msg += `\n\n⚠️ *Deudas de partidos anteriores:* ${morosos.join(", ")}`;
+  const bt = bankText(); if (bt) msg += `\n\n*Datos para transferir:*\n${bt}`;
+  if (S.banco.qr) msg += `\n\n📲 (Te mando el QR en el próximo mensaje)`;
+  msg += `\n\n¡Gracias! 🙌`;
+  openWhatsApp(msg);
+});
+$("nuevaPichanga").addEventListener("click", () => {
+  if (!confirm("¿Empezar una nueva pichanga? Se limpia la lista y los que no pagaron quedan marcados ⚠️")) return;
+  titulares().forEach((n) => { if (!S.pagado[n]) S.morosos[n] = true; });
+  Object.assign(S, { fecha: "", inscritos: [], equipos: { A: [], B: [] }, pagado: {}, tercer: {}, costoTercer: "" });
+  ["fecha", "costoTercer"].forEach((k) => ($(k).value = ""));
+  save(); renderConvocatoria(); renderPagos(); toast("🔄 ¡Lista limpia para la próxima!");
+});
+
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+renderConvocatoria();
+</script>
+</body>
+</html>
