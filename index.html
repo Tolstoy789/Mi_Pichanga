@@ -106,6 +106,29 @@
   .levels .list li .seg button:first-child { border-left: 0; }
   .levels .list li .seg button.on { background: var(--sky); color: #fff; }
   details summary { cursor: pointer; font-weight: 800; }
+  /* Post-partido */
+  .score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; text-align: center; }
+  .score .side { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .score .goals { display: flex; align-items: center; gap: 8px; }
+  .score .goals b { font-family: "Lilita One"; font-weight: 400; font-size: 44px; min-width: 40px; color: #fff; }
+  .score .goals .btn { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 20px; }
+  .score .dash { font-family: "Lilita One"; font-size: 30px; color: var(--gold); }
+  .award { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .award:last-child { border-bottom: 0; }
+  .award .ic { font-size: 28px; width: 40px; text-align: center; }
+  .award .lb { font-weight: 800; font-size: 14px; width: 82px; }
+  .award select { flex: 1; }
+  .stats-bar { display: flex; height: 34px; border-radius: 12px; overflow: hidden; margin: 8px 0 6px; font: 800 13px Nunito; }
+  .stats-bar span { display: grid; place-items: center; min-width: 0; overflow: hidden; white-space: nowrap; transition: width .35s; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .kpis div { background: #f5f8fa; border-radius: 12px; padding: 8px; text-align: center; font-size: 12px; color: var(--muted); }
+  .kpis b { display: block; font-family: "Lilita One"; font-weight: 400; font-size: 26px; color: var(--ink); }
+  .rank li .count { font-family: "Lilita One"; font-size: 18px; }
+  .hist li { font-size: 14px; }
+  .hist .res { font-family: "Lilita One"; font-size: 18px; min-width: 64px; text-align: center; }
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .month-nav b { font-family: "Lilita One"; font-weight: 400; font-size: 18px; }
+
   /* Pagos */
   .bank { background: #f1f7ff; border-radius: 12px; padding: 10px; font-weight: 800; white-space: pre-line; font-size: 14px; }
   .qr { max-width: 160px; display: block; margin: 10px auto 0; border-radius: 10px; }
@@ -254,12 +277,50 @@
     <button class="btn green block" id="waCobrar">💬 Cobrar por WhatsApp</button>
     <button class="btn ghost block" id="nuevaPichanga" style="margin-top:12px;font-size:14px">🔄 Nueva pichanga (los que no pagaron quedan ⚠️)</button>
   </section>
+  <!-- PANTALLA 4 -->
+  <section class="screen" id="s-post">
+    <h2 class="title">🏆 Post-Partido</h2>
+    <div class="board">
+      <div class="score">
+        <div class="side"><svg class="crest" id="pCrestA" viewBox="0 0 64 64" style="width:40px;height:40px"></svg>
+          <div class="goals"><button class="btn orange" data-gol="A,-1">−</button><b id="golesA">0</b><button class="btn" data-gol="A,1">+</button></div></div>
+        <div class="dash">VS</div>
+        <div class="side"><svg class="crest" id="pCrestB" viewBox="0 0 64 64" style="width:40px;height:40px"></svg>
+          <div class="goals"><button class="btn orange" data-gol="B,-1">−</button><b id="golesB">0</b><button class="btn" data-gol="B,1">+</button></div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h2>🗳️ Premios del partido</h2>
+      <button class="btn green" id="waVotar" style="width:100%;margin-bottom:8px">📲 Enviar votación al grupo</button>
+      <p style="margin:0 0 4px;font-size:13px;color:var(--muted)">Con los votos del grupo, elige a los ganadores:</p>
+      <div class="award"><span class="ic">⭐</span><span class="lb">MVP</span><select id="aMvp"></select></div>
+      <div class="award"><span class="ic">👟</span><span class="lb">Goleador</span><select id="aGol"></select></div>
+      <div class="award"><span class="ic">🪓</span><span class="lb">El Rústico</span><select id="aRus"></select></div>
+    </div>
+    <button class="btn orange block" id="guardarPartido">💾 Guardar partido</button>
+
+    <div class="card" style="margin-top:14px">
+      <div class="month-nav"><button class="btn small ghost" id="mesAnt">◀</button><b id="mesTxt"></b><button class="btn small ghost" id="mesSig">▶</button></div>
+      <div class="stats-bar" id="statsBar"></div>
+      <div class="kpis">
+        <div>Gana A<b id="kA">0</b></div><div>Empates<b id="kE">0</b></div><div>Gana B<b id="kB">0</b></div>
+      </div>
+      <h2 style="margin:14px 0 4px;font-size:16px">🏅 Ranking del mes</h2>
+      <ul class="list rank" id="ranking"></ul>
+      <h2 style="margin:14px 0 4px;font-size:16px">📜 Partidos</h2>
+      <ul class="list hist" id="historial"></ul>
+    </div>
+    <button class="btn green block" id="waStats">💬 Compartir tabla del mes</button>
+  </section>
+
 </main>
 
 <nav class="tabs"><div class="wrap">
   <button data-go="s-convocatoria" class="active"><span class="ico">📅</span>Convocatoria</button>
   <button data-go="s-equipos"><span class="ico">👕</span>Equipos</button>
   <button data-go="s-pagos"><span class="ico">💰</span>Pagos</button>
+  <button data-go="s-post"><span class="ico">🏆</span>Post-Partido</button>
 </div></nav>
 
 <script>
@@ -285,6 +346,7 @@ const defaults = () => ({
   banco: { nombre: "", rut: "", banco: "", tipo: "", cuenta: "", mail: "", link: "", qr: "" },
   costoCancha: "", costoTercer: "",
   pagado: {}, tercer: {}, morosos: {},
+  post: { golesA: 0, golesB: 0 }, historial: [],
 });
 
 let S;
@@ -311,6 +373,7 @@ document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("
   document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === b.dataset.go));
   if (b.dataset.go === "s-equipos") { syncEquipos(); renderEquipos(); }
   if (b.dataset.go === "s-pagos") renderPagos();
+  if (b.dataset.go === "s-post") { syncEquipos(); renderPost(); }
   window.scrollTo(0, 0);
 }));
 
@@ -718,6 +781,97 @@ $("nuevaPichanga").addEventListener("click", () => {
   Object.assign(S, { fecha: "", inscritos: [], equipos: { A: [], B: [] }, pagado: {}, tercer: {}, costoTercer: "" });
   ["fecha", "costoTercer"].forEach((k) => ($(k).value = ""));
   save(); renderConvocatoria(); renderPagos(); toast("🔄 ¡Lista limpia para la próxima!");
+});
+
+/* ---------- Pantalla 4: Post-partido ---------- */
+let mesVista = new Date(); mesVista.setDate(1);
+const mesKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const hoyISO = () => { const d = new Date(); return `${mesKey(d)}-${String(d.getDate()).padStart(2, "0")}`; };
+
+document.querySelectorAll("[data-gol]").forEach((b) => b.addEventListener("click", () => {
+  const [t, d] = b.dataset.gol.split(","); const k = "goles" + t;
+  S.post[k] = Math.max(0, (S.post[k] || 0) + +d); save(); renderPost();
+}));
+const AWARDS = [["aMvp", "mvp"], ["aGol", "goleador"], ["aRus", "rustico"]];
+AWARDS.forEach(([id, k]) => $(id).addEventListener("change", () => { S.post[k] = $(id).value; save(); }));
+
+$("waVotar").addEventListener("click", () => {
+  const t = titulares(); if (!t.length) return toast("Primero inscribe jugadores 🏃");
+  const msg = `🗳️ *VOTACIÓN POST-PICHANGA* ⚽\n📅 ${fechaBonita()}\n🏁 Resultado: Equipo A ${S.post.golesA || 0} - ${S.post.golesB || 0} Equipo B\n\n` +
+    `Responde con 3 números:\n⭐ *MVP* (el mejor)\n👟 *Goleador*\n🪓 *El Rústico* (el más pierna 😂)\n\n` +
+    t.map((n, i) => `${i + 1}. ${n}`).join("\n") + `\n\nEjemplo: *3, 5, 7*`;
+  openWhatsApp(msg);
+});
+
+$("guardarPartido").addEventListener("click", () => {
+  if (!S.equipos.A.length && !S.equipos.B.length) return toast("Arma los equipos antes de guardar 👕");
+  const p = {
+    id: Date.now(), fecha: S.fecha || hoyISO(), lugar: S.lugar,
+    golesA: S.post.golesA || 0, golesB: S.post.golesB || 0,
+    colorA: S.colorA, colorB: S.colorB, A: S.equipos.A.slice(), B: S.equipos.B.slice(),
+    mvp: S.post.mvp || "", goleador: S.post.goleador || "", rustico: S.post.rustico || "",
+  };
+  S.historial.push(p); S.post = { golesA: 0, golesB: 0 };
+  mesVista = new Date(p.fecha + "T12:00:00"); mesVista.setDate(1);
+  save(); renderPost();
+  const r = p.golesA === p.golesB ? "🤝 ¡Empate!" : `🏆 ¡Ganó el Equipo ${p.golesA > p.golesB ? "A" : "B"}!`;
+  toast(`${r} Partido guardado`);
+});
+$("mesAnt").addEventListener("click", () => { mesVista.setMonth(mesVista.getMonth() - 1); renderPost(); });
+$("mesSig").addEventListener("click", () => { mesVista.setMonth(mesVista.getMonth() + 1); renderPost(); });
+
+function delMes() { return S.historial.filter((p) => p.fecha.slice(0, 7) === mesKey(mesVista)); }
+function resumen(ps) {
+  const r = { A: 0, B: 0, E: 0, mvp: {}, goleador: {}, rustico: {} };
+  ps.forEach((p) => {
+    r[p.golesA > p.golesB ? "A" : p.golesB > p.golesA ? "B" : "E"]++;
+    ["mvp", "goleador", "rustico"].forEach((k) => { if (p[k]) r[k][p[k]] = (r[k][p[k]] || 0) + 1; });
+  });
+  return r;
+}
+const ranked = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
+
+function renderPost() {
+  const [bgA, fgA] = COLORS[S.colorA], [bgB, fgB] = COLORS[S.colorB];
+  $("pCrestA").innerHTML = crestSVG(bgA, fgA, "A"); $("pCrestB").innerHTML = crestSVG(bgB, fgB, "B");
+  $("golesA").textContent = S.post.golesA || 0; $("golesB").textContent = S.post.golesB || 0;
+  const opts = `<option value="">— Elegir —</option>` + titulares().map((n) => `<option>${esc(n)}</option>`).join("");
+  AWARDS.forEach(([id, k]) => { $(id).innerHTML = opts; $(id).value = S.post[k] || ""; });
+
+  const mtxt = mesVista.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
+  $("mesTxt").textContent = mtxt.charAt(0).toUpperCase() + mtxt.slice(1);
+  const ps = delMes(), r = resumen(ps), tot = ps.length;
+  $("kA").textContent = r.A; $("kE").textContent = r.E; $("kB").textContent = r.B;
+  const seg = (n, bg, fg, l) => n ? `<span style="width:${(n / tot) * 100}%;background:${bg};color:${fg}">${l} ${n}</span>` : "";
+  $("statsBar").innerHTML = tot ? seg(r.A, bgA, fgA, "A") + seg(r.E, "#cfd8df", "#14212b", "=") + seg(r.B, bgB, fgB, "B")
+    : `<span style="width:100%;background:#eef3f7;color:var(--muted)">Sin partidos este mes</span>`;
+
+  const filas = [["⭐", "MVP", r.mvp], ["👟", "Goleador", r.goleador], ["🪓", "Rústico", r.rustico]]
+    .map(([ic, lb, o]) => { const t = ranked(o)[0]; return t ? `<li><span style="font-size:20px">${ic}</span><span class="name">${esc(t[0])} <span style="color:var(--muted);font-weight:600;font-size:12px">${lb}</span></span><span class="count">${t[1]}×</span></li>` : ""; })
+    .join("");
+  $("ranking").innerHTML = filas || `<li class="empty">Guarda un partido para ver el ranking</li>`;
+
+  $("historial").innerHTML = ps.slice().reverse().map((p) => {
+    const d = new Date(p.fecha + "T12:00:00").toLocaleDateString("es-CL", { weekday: "short", day: "numeric" });
+    const w = p.golesA === p.golesB ? "🤝" : p.golesA > p.golesB ? "🅰️" : "🅱️";
+    return `<li><span style="width:64px;color:var(--muted);font-weight:800;font-size:13px">${d}</span><span class="res">${p.golesA} – ${p.golesB}</span><span class="name" style="font-size:12px;color:var(--muted)">${p.mvp ? "⭐ " + esc(p.mvp) : ""}</span><span>${w}</span><button class="x" data-delpartido="${p.id}" aria-label="Borrar">✖</button></li>`;
+  }).join("") || `<li class="empty">—</li>`;
+}
+$("historial").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-delpartido]"); if (!b) return;
+  if (!confirm("¿Borrar este partido del historial?")) return;
+  S.historial = S.historial.filter((p) => p.id !== +b.dataset.delpartido); save(); renderPost();
+});
+$("waStats").addEventListener("click", () => {
+  const ps = delMes(), r = resumen(ps);
+  if (!ps.length) return toast("No hay partidos este mes");
+  const mtxt = mesVista.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
+  const lider = r.A === r.B ? "🤝 ¡Mes empatado!" : `🔥 *Manda el Equipo ${r.A > r.B ? "A" : "B"}*`;
+  let msg = `📊 *TABLA DE ${mtxt.toUpperCase()}* ⚽\n\n🅰️ Equipo A: ${r.A} victorias\n🅱️ Equipo B: ${r.B} victorias\n🤝 Empates: ${r.E}\n\n${lider}\n`;
+  const l = (ic, lb, o) => { const t = ranked(o).slice(0, 3); return t.length ? `\n${ic} *${lb}:* ` + t.map(([n, c]) => `${n} (${c})`).join(", ") : ""; };
+  msg += l("⭐", "MVP", r.mvp) + l("👟", "Goleadores", r.goleador) + l("🪓", "Rústicos", r.rustico);
+  msg += `\n\n*Últimos partidos:*\n` + ps.slice(-5).reverse().map((p) => `• ${p.fecha.slice(8)}/${p.fecha.slice(5, 7)}: A ${p.golesA} – ${p.golesB} B`).join("\n");
+  openWhatsApp(msg);
 });
 
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }

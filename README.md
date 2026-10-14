@@ -8,7 +8,7 @@ Organizador de pichangas para el celular: convocatoria, armado de equipos y cobr
 - **👕 Equipos:** cancha táctica con formación según la cantidad de jugadores, color de petos por equipo, mezcla al azar, armado equilibrado según niveles ocultos (1 a 5), arrastrar para intercambiar jugadores e imagen del planteamiento para compartir.
 - **💰 Pagos:** datos bancarios con QR o link de cobro, cuota de cancha por persona, división del tercer tiempo 🍻 solo entre los que se quedan, marcas de pagado y morosos ⚠️, y cobranza por WhatsApp.
 
-Próximamente: votación de MVP, goleador y "El Rústico", y estadísticas del mes.
+- **🏆 Post-Partido:** marcador del partido, votación por WhatsApp para elegir ⭐ MVP, 👟 Goleador y 🪓 El Rústico, historial de partidos y tabla del mes (victorias del Equipo A vs Equipo B y ranking de premios) para compartir al grupo.
 
 ## Cómo usarla
 
