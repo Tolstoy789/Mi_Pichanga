@@ -64,7 +64,9 @@ async function abrir(estado, { width = 390, height = 844, url = FILE } = {}) {
     txt: (sel) => page.locator(sel).first().innerText(),
     toast: (texto) => page.waitForFunction((x) => { const e = document.getElementById("toast"); return e.classList.contains("show") && e.textContent.includes(x); }, texto, { timeout: 3000 }),
     sinToast: () => page.evaluate(() => { const e = document.getElementById("toast"); clearTimeout(window.__t); e.classList.remove("show"); }),
-    tap: async (sel) => { await page.locator(sel).first().click(); },
+    // La app ignora toques en una hoja recién abierta (protección de doble toque): se espera como lo haría una persona
+    hoja: () => page.waitForFunction(() => !document.getElementById("sheet").open || Date.now() - (window.sheet.abierta || 0) >= 460, null, { timeout: 3000 }),
+    tap: async (sel) => { await t.hoja(); await page.locator(sel).first().click(); },
   });
   return t;
 }
@@ -104,10 +106,11 @@ await prueba("Migración: datos con la forma antigua se convierten sin perder na
   igual(S.costoCancha, "42000", "costo cancha con punto de miles");
   igual(S.costoTercer, "12000", "costo tercer tiempo");
   igual(S.tercer, VIEJO.tercer, "🍻 marcados");
-  igual(S.deudas.Pablo, [{ fecha: "", concepto: "Deuda anterior (monto por confirmar)", monto: null }], "moroso Pablo → libreta");
+  igual(S.deudas.Pablo, [{ fecha: "", concepto: "Deuda anterior", monto: null }], "moroso Pablo → libreta");
   ok(S.deudas.Caro && !S.deudas.Nadie, "Caro con deuda, Nadie (false) sin deuda");
   igual(S.pagos.Ana.monto, 19000, "Ana pagado → $7.000 cancha + $12.000 🍻");
   igual(S.pagos.Beto.monto, 7000, "Beto pagado → $7.000");
+  igual(S.deudas.Zeta, [{ fecha: "2026-10-10", concepto: "Pagó y no jugó (a favor)", monto: -7000 }], "Zeta pagó y ya no está: queda a favor");
   ok(!("morosos" in S) && !("pagado" in S), "claves antiguas reemplazadas");
   igual([S.post.golesA, S.post.golesB, S.post.mvp, S.post.guardadoId], [2, 1, "Ana", null], "post");
   igual(S.historial[0].id, 111, "historial intacto");
@@ -156,7 +159,8 @@ await prueba("Migración: restaurar un respaldo antiguo (.json) lo convierte", a
   const f = path.join(os.tmpdir(), `respaldo-viejo-${process.pid}.json`);
   fs.writeFileSync(f, JSON.stringify({ app: "pichanga", version: 1, fecha: "2026-10-01T00:00:00Z", datos: VIEJO }));
   await t.ir("post");
-  await Promise.all([t.page.waitForEvent("load"), t.page.setInputFiles("#importar", f)]);
+  await t.page.setInputFiles("#importar", f);
+  await t.toast("Respaldo restaurado");
   const S = await t.S();
   fs.unlinkSync(f);
   igual(S.v, 2, "versión");
@@ -221,7 +225,7 @@ await prueba("B2/F1: Cerrar pichanga guarda el partido pendiente, anota deudas y
 await prueba("B2: cerrar sin guardar el resultado no lo arrastra a la fecha siguiente", async (abrir) => {
   const t = await abrir(base({ porLado: 3, inscritos: SEIS.slice(), equipos: { A: SEIS.slice(0, 3), B: SEIS.slice(3) }, post: { golesA: 0, golesB: 2, mvp: "Beto", goleador: "", rustico: "", guardadoId: null } }));
   await t.ir("pagos"); await t.tap(".screen.active [data-cerrar]");
-  await t.page.uncheck("#cGuardar");
+  await t.hoja(); await t.page.uncheck("#cGuardar");
   await t.tap("#cOk");
   const S = await t.S();
   igual(S.historial.length, 0, "no se guardó");
@@ -358,6 +362,7 @@ await prueba("B5: se guarda el monto pagado; si se suma el 🍻 después, aparec
   igual((await t.S()).pagos.Ana.monto, 3500, "monto guardado");
   await t.page.locator("#costoTercer").pressSequentially("20000");
   await t.tap('[data-beer="Ana"]'); await t.tap('[data-beer="Beto"]');
+  await esperar(BAJA); // fuera de la ventana de doble toque
   const fila = await t.txt('#pagos li:has([data-pay="Ana"])');
   ok(fila.includes("pagó $3.500") && fila.includes("falta $10.000"), "pagó/falta: " + fila.replace(/\n/g, " "));
   await t.tap("#waCobrar");
@@ -668,12 +673,323 @@ await prueba("F2: el cobro lista a cada deudor con su monto (y los sin monto)", 
 await prueba("F2: el saldo a favor se descuenta al cerrar y se puede marcar como devuelto", async (abrir) => {
   const t = await abrir(base({ porLado: 3, inscritos: ["Ana", "Beto"], costoCancha: "7000", deudas: { Ana: [{ fecha: "2026-10-12", concepto: "Pagó y no jugó (a favor)", monto: -3500 }], Memo: [{ fecha: "2026-10-12", concepto: "Pagó y no jugó (a favor)", monto: -2000 }] } }));
   await t.ir("pagos");
-  ok((await t.txt('#pagos li:has([data-pay="Ana"])')).includes("💚 $3.500 a favor"), "se ve en su fila");
+  ok((await t.txt('#pagos li:has([data-pay="Ana"])')).includes("💚 CUBIERTO"), "su saldo a favor cubre la cuota");
   await t.tap('[data-devuelto="Memo"]');
   igual((await t.S()).deudas.Memo, undefined, "devuelto");
   await t.tap('.state[data-pay="Beto"]');
   await t.tap(".screen.active [data-cerrar]"); await t.tap("#cOk");
   igual((await t.S()).deudas, {}, "deuda de Ana compensada con su saldo a favor");
+});
+
+/* ================= QA de la Ronda 1 ================= */
+// Estado antiguo (99372cf) con los valores por defecto de esa versión
+const viejo = (x = {}) => Object.assign({
+  fecha: "2026-10-14", hora: "20:00", lugar: "Complejo", porLado: 3,
+  inscritos: ["Ana", "Beto", "Caro", "Dani", "Eli", "Fede"], caseros: ["Ana", "Beto", "Caro", "Dani", "Eli", "Fede", "Gabi"],
+  niveles: {}, equipos: { A: [], B: [] }, colorA: "⚫ Negro", colorB: "🟢 Peto Flúor",
+  banco: { nombre: "", rut: "", banco: "", tipo: "", cuenta: "", mail: "", link: "", qr: "" },
+  costoCancha: "", costoTercer: "", pagado: {}, tercer: {}, morosos: {}, post: { golesA: 0, golesB: 0 }, historial: [],
+}, x);
+const fila = (t, n) => t.txt(`#pagos li:has([data-pay="${n}"])`).then((x) => x.replace(/\s+/g, " "));
+
+await prueba("QA F2: saldar una deuda sin monto conserva el saldo a favor (y el saldo se ve)", async (abrir) => {
+  const t = await abrir(viejo({ porLado: 7, inscritos: ["Ana", ...J(13)], costoCancha: "49000", morosos: { Ana: true } }));
+  await t.ir("pagos");
+  t.respuestas.push(false); // "¿La pagó también?" → No
+  await t.tap('.state[data-pay="Ana"]');
+  ok(t.dialogos[0].includes("Ana también tiene una deuda anterior sin monto. ¿La pagó también?"), "pregunta sin texto repetido: " + t.dialogos[0]);
+  await t.ir("convocatoria"); await t.tap('[data-del="Ana"]');
+  await t.toast("queda a favor");
+  igual((await t.S()).deudas.Ana.map((e) => e.monto), [null, -3500], "libreta: deuda sin monto + a favor");
+  await t.ir("pagos");
+  const d = (await t.txt("#deudas")).replace(/\s+/g, " ");
+  ok(d.includes("Ana") && d.includes("💚 Tiene $3.500 a favor"), "el saldo a favor se ve: " + d);
+  await t.tap("#waCobrar");
+  ok((await t.wa())[0].includes("• Ana: deuda anterior, monto por confirmar (tiene $3.500 a favor)"), "cobro con el saldo a favor");
+  await t.tap('[data-saldar="Ana"]');
+  ok((await t.txt("#sheetBody")).includes("💚 Saldo a favor"), "la hoja muestra el saldo a favor");
+  ok((await t.txt("#sNota")).includes("conserva $3.500 a favor"), "explica que lo conserva");
+  await t.tap("#sOk");
+  igual((await t.S()).deudas.Ana, [{ fecha: (await t.S()).deudas.Ana[0].fecha, concepto: "Pagó y no jugó (a favor)", monto: -3500 }], "solo se borra la deuda sin monto");
+  ok((await t.txt("#deudas")).includes("💚"), "sigue como saldo a favor");
+});
+
+await prueba("QA F2: '¿La pagó también?' = Sí tampoco borra el saldo a favor", async (abrir) => {
+  const t = await abrir(base({ porLado: 3, inscritos: SEIS.slice(), costoCancha: "36000", deudas: { Ana: [{ fecha: "", concepto: "Deuda anterior", monto: null }, { fecha: "2026-10-12", concepto: "Pagó y no jugó (a favor)", monto: -6000 }] } }));
+  await t.ir("pagos");
+  ok((await fila(t, "Ana")).includes("💚 CUBIERTO"), "la cuota la cubre su saldo a favor");
+  t.respuestas.push(true, true); // pagó en efectivo igual · también pagó la deuda anterior
+  await t.tap('.state[data-pay="Ana"]');
+  ok(t.dialogos[0].includes("¿Pagó en efectivo igual?"), "pregunta antes de cobrar dos veces");
+  const S = await t.S();
+  igual([S.pagos.Ana.monto, S.deudas.Ana.map((e) => e.monto)], [6000, [-6000]], "pagó hoy y conserva su saldo a favor");
+});
+
+await prueba("QA B5: quien pagó, se bajó y vuelve no paga dos veces ni queda con saldo fantasma", async (abrir) => {
+  const t = await abrir(base({ porLado: 3, inscritos: ["Ana", "Beto", "Caro"], caseros: ["Ana", "Beto", "Caro"], costoCancha: "30000" }));
+  await t.ir("pagos"); await t.tap('.state[data-pay="Ana"]');
+  await t.ir("convocatoria"); await t.tap('[data-del="Ana"]'); await esperar(BAJA);
+  await t.tap('.chip[data-add="Ana"]');
+  await t.ir("pagos");
+  ok((await fila(t, "Ana")).includes("💚 CUBIERTO"), "fila cubierta: " + await fila(t, "Ana"));
+  await t.tap("#waCobrar");
+  const m = (await t.wa())[0];
+  ok(!m.includes("Ana") && m.includes("⏳ Beto: $10.000"), "Ana no sale en el cobro: " + m.replace(/\n/g, " | "));
+  t.respuestas.push(false);
+  await t.tap('.state[data-pay="Ana"]');
+  ok(t.dialogos[0].includes("¿Pagó en efectivo igual?"), "no registra un segundo pago sin preguntar");
+  igual((await t.S()).pagos.Ana, undefined, "sin segundo pago");
+  ok((await t.txt("#recaudado")).includes("💚 $10.000 con saldo a favor"), "recaudado cuenta el saldo a favor");
+  await t.tap(".screen.active [data-cerrar]");
+  ok((await t.txt("#sheet")).includes("Se descuenta de su saldo a favor: Ana $10.000"), "el cierre lo explica");
+  await t.tap("#cOk");
+  const S = await t.S();
+  igual(S.deudas.Ana, undefined, "Ana pagó una vez y jugó: queda en $0");
+  igual([S.deudas.Beto[0].monto, S.deudas.Caro[0].monto], [10000, 10000], "los demás deben su cuota");
+});
+
+await prueba("QA B5: '−' y luego '+' no hace pagar dos veces; saldo a favor parcial", async (abrir) => {
+  const t = await abrir(base({ porLado: 4, inscritos: [...SEIS, "Gabi", "Hugo"], costoCancha: "48000", pagos: { Hugo: { monto: 6000, fecha: "2026-10-16" } }, deudas: { Ana: [{ fecha: "2026-10-03", concepto: "Pagó de más (a favor)", monto: -2000 }] } }));
+  await t.tap("#menos");
+  ok(t.dialogos[0].includes("Hugo ya pagó"), "avisa al pasar a suplente");
+  igual((await t.S()).deudas.Hugo[0].monto, -6000, "su pago queda a favor");
+  await t.tap("#mas");
+  await t.ir("pagos");
+  ok((await fila(t, "Hugo")).includes("💚 CUBIERTO"), "Hugo vuelve cubierto: " + await fila(t, "Hugo"));
+  const a = await fila(t, "Ana");
+  ok(a.includes("usa $2.000 a favor") && a.includes("⏳ $4.000"), "Ana usa su saldo a favor: " + a);
+  await t.tap("#waCobrar");
+  ok((await t.wa())[0].includes("⏳ Ana: $4.000 (usa $2.000 a favor)"), "cobro con el descuento");
+  await t.tap('.state[data-pay="Ana"]');
+  igual((await t.S()).pagos.Ana.monto, 4000, "paga solo lo que falta");
+  ok((await fila(t, "Ana")).includes("✅ PAGADO"), "queda pagada");
+  await t.tap(".screen.active [data-cerrar]"); await t.tap("#cOk");
+  const S = await t.S();
+  igual([S.deudas.Ana, S.deudas.Hugo], [undefined, undefined], "saldos a favor usados");
+});
+
+await prueba("QA B5: tocar una fila pagada no borra lo que ya había pagado (doble toque, abono previo, ↩️)", async (abrir) => {
+  const N = ["Carlos", "Seba", ...J(13)];
+  const t = await abrir(base({ porLado: 7, inscritos: N, costoCancha: "70000", pagos: { Seba: { monto: 4000, fecha: "2026-10-10" } } }));
+  await t.ir("pagos");
+  ok((await fila(t, "Seba")).includes("pagó $4.000 falta $1.000"), "abono previo a la vista");
+  await t.page.locator('.state[data-pay="Seba"]').dblclick();
+  igual((await t.S()).pagos.Seba, { monto: 5000, fecha: (await t.S()).pagos.Seba.fecha, previo: 4000 }, "doble toque: completa una sola vez");
+  await esperar(BAJA);
+  await t.tap('.state[data-pay="Seba"]');
+  igual((await t.S()).pagos.Seba.monto, 4000, "desmarcar vuelve al abono anterior, no a cero");
+  await t.toast("pagó $4.000");
+  await t.page.locator("#toast .tbtn").click();
+  igual((await t.S()).pagos.Seba.monto, 5000, "↩️ Deshacer");
+  // Pagó de más: preguntar antes de borrar y poder deshacer
+  const t2 = await abrir(base({ inscritos: ["Maximiliano", ...J(15)], costoCancha: "49000", pagos: { Maximiliano: { monto: 10000, fecha: "2026-10-10" } } }), { width: 320, height: 568 });
+  await t2.ir("pagos");
+  ok((await fila(t2, "Maximiliano")).includes("a favor $6.500"), "pagó de más");
+  t2.respuestas.push(false);
+  await t2.tap('.state[data-pay="Maximiliano"]');
+  ok(t2.dialogos[0].includes("pagó $10.000 y la cuota es $3.500"), "pregunta");
+  igual((await t2.S()).pagos.Maximiliano.monto, 10000, "cancelar no borra");
+  await esperar(BAJA);
+  await t2.tap('.state[data-pay="Maximiliano"]');
+  igual((await t2.S()).pagos.Maximiliano, undefined, "aceptar borra");
+  await t2.toast("quedó sin pagar");
+  await t2.page.locator("#toast .tbtn").click();
+  igual((await t2.S()).pagos.Maximiliano.monto, 10000, "↩️ recupera los $10.000");
+});
+
+await prueba("QA migración: ✅ pagado y 🍻 viejos de quien ya no es titular, y pagado sin costo de cancha", async (abrir) => {
+  // pagó y luego se bajó (J99) → a favor
+  let t = await abrir(viejo({ inscritos: ["Ana2", "Caro", "Dani", "Eli"], porLado: 2, pagado: { Caro: true, J99: true }, costoCancha: "42.000" }));
+  let S = await t.S();
+  igual(S.pagos.Caro.monto, 10500, "titular con su cuota");
+  igual(S.deudas.J99, [{ fecha: "2026-10-14", concepto: "Pagó y no jugó (a favor)", monto: -10500 }], "J99 queda a favor");
+  // pagado con la cancha sin costo → pagado (sin monto); al escribir el costo sigue pagado
+  t = await abrir(viejo({ porLado: 3, pagado: { Ana: true, Beto: true } }));
+  S = await t.S();
+  igual([S.pagos.Ana, S.pagos.Beto], [{ monto: null, fecha: "" }, { monto: null, fecha: "" }], "pagado sin monto");
+  await t.ir("pagos");
+  ok((await fila(t, "Ana")).includes("✅ PAGADO"), "el ✅ se ve aunque no haya costo");
+  await t.page.locator("#costoCancha").pressSequentially("36000");
+  ok((await fila(t, "Ana")).includes("✅ PAGADO") && (await fila(t, "Beto")).includes("✅ PAGADO"), "siguen pagados con costo");
+  ok((await fila(t, "Caro")).includes("⏳ $6.000"), "Caro debe");
+  await t.tap(".screen.active [data-cerrar]");
+  const hoja = await t.txt("#sheet");
+  ok(!hoja.includes("⏳ Ana") && !hoja.includes("⏳ Beto") && hoja.includes("4 deudas"), "al cerrar no se anotan como deudores");
+  // 🍻 viejo de quien se bajó no vuelve con él; ✅ de un suplente (pasó con '−') queda a favor
+  t = await abrir(viejo({ costoCancha: "36000", costoTercer: "12000", tercer: { Gabi: true, Ana: true } }));
+  igual((await t.S()).tercer, { Ana: true }, "🍻 solo de titulares");
+  await t.tap("#mas"); await t.tap('.chip[data-add="Gabi"]');
+  await t.ir("pagos");
+  igual(await t.page.getAttribute('[data-beer="Gabi"]', "aria-pressed"), "false", "Gabi vuelve sin 🍻");
+  const N = ["Carlos", "Seba", "Nico", "Mati", "Mako", "Pancho", "Rodrigo", "Felipe", "Tomás", "Javi", "Cristóbal", "Benja", "Diego", "Ignacio", "Vicente", "Joaquín"];
+  t = await abrir(viejo({ porLado: 7, inscritos: N, costoCancha: "56000", pagado: { Vicente: true, Carlos: true } }));
+  S = await t.S();
+  igual([S.pagos.Carlos.monto, S.deudas.Vicente], [4000, [{ fecha: "2026-10-14", concepto: "Pagó y no jugó (a favor)", monto: -4000 }]], "suplente que pagó queda a favor");
+  // { monto: 0 } que dejaba la migración anterior = pagado
+  t = await abrir(base({ porLado: 3, inscritos: ["Ana", "Beto"], pagos: { Ana: { monto: 0, fecha: "" } } }));
+  igual((await t.S()).pagos.Ana, { monto: null, fecha: "" }, "monto 0 → pagado sin monto");
+});
+
+await prueba("QA: nombres como 'constructor' o '__proto__' no rompen la app", async (abrir) => {
+  const t = await abrir(null);
+  for (const n of ["constructor", "__proto__", "toString", "hasOwnProperty", "Ana"]) { await t.page.fill("#nuevo", n); await t.tap("#agregar"); }
+  igual((await t.S()).inscritos, ["constructor", "__proto__", "toString", "hasOwnProperty", "Ana"], "inscritos");
+  await t.page.reload();
+  igual(await t.page.locator("#titulares li").count(), 5, "filas tras recargar");
+  ok(!(await t.txt("#titulares")).includes("⚠️"), "nadie aparece debiendo");
+  await t.ir("pagos");
+  igual(await t.page.locator("#pagos li").count(), 5, "filas en Pagos");
+  ok(!(await t.txt("#pagos")).includes("PAGADO"), "nadie aparece PAGADO solo");
+  await t.page.locator("#costoCancha").pressSequentially("10000");
+  await t.tap('.state[data-pay="__proto__"]');
+  await t.ir("convocatoria"); await t.tap('[data-del="__proto__"]');
+  await t.ir("equipos"); await t.tap("#equilibrar");
+  await t.ir("convocatoria"); await t.page.reload();
+  const r = await t.page.evaluate(() => [Object.keys(S.deudas), saldo("__proto__"), Object.keys(S.niveles).length, document.querySelectorAll("#titulares li").length]);
+  igual(r, [["__proto__"], -2000, 0, 4], "la libreta guarda a '__proto__' como un nombre más");
+});
+
+await prueba("QA bug 61: un respaldo con un id de partido malicioso no ejecuta código y se puede borrar", async (abrir) => {
+  const t = await abrir(base());
+  await t.page.evaluate(() => { window.__xss = 0; });
+  const fecha = new Date().toISOString().slice(0, 8) + "05";
+  const f = path.join(os.tmpdir(), `respaldo-malo-${process.pid}.json`);
+  fs.writeFileSync(f, JSON.stringify({ app: "pichanga", version: 2, datos: { v: 2, inscritos: ["Ana"], historial: [{ id: '1"><img src=x onerror="window.__xss++">', fecha, golesA: "1<b>", golesB: 0, A: ["Ana"], B: [] }] } }));
+  await t.ir("post");
+  await t.page.setInputFiles("#importar", f);
+  await t.toast("Respaldo restaurado");
+  fs.unlinkSync(f);
+  await t.page.evaluate(() => { window.__xss = 0; });
+  await t.ir("post"); await esperar(200);
+  const S = await t.S();
+  ok(Number.isSafeInteger(S.historial[0].id) && S.historial[0].golesA === 1, "id numérico y goles enteros");
+  igual(await t.page.evaluate(() => window.__xss), 0, "no se ejecutó nada");
+  igual(await t.page.locator("#historial img").count(), 0, "sin HTML inyectado");
+  await t.tap("[data-delpartido]");
+  igual((await t.S()).historial.length, 0, "se puede borrar");
+});
+
+await prueba("QA F1: doble toque en el chip que completa la lista de la semana pasada no suma a otro", async (abrir) => {
+  const N = ["Carlos", "Seba", "Nico", "Mati", "Mako", "Pancho", "Rodrigo", "Felipe", "Tomás", "Javi"];
+  for (const [width, height] of [[390, 844], [320, 568]]) {
+    const t = await abrir(base({ porLado: 5, inscritos: N.slice(0, 9), caseros: N.concat(["Andrés", "Pedro", "Lucho", "Gonzalo"]), ultimaLista: N.slice() }), { width, height });
+    const chip = t.page.locator('.chip[data-add="Javi"]');
+    await chip.scrollIntoViewIfNeeded();
+    await chip.dblclick();
+    await esperar(150);
+    igual((await t.S()).inscritos, N, `${width}px: solo se suma Javi`);
+    ok(await t.page.locator("#mismaLista").isDisabled(), "el botón queda en su lugar, desactivado");
+    igual(await t.txt("#mismaLista"), "✅ Ya están todos los de la semana pasada", "texto del botón");
+  }
+  const t = await abrir(base({ porLado: 5, caseros: N.slice(), ultimaLista: N.slice() }));
+  await t.page.dblclick("#mismaLista");
+  igual((await t.S()).inscritos, N, "doble toque en 🔁 Misma lista inscribe una vez");
+});
+
+await prueba("QA F2: Saldar una deuda sin monto respeta lo que se escribe (abono, monto, saldo a favor)", async (abrir) => {
+  const JP = "Juan Pablo Fernández";
+  let t = await abrir(viejo({ morosos: { [JP]: true } }));
+  await t.ir("pagos"); await t.tap(`[data-saldar="${JP}"]`);
+  igual(await t.page.inputValue("#sMonto"), "", "sin monto propuesto");
+  await t.page.locator("#sMonto").pressSequentially("5000");
+  igual(await t.txt("#sOk"), "✅ Saldar todo con $5.000", "el monto escrito cambia el botón");
+  ok((await t.txt("#sNota")).includes("queda en $5.000"), "explica qué hará");
+  await t.page.locator("#sFijar").pressSequentially("8000");
+  igual(await t.txt("#sOk"), "💵 Abonar $5.000 · queda $3.000", "con el monto de la deuda, abono parcial");
+  await t.tap("#sOk");
+  igual((await t.S()).deudas[JP].map((e) => e.monto), [8000, -5000], "abono registrado");
+  ok((await t.txt("#deudas")).includes("$3.000"), "queda $3.000");
+  // Mixta "$8.500 + ?": pagar 8.500 no borra la deuda sin monto
+  t = await abrir(base({ deudas: { Maxi: [{ fecha: "2026-10-03", concepto: "Cancha", monto: 8500 }, { fecha: "", concepto: "Deuda anterior", monto: null }] } }));
+  await t.ir("pagos"); await t.tap('[data-saldar="Maxi"]');
+  await t.page.locator("#sMonto").pressSequentially("8500");
+  igual(await t.txt("#sOk"), "💵 Abonar $8.500 · queda la deuda sin monto", "botón");
+  await t.tap("#sOk");
+  ok(await t.page.evaluate(() => sinMonto("Maxi") && saldo("Maxi") === 0), "sigue la deuda sin monto");
+  // Solo anotar el monto, y pagar con el saldo a favor
+  t = await abrir(base({ deudas: { Ana: [{ fecha: "", concepto: "Deuda anterior", monto: null }, { fecha: "2026-10-10", concepto: "Pagó de más (a favor)", monto: -3500 }], Beto: [{ fecha: "", concepto: "Deuda anterior", monto: null }] } }));
+  await t.ir("pagos"); await t.tap('[data-saldar="Beto"]');
+  await t.page.locator("#sFijar").pressSequentially("7000");
+  await t.tap("#sSoloMonto");
+  igual((await t.S()).deudas.Beto, [{ fecha: "", concepto: "Deuda anterior", monto: 7000 }], "monto anotado sin pago");
+  await t.sinToast();
+  await t.tap('[data-saldar="Ana"]');
+  await t.page.locator("#sFijar").pressSequentially("3500");
+  igual(await t.txt("#sOk"), "💚 Pagar con su saldo a favor", "botón");
+  await t.tap("#sOk");
+  igual((await t.S()).deudas.Ana, undefined, "pagada con el saldo a favor");
+});
+
+await prueba("QA F2: el total de deudas no dice '$0' cuando hay deudas sin monto", async (abrir) => {
+  let t = await abrir(viejo({ morosos: { "Juan Pablo Fernández": true, Carlos: true } }), { width: 320, height: 568 });
+  await t.ir("pagos");
+  igual(await t.txt("#deudaTotal"), "2 · ?", "solo sin monto");
+  t = await abrir(base({ deudas: { A: [{ fecha: "", concepto: "Cancha", monto: 8500 }], B: [{ fecha: "", concepto: "Deuda anterior", monto: null }] } }));
+  await t.ir("pagos");
+  igual(await t.txt("#deudaTotal"), "2 · $8.500 + ?", "mixtas");
+});
+
+await prueba("QA textos: recordatorio sin repetir 'monto por confirmar' y aviso de equipos con el nombre del botón", async (abrir) => {
+  const JP = "Juan Pablo Fernández";
+  const t = await abrir(viejo({ morosos: { [JP]: true }, inscritos: [JP, "Beto"], costoCancha: "20000" }));
+  await t.ir("pagos"); await t.tap(`[data-saldar="${JP}"]`); await t.tap("#sRecordar");
+  const m = (await t.wa())[0];
+  ok(!m.includes("(monto por confirmar) (monto por confirmar)") && (m.match(/monto por confirmar/g) || []).length === 1, "sin repetir: " + m.replace(/\n/g, " | "));
+  ok(m.includes("• Deuda anterior: monto por confirmar") && m.includes("¿me confirmas cuánto era?"), "pide el monto");
+  const t2 = await abrir(base({ inscritos: J(14), equipos: { A: J(7), B: J(14).slice(7) } }));
+  for (const n of ["J01", "J02", "J03"]) { await t2.tap(`[data-del="${n}"]`); await esperar(BAJA); }
+  await t2.ir("equipos");
+  await t2.toast("Equipos reajustados");
+  const x = await t2.txt("#toast");
+  ok(x.includes("toca ⚖️ Armado Equilibrado") && !x.includes("pulsa Equilibrar"), "nombre real del botón: " + x);
+});
+
+await prueba("QA B7: el ↩️ Deshacer de una baja sigue disponible si se abre Equipos", async (abrir) => {
+  const t = await abrir(base({ inscritos: J(14), equipos: { A: J(7), B: J(14).slice(7) } }));
+  for (const n of ["J01", "J02", "J03"]) { await t.tap(`[data-del="${n}"]`); await esperar(BAJA); }
+  await t.ir("equipos");
+  await t.toast("Equipos reajustados");
+  ok((await t.txt("#toast")).includes("J03 se bajó"), "recuerda qué se puede deshacer");
+  await t.page.locator("#toast .tbtn").click();
+  ok((await t.S()).inscritos.includes("J03"), "J03 vuelve");
+});
+
+await prueba("QA F2: Deudas pendientes a 320 px no parte nombres ni deja el ⚠️ solo", async (abrir) => {
+  const M = "Maximiliano Ignacio Rodríguez";
+  const t = await abrir(base({ deudas: { [M]: [{ fecha: "2026-10-03", concepto: "Cancha", monto: 8500 }, { fecha: "", concepto: "Deuda anterior", monto: null }], "Maximiliano Ignacio Rodríguez 2": [{ fecha: "2026-10-03", concepto: "Pagó de más (a favor)", monto: -2000 }] } }), { width: 320, height: 568 });
+  await t.ir("pagos");
+  const r = await t.page.evaluate(() => [...document.querySelectorAll("#deudas .name")].map((el) => {
+    const nodo = el.firstChild, rango = document.createRange();
+    const top = (i) => { rango.setStart(nodo, i); rango.setEnd(nodo, i + 1); return Math.round(rango.getBoundingClientRect().top); };
+    const txt = nodo.textContent, i = txt.indexOf("Maximiliano");
+    // cada palabra entera en una sola línea
+    const partidas = txt.split(" ").filter((w) => w).some(() => false);
+    let cortes = 0, pos = 0;
+    for (const w of txt.split(" ")) { if (w.length > 1 && top(pos) !== top(pos + w.length - 1)) cortes++; pos += w.length + 1; }
+    return { emojiSolo: top(0) !== top(i), cortes, partidas };
+  }));
+  ok(r.length === 2 && r.every((x) => !x.emojiSolo && !x.cortes), "nombres enteros: " + JSON.stringify(r));
+});
+
+await prueba("QA F2: doble toque en 'Devuelto' no abre la hoja de la fila que sube", async (abrir) => {
+  const t = await abrir(base({ deudas: { Lucho: [{ fecha: "2026-10-07", concepto: "Pagó de más (a favor)", monto: -3000 }], Rita: [{ fecha: "2026-10-07", concepto: "Pagó de más (a favor)", monto: -1000 }] } }));
+  await t.ir("pagos");
+  await t.page.locator('[data-devuelto="Lucho"]').dblclick();
+  const S = await t.S();
+  igual([S.deudas.Lucho, S.deudas.Rita[0].monto, t.dialogos.length], [undefined, -1000, 1], "solo se devuelve a Lucho");
+  ok(!(await t.page.locator("#sheet[open]").count()), "sin hojas abiertas");
+  await t.page.evaluate(() => { S.deudas.Pato = [{ fecha: "2026-10-07", concepto: "Cancha", monto: 5000 }]; save(); renderPagos(); });
+  // Doble toque en Saldar: el segundo toque cae sobre la hoja recién abierta y no aprieta nada
+  await esperar(BAJA);
+  for (const pos of ["start", "center"]) { // arriba: cae en el fondo oscuro; al centro: sobre los botones de la hoja
+    const b = t.page.locator('[data-saldar="Pato"]');
+    await b.evaluate((el, pos) => el.scrollIntoView({ block: pos }), pos);
+    const box = await b.boundingBox();
+    await t.page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+    ok(await t.page.locator("#sheet[open]").count(), `hoja abierta (botón arriba/abajo: ${pos})`);
+    igual((await t.S()).deudas.Pato[0].monto, 5000, "no se saldó sola");
+    await t.page.keyboard.press("Escape");
+  }
 });
 
 /* ================= Pantallas ================= */
@@ -689,7 +1005,7 @@ await prueba("Pantallas: sin scroll horizontal, toques ≥ 44px e inputs ≥ 16p
         const r = el.getBoundingClientRect();
         if (r.width && (r.width < 43.5 || r.height < 43.5)) malos.push(`${sel} ${Math.round(r.width)}x${Math.round(r.height)}`);
       });
-      document.querySelectorAll(".screen.active input:not([type=file]):not([type=checkbox]), .screen.active select:not(.board select), #sheet input:not([type=checkbox])").forEach((el) => {
+      document.querySelectorAll(".screen.active input:not([type=file]):not([type=checkbox]), .screen.active select, #sheet input:not([type=checkbox])").forEach((el) => {
         if (el.getBoundingClientRect().width && parseFloat(getComputedStyle(el).fontSize) < 16) malos.push(`${el.id} font ${getComputedStyle(el).fontSize}`);
       });
       if (document.scrollingElement.scrollWidth > innerWidth) malos.push(`scroll horizontal ${document.scrollingElement.scrollWidth}px`);
@@ -697,12 +1013,13 @@ await prueba("Pantallas: sin scroll horizontal, toques ≥ 44px e inputs ≥ 16p
     }, sels);
     const tactiles = {
       convocatoria: [".x", ".chip:not(.in)", "#mismaLista", "#menos", "#mas", "#agregar"],
-      equipos: ["#azar", "#equilibrar"],
-      pagos: [".beer", ".state", ".pname", "[data-saldar]", "#waCobrar", "[data-cerrar]", ".manual summary"],
-      post: ["[data-gol]", "#guardarPartido", "[data-cerrar]"],
+      equipos: ["#azar", "#equilibrar", "#colorA", "#colorB", ".levels summary", ".levels .seg button"],
+      pagos: [".beer", ".state", ".pname", "[data-saldar]", "#waCobrar", "[data-cerrar]", "#s-pagos summary", "#copiarBanco"],
+      post: ["[data-gol]", "#guardarPartido", "[data-cerrar]", "#mesAnt", "#mesSig", "#aMvp", "#waStats"],
     };
     for (const [tab, sels] of Object.entries(tactiles)) {
       await t.ir(tab);
+      if (tab === "equipos") await t.page.click(".levels summary"); // abre los niveles para medir sus botones
       const m = await medir(sels);
       ok(!m.length, `${width}px ${tab}: ${m.join(", ")}`);
     }
@@ -746,7 +1063,7 @@ await prueba("B12: el SW no guarda páginas de error y abre desde la caché con 
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.reload();
     ok(await page.evaluate(() => !!navigator.serviceWorker.controller), "SW controla la página");
-    igual(await page.evaluate(() => caches.keys()), ["pichanga-v2"], "caché nueva (pichanga-v2)");
+    igual(await page.evaluate(() => caches.keys()), ["pichanga-v3"], "caché nueva (pichanga-v3)");
     const copia = () => page.evaluate(() => caches.match("./index.html").then((r) => r && r.text()));
     await page.goto(raiz + "jugadores");
     ok((await page.title()) === "404", "la página 404 se muestra tal cual");
