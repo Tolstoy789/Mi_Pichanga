@@ -98,6 +98,15 @@ const VIEJO = {
   historial: [{ id: 111, fecha: "2026-10-03", lugar: "X", golesA: 1, golesB: 1, colorA: "⚫ Negro", colorB: "🟢 Peto Flúor", A: ["Ana"], B: ["Beto"], mvp: "Ana", goleador: "", rustico: "" }],
 };
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+// Ya no se ve un ↩️ Deshacer (ni se puede apretar): el aviso se fue o es uno sin botón
+async function sinDeshacer(t, cuando) {
+  await esperar(350); // la salida del aviso dura .25 s
+  const v = await t.page.evaluate(() => {
+    const e = document.getElementById("toast"), b = e.querySelector(".tbtn");
+    return { boton: !!(b && e.classList.contains("show") && b.getBoundingClientRect().bottom > 0), accion: !!window.toast.accion, txt: e.textContent };
+  });
+  ok(!v.boton && !v.accion, `${cuando}: sigue el ↩️ de antes (“${v.txt}”)`);
+}
 const BAJA = 500; // pausa entre bajas (protección de doble toque)
 
 /* ================= Migración ================= */
@@ -440,8 +449,8 @@ await prueba("B7: Deshacer no pisa a alguien inscrito después de la baja", asyn
   await t.tap('[data-del="J03"]');
   await t.toast("J03 se bajó");
   await t.page.fill("#nuevo", "Nuevo"); await t.page.press("#nuevo", "Enter");
-  await t.tap("#toast .tbtn");
-  await t.toast("no se puede deshacer");
+  // Inscribir a alguien es una acción nueva: el ↩️ de la baja se va (no puede deshacer lo último)
+  await sinDeshacer(t, "inscribir después de la baja");
   const S = await t.S();
   ok(S.inscritos.includes("Nuevo") && !S.inscritos.includes("J03"), "se mantiene lo más nuevo");
 });
@@ -1124,19 +1133,17 @@ await prueba("QA B7: ⚖️ Equilibrado y 💾 Guardar partido no muestran el �
   void parejos;
 });
 
-await prueba("QA B7: el ↩️ de una baja respeta los equipos que se armaron a mano después", async (abrir) => {
+await prueba("QA B7: arreglar los equipos a mano después de una baja quita su ↩️ (no deshace lo armado)", async (abrir) => {
   const t = await abrir(base({ porLado: 4, inscritos: J(9), equipos: { A: J(4), B: J(8).slice(4) } }));
   await t.tap('[data-del="J02"]');
   await t.toast("J02 se bajó");
   await t.ir("equipos");
   await t.page.evaluate(() => { swap("J01", "J05"); renderEquipos(); }); // arrastre a mano (sin aviso)
   const armados = (await t.S()).equipos;
-  await t.tap("#toast .tbtn");
-  await t.toast("J02 volvió");
+  await sinDeshacer(t, "arrastre a mano");
   const S = await t.S();
-  igual(S.inscritos, J(9), "J02 vuelve a su lugar");
-  ok(S.equipos.A[0] === armados.A[0] && S.equipos.B[0] === armados.B[0] && armados.A[0] === "J05", "se mantienen los arcos elegidos a mano");
-  ok(S.equipos.A.concat(S.equipos.B).includes("J02") && !S.equipos.A.concat(S.equipos.B).includes("J09"), "J02 en la cancha y J09 de nuevo a la banca");
+  igual(S.equipos, armados, "los equipos armados a mano se mantienen");
+  ok(!S.inscritos.includes("J02"), "la baja sigue");
 });
 
 await prueba("QA B7: el segundo toque de un doble toque no aprieta el ↩️ Deshacer recién aparecido", async (abrir) => {
@@ -1148,6 +1155,115 @@ await prueba("QA B7: el segundo toque de un doble toque no aprieta el ↩️ Des
   igual((await t.S()).equipos, parejos, "los equipos no se deshicieron");
   await t.tap("#toast .tbtn"); // un toque a propósito sí deshace
   await t.toast("Equipos como estaban");
+});
+
+/* ================= QA ronda 1, pasada 3 ================= */
+await prueba("QA B1/B5: las cuotas suman exacto el costo de la cancha (13 y 12 jugadores, 🍻 y cierre)", async (abrir) => {
+  const t = await abrir(base({ inscritos: J(13) }));
+  await t.ir("pagos");
+  await t.page.locator("#costoCancha").pressSequentially("49.000");
+  const suma = () => t.page.evaluate(() => titulares().reduce((s, n) => s + deuda(n), 0));
+  igual(await suma(), 49000, "13 cuotas suman $49.000");
+  const cuota = await t.txt("#porCancha");
+  ok(cuota.includes("$3.769") && cuota.includes("3 pagan $3.770"), "cuota muestra quiénes pagan $1 más: " + cuota);
+  ok((await t.txt("#recaudado")).includes("de $49.000"), "recaudado sobre $49.000: " + (await t.txt("#recaudado")));
+  igual(await t.page.evaluate(() => titulares().map(deuda)), [3770, 3770, 3770].concat(Array(10).fill(3769)), "las primeras 3 pagan $1 más");
+  // 🍻 $10.000 entre 3
+  await t.page.locator("#costoTercer").pressSequentially("10000");
+  for (const n of ["J01", "J05", "J09"]) await t.tap(`[data-beer="${n}"]`);
+  igual(await suma(), 59000, "cancha + 🍻 suman $59.000");
+  for (const n of J(13)) await t.page.evaluate((n) => togglePago(n), n);
+  await t.page.evaluate(() => { save(); renderPagos(); });
+  ok((await t.txt("#recaudado")).includes("Recaudado $59.000 de $59.000"), "todos pagados = total exacto: " + (await t.txt("#recaudado")));
+  // 12 jugadores ('−' desde 7v7 con 14) y cierre sin pagos: la libreta suma el costo exacto
+  const t2 = await abrir(base({ inscritos: J(14), costoCancha: "49000" }));
+  await t2.page.click("#menos");
+  igual(await t2.page.evaluate(() => titulares().reduce((s, n) => s + deuda(n), 0)), 49000, "12 cuotas suman $49.000");
+  await t2.ir("pagos");
+  ok((await t2.txt("#recaudado")).includes("de $49.000"), "recaudado de $49.000 con 12");
+  await t2.tap("#s-pagos [data-cerrar]"); await t2.tap("#cOk");
+  const S = await t2.S();
+  igual(Object.values(S.deudas).flat().reduce((s, e) => s + e.monto, 0), 49000, "deudas anotadas al cerrar suman $49.000");
+});
+
+await prueba("QA F2: escribir 'juan' para el casero 'Juan' con deuda usa su nombre (⚠️, chip ✓ y una sola libreta)", async (abrir) => {
+  const t = await abrir(base({ porLado: 3, costoCancha: "60000", caseros: ["Juan", "Seba"], deudas: { Juan: [{ fecha: "2026-10-08", concepto: "Cancha", monto: 10000 }] } }));
+  await t.page.fill("#nuevo", "juan"); await t.tap("#agregar");
+  await t.toast("⚠️ Juan debe $10.000");
+  ok((await t.txt("#titulares")).includes("Juan ⚠️ $10.000"), "fila con el nombre guardado y su ⚠️");
+  ok((await t.txt('#caseros [data-add="Juan"]')).startsWith("✓"), "chip de Juan marcado ✓");
+  igual((await t.S()).caseros, ["Juan", "Seba"], "no se crea otro casero");
+  await t.ir("pagos"); await t.tap("#s-pagos [data-cerrar]"); await t.tap("#cOk");
+  const S = await t.S();
+  igual(Object.keys(S.deudas), ["Juan"], "una sola persona en la libreta");
+  igual(S.deudas.Juan.map((e) => e.monto), [10000, 60000], "la deuda nueva se suma a la de Juan");
+  // También desde una deuda sin casero: 'PEDRO' se anota como 'Pedro'
+  const t2 = await abrir(base({ deudas: { Pedro: [{ fecha: "", concepto: "Deuda anterior", monto: 5000 }] } }));
+  await t2.page.fill("#nuevo", "  PEDRO "); await t2.tap("#agregar");
+  igual((await t2.S()).inscritos, ["Pedro"], "usa el nombre de la libreta");
+});
+
+for (const btn of ["#equilibrar", "#azar"]) {
+  await prueba(`QA B7/B8: doble toque en ${btn === "#azar" ? "🎲 Mezclar" : "⚖️ Armado Equilibrado"} y ↩️ vuelve a los equipos armados a mano`, async (abrir) => {
+    const nombres = ["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3", "B4", "B5"], aMano = { A: ["A5", "A1", "A2", "A3", "A4"], B: ["B5", "B1", "B2", "B3", "B4"] };
+    const t = await abrir(base({ porLado: 5, inscritos: nombres, niveles: { A1: 5, A2: 5, A3: 4, B1: 1, B2: 1 }, equipos: aMano }));
+    await t.ir("equipos"); await t.hoja();
+    const box = await t.page.locator(btn).boundingBox(), x = box.x + box.width / 2, y = box.y + box.height / 2;
+    await t.page.touchscreen.tap(x, y); await esperar(150); await t.page.touchscreen.tap(x, y);
+    await esperar(700);
+    await t.tap("#toast .tbtn");
+    await t.toast("Equipos como estaban");
+    igual((await t.S()).equipos, aMano, "vuelven los equipos de antes del doble toque");
+    // Dos toques separados siguen sorteando dos veces (el segundo es una acción nueva)
+    await t.tap(btn); await esperar(500);
+    const primero = (await t.S()).equipos;
+    await t.tap(btn); await t.tap("#toast .tbtn");
+    igual((await t.S()).equipos, primero, "↩️ deshace solo el último sorteo");
+  });
+}
+
+await prueba("QA B7: inscribir, tocar un chip, pagar, 🍻 o sumar un gol quitan el ↩️ de la acción anterior", async (abrir) => {
+  const insc = ["Carlos", "Seba", "Nico", "Mati", "Mako"].concat(J(11));
+  const st = base({ inscritos: insc, caseros: ["Carlos", "Seba", "Nico", "Mati", "Mako", "Pedro"], costoCancha: "48000" });
+  // (1) ⚖️ → Pagos → marcar a Carlos: el ↩️ de los equipos se va y la página no cambia los equipos
+  let t = await abrir(st);
+  await t.ir("equipos"); await t.tap("#equilibrar"); await t.toast("⚖️");
+  const parejos = (await t.S()).equipos;
+  await t.ir("pagos"); await t.tap('.pname[data-pay="Carlos"]');
+  await sinDeshacer(t, "pagar después de ⚖️");
+  await t.tap('.pname[data-pay="Seba"]');
+  await sinDeshacer(t, "pagar otra vez");
+  const S1 = await t.S();
+  igual(S1.equipos, parejos, "los equipos parejos siguen");
+  ok(S1.pagos.Carlos && S1.pagos.Seba, "pagos marcados");
+  // 🍻 tras ✖
+  await t.ir("convocatoria"); await t.tap('[data-del="Nico"]'); await t.toast("Nico se bajó");
+  await t.ir("pagos"); await t.tap('[data-beer="Mati"]');
+  await sinDeshacer(t, "🍻 después de una baja");
+  // (2) ✖ Nico → ➕ Zeta / chip Pedro
+  t = await abrir(st);
+  await t.tap('[data-del="Nico"]'); await t.toast("Nico se bajó");
+  await t.page.fill("#nuevo", "Zeta"); await t.tap("#agregar");
+  await sinDeshacer(t, "➕ después de una baja");
+  await t.tap('[data-del="Mati"]'); await t.toast("Mati se bajó");
+  await t.tap('[data-add="Pedro"]');
+  await sinDeshacer(t, "chip después de una baja");
+  const S2 = await t.S();
+  ok(S2.inscritos.includes("Zeta") && S2.inscritos.includes("Pedro") && !S2.inscritos.includes("Nico") && !S2.inscritos.includes("Mati"), "lo hecho se mantiene");
+  // (3) Post: gol A, 💾 Guardar, gol B → el ↩️ de "Ganó el Equipo A" se va
+  t = await abrir(base({ porLado: 3, inscritos: SEIS.slice(), equipos: { A: SEIS.slice(0, 3), B: SEIS.slice(3) } }));
+  await t.ir("post");
+  await t.tap('[data-gol="A,1"]'); await t.tap("#guardarPartido"); await t.toast("Partido guardado");
+  await t.tap('[data-gol="B,1"]');
+  await sinDeshacer(t, "gol después de guardar");
+  igual(await t.txt("#guardarPartido"), "💾 Actualizar partido guardado", "botón para actualizar");
+  // ...y un aviso sin acción nueva (ej. 'Ya está inscrito') sí conserva el ↩️
+  t = await abrir(st);
+  await t.tap('[data-del="Nico"]'); await t.toast("Nico se bajó");
+  await t.page.fill("#nuevo", "carlos"); await t.tap("#agregar");
+  await t.toast("Ya está inscrito");
+  ok(await t.page.locator("#toast .tbtn").isVisible(), "el ↩️ de la baja sigue tras un aviso que no cambia nada");
+  await t.tap("#toast .tbtn"); await t.toast("Nico volvió");
 });
 
 await prueba("Migración v2 → v3: un estado v2 se conserva entero (con copia)", async (abrir) => {
@@ -1231,7 +1347,7 @@ await prueba("B12: el SW no guarda páginas de error y abre desde la caché con 
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.reload();
     ok(await page.evaluate(() => !!navigator.serviceWorker.controller), "SW controla la página");
-    igual(await page.evaluate(() => caches.keys()), ["pichanga-v4"], "caché nueva (pichanga-v4)");
+    igual(await page.evaluate(() => caches.keys()), ["pichanga-v5"], "caché nueva (pichanga-v5)");
     const copia = () => page.evaluate(() => caches.match("./index.html").then((r) => r && r.text()));
     await page.goto(raiz + "jugadores");
     ok((await page.title()) === "404", "la página 404 se muestra tal cual");
