@@ -15,6 +15,8 @@ Organizador de pichangas para el celular: convocatoria, armado de equipos y cobr
 
 Ábrela en https://tolstoy789.github.io/Mi_Pichanga/ desde el celular y usa **"Agregar a pantalla de inicio"** para instalarla como app. Funciona sin conexión.
 
+Las acciones importantes (bajar a alguien, cerrar la pichanga, saldar o anotar una deuda, marcar un pago, 🔁 Misma lista, armar equipos, guardar el partido) muestran **↩️ Deshacer** por unos segundos.
+
 Los datos se guardan en el mismo teléfono. En la pestaña 🏆 Post-Partido puedes guardar un respaldo (archivo `.json`) y restaurarlo en otro celular.
 
 Es una sola página (`index.html`) sin dependencias ni paso de compilación; `sw.js` y `manifest.webmanifest` la hacen instalable y usable sin internet.

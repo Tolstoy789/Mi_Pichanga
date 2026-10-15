@@ -59,22 +59,25 @@ async function abrir(estado, { width = 390, height = 844, url = FILE } = {}) {
   await page.goto(url);
   Object.assign(t, {
     S: () => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY),
-    ir: async (tab) => { await page.click(`nav.tabs button[data-go="s-${tab}"]`); },
+    ir: async (tab) => { await t.hoja(); await page.click(`nav.tabs button[data-go="s-${tab}"]`); },
     wa: () => page.evaluate(() => window.__wa),
     txt: (sel) => page.locator(sel).first().innerText(),
     toast: (texto) => page.waitForFunction((x) => { const e = document.getElementById("toast"); return e.classList.contains("show") && e.textContent.includes(x); }, texto, { timeout: 3000 }),
     sinToast: () => page.evaluate(() => { const e = document.getElementById("toast"); clearTimeout(window.__t); e.classList.remove("show"); }),
     // La app ignora toques en una hoja recién abierta (protección de doble toque): se espera como lo haría una persona
-    hoja: () => page.waitForFunction(() => !document.getElementById("sheet").open || Date.now() - (window.sheet.abierta || 0) >= 460, null, { timeout: 3000 }),
+    // ...y también los toques justo después de cerrarla (el segundo toque de un doble toque cae en la pantalla)
+    // (y el ↩️ Deshacer recién aparecido, por la misma razón)
+    hoja: () => page.waitForFunction(() => (document.getElementById("sheet").open ? Date.now() - (window.sheet.abierta || 0) : Date.now() - (window.cerrarSheet.at || 0)) >= 460
+      && Date.now() - (window.toast.desde || 0) >= 460, null, { timeout: 3000 }),
     tap: async (sel) => { await t.hoja(); await page.locator(sel).first().click(); },
   });
   return t;
 }
 
 const J = (n, p = "J") => Array.from({ length: n }, (_, i) => p + String(i + 1).padStart(2, "0"));
-// Estado con la forma actual (v2)
+// Estado con la forma actual (v3)
 const base = (x = {}) => Object.assign({
-  v: 2, fecha: "2026-10-17", hora: "20:00", lugar: "Complejo El Campito", porLado: 7,
+  v: 3, fecha: "2026-10-17", hora: "20:00", lugar: "Complejo El Campito", porLado: 7,
   inscritos: [], caseros: ["Carlos", "Seba"], niveles: {}, equipos: { A: [], B: [] },
   colorA: "⚫ Negro", colorB: "🟢 Peto Flúor",
   banco: { nombre: "", rut: "", banco: "", tipo: "", cuenta: "", mail: "", link: "", qr: "" },
@@ -101,7 +104,7 @@ const BAJA = 500; // pausa entre bajas (protección de doble toque)
 await prueba("Migración: datos con la forma antigua se convierten sin perder nada", async (abrir) => {
   const t = await abrir(VIEJO);
   const S = await t.S();
-  igual(S.v, 2, "versión");
+  igual(S.v, 3, "versión");
   for (const k of ["fecha", "hora", "lugar", "porLado", "inscritos", "caseros", "niveles", "equipos", "colorA", "colorB", "banco"]) igual(S[k], VIEJO[k], k);
   igual(S.costoCancha, "42000", "costo cancha con punto de miles");
   igual(S.costoTercer, "12000", "costo tercer tiempo");
@@ -115,7 +118,7 @@ await prueba("Migración: datos con la forma antigua se convierten sin perder na
   igual([S.post.golesA, S.post.golesB, S.post.mvp, S.post.guardadoId], [2, 1, "Ana", null], "post");
   igual(S.historial[0].id, 111, "historial intacto");
   igual(S.historial[0].mvp, "Ana", "historial premio");
-  const copia = await t.page.evaluate((k) => localStorage.getItem(k + "-antes-v2"), KEY);
+  const copia = await t.page.evaluate((k) => localStorage.getItem(k + "-antes-v3"), KEY);
   igual(JSON.parse(copia), VIEJO, "copia intacta de los datos antiguos");
   igual(await t.page.inputValue("#hora"), "21:00", "hora en pantalla");
   ok((await t.txt("#titulares")).includes("Caro ⚠️ debe"), "⚠️ de Caro en Convocatoria");
@@ -151,7 +154,7 @@ await prueba("Migración: faltan claves anidadas o vienen dañadas", async (abri
 await prueba("Migración: datos ilegibles no se pierden (se respaldan) y la app abre", async (abrir) => {
   const t = await abrir("{malo");
   igual(await t.page.evaluate((k) => localStorage.getItem(k + "-danado"), KEY), "{malo", "copia del dato dañado");
-  igual((await t.S()).v, 2, "estado nuevo");
+  igual((await t.S()).v, 3, "estado nuevo");
 });
 
 await prueba("Migración: restaurar un respaldo antiguo (.json) lo convierte", async (abrir) => {
@@ -163,7 +166,7 @@ await prueba("Migración: restaurar un respaldo antiguo (.json) lo convierte", a
   await t.toast("Respaldo restaurado");
   const S = await t.S();
   fs.unlinkSync(f);
-  igual(S.v, 2, "versión");
+  igual(S.v, 3, "versión");
   ok(S.deudas.Pablo && S.pagos.Ana.monto === 19000, "morosos y pagos convertidos");
 });
 
@@ -243,7 +246,7 @@ await prueba("F1: un 0-0 sin premios no se guarda por defecto; deshacer el cierr
   const S = await t.S();
   igual(S.fecha, "2026-10-25", "fecha elegida");
   igual(Object.keys(S.deudas).length, 5, "5 deudores anotados");
-  await t.page.locator("#toast .tbtn").click();
+  await t.tap("#toast .tbtn");
   igual(await t.S(), antes, "deshacer restaura el estado completo");
   igual(await t.page.inputValue("#fecha"), "2026-10-17", "campos restaurados");
 });
@@ -425,7 +428,7 @@ await prueba("B7: doble toque en ✖ baja a uno solo y se puede deshacer en su l
   await t.page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
   igual((await t.S()).inscritos, J(10).filter((n) => n !== "J03"), "solo se bajó J03");
   await t.toast("J03 se bajó");
-  await t.page.locator("#toast .tbtn").click();
+  await t.tap("#toast .tbtn");
   igual((await t.S()).inscritos, J(10), "deshacer lo deja en su posición");
   await esperar(BAJA);
   await t.page.locator('[data-del="J04"]').dblclick();
@@ -437,7 +440,7 @@ await prueba("B7: Deshacer no pisa a alguien inscrito después de la baja", asyn
   await t.tap('[data-del="J03"]');
   await t.toast("J03 se bajó");
   await t.page.fill("#nuevo", "Nuevo"); await t.page.press("#nuevo", "Enter");
-  await t.page.locator("#toast .tbtn").click();
+  await t.tap("#toast .tbtn");
   await t.toast("no se puede deshacer");
   const S = await t.S();
   ok(S.inscritos.includes("Nuevo") && !S.inscritos.includes("J03"), "se mantiene lo más nuevo");
@@ -609,7 +612,7 @@ await prueba("F2: abono parcial, saldo total y deshacer", async (abrir) => {
   ok((await t.txt("#titulares")).includes("⚠️ $14.000"), "monto en Convocatoria");
   await t.ir("pagos"); await t.tap('[data-saldar="Ana"]'); await t.tap("#sOk");
   igual((await t.S()).deudas, {}, "saldada");
-  await t.page.locator("#toast .tbtn").click();
+  await t.tap("#toast .tbtn");
   igual((await t.S()).deudas.Ana.length, 2, "deshacer el saldo");
 });
 
@@ -779,7 +782,7 @@ await prueba("QA B5: tocar una fila pagada no borra lo que ya había pagado (dob
   await t.tap('.state[data-pay="Seba"]');
   igual((await t.S()).pagos.Seba.monto, 4000, "desmarcar vuelve al abono anterior, no a cero");
   await t.toast("pagó $4.000");
-  await t.page.locator("#toast .tbtn").click();
+  await t.tap("#toast .tbtn");
   igual((await t.S()).pagos.Seba.monto, 5000, "↩️ Deshacer");
   // Pagó de más: preguntar antes de borrar y poder deshacer
   const t2 = await abrir(base({ inscritos: ["Maximiliano", ...J(15)], costoCancha: "49000", pagos: { Maximiliano: { monto: 10000, fecha: "2026-10-10" } } }), { width: 320, height: 568 });
@@ -793,7 +796,7 @@ await prueba("QA B5: tocar una fila pagada no borra lo que ya había pagado (dob
   await t2.tap('.state[data-pay="Maximiliano"]');
   igual((await t2.S()).pagos.Maximiliano, undefined, "aceptar borra");
   await t2.toast("quedó sin pagar");
-  await t2.page.locator("#toast .tbtn").click();
+  await t2.tap("#toast .tbtn");
   igual((await t2.S()).pagos.Maximiliano.monto, 10000, "↩️ recupera los $10.000");
 });
 
@@ -950,7 +953,7 @@ await prueba("QA B7: el ↩️ Deshacer de una baja sigue disponible si se abre 
   await t.ir("equipos");
   await t.toast("Equipos reajustados");
   ok((await t.txt("#toast")).includes("J03 se bajó"), "recuerda qué se puede deshacer");
-  await t.page.locator("#toast .tbtn").click();
+  await t.tap("#toast .tbtn");
   ok((await t.S()).inscritos.includes("J03"), "J03 vuelve");
 });
 
@@ -990,6 +993,171 @@ await prueba("QA F2: doble toque en 'Devuelto' no abre la hoja de la fila que su
     igual((await t.S()).deudas.Pato[0].monto, 5000, "no se saldó sola");
     await t.page.keyboard.press("Escape");
   }
+});
+
+/* ================= QA Ronda 1 (pasada 2) ================= */
+const DIEZ = ["Carlos", "Seba", "Nico", "Mati", "Mako", "Diego", "Pedro", "Tomás", "Javier", "Felipe"];
+const estadoCierre = () => base({ porLado: 5, inscritos: DIEZ.slice(), caseros: DIEZ.concat("Andrés", "Pablo", "Lucho"), costoCancha: "50000",
+  pagos: { Carlos: { monto: 5000, fecha: "2026-10-16" } }, ultimaLista: DIEZ.slice(), post: { golesA: 2, golesB: 1, mvp: "", goleador: "", rustico: "", guardadoId: null } });
+for (const [w, h] of [[390, 844], [360, 740]]) {
+  await prueba(`QA F1: doble toque en 'Cerrar y preparar la próxima' no inscribe a nadie y se puede deshacer (${w}px)`, async (abrir) => {
+    const t = await abrir(estadoCierre(), { width: w, height: h });
+    await t.ir("pagos");
+    for (const ms of [120, 250]) {
+      if (ms === 250) { await t.tap("#toast .tbtn"); await t.toast("Pichanga reabierta"); await t.ir("pagos"); }
+      await t.tap(".screen.active [data-cerrar]"); await t.hoja();
+      await t.page.locator("#cOk").scrollIntoViewIfNeeded();
+      const b = await t.page.locator("#cOk").boundingBox();
+      await t.page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2);
+      await esperar(ms);
+      await t.page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2);
+      const S = await t.S();
+      igual([S.inscritos, Object.keys(S.deudas).length, S.historial.length], [[], 9, 1], `cerrada sin inscribir a nadie (${ms} ms)`);
+      ok(!(await t.txt("#toast")).includes("debe"), "el segundo toque no tocó un chip");
+    }
+    await t.tap("#toast .tbtn");
+    await t.toast("Pichanga reabierta");
+    const S = await t.S();
+    igual([S.inscritos, S.deudas, S.historial.length, S.pagos.Carlos.monto], [DIEZ, {}, 0, 5000], "↩️ Deshacer devuelve todo");
+  });
+}
+
+await prueba("QA F2: '¿Pagó eso también?' tiene ↩️ Deshacer y desmarcar el pago devuelve la deuda anterior", async (abrir) => {
+  const SEBA = [{ fecha: "2026-10-10", concepto: "Cancha", monto: 5000 }, { fecha: "2026-10-03", concepto: "Cancha", monto: 5000 }];
+  const estado = base({ porLado: 3, inscritos: ["Carlos", "Seba", "Nico", "Mati", "Mako", "Pedro"], costoCancha: "30000", deudas: { Seba: SEBA } });
+  const t = await abrir(estado);
+  await t.ir("pagos");
+  await t.tap('.pname[data-pay="Seba"]');
+  ok(t.dialogos[0].includes("Seba también debe $10.000"), "pregunta por la deuda anterior");
+  await t.toast("Seba quedó al día");
+  ok(await t.page.locator("#toast .tbtn").count(), "el aviso trae ↩️ Deshacer");
+  let S = await t.S();
+  ok(!S.deudas.Seba && S.pagos.Seba.monto === 5000, "pagó cuota y deuda");
+  await esperar(BAJA);
+  await t.tap('.pname[data-pay="Seba"]');
+  await t.toast("Seba quedó sin pagar");
+  ok((await t.txt("#toast")).includes("vuelve a deber $10.000"), "avisa que vuelve a deber: " + await t.txt("#toast"));
+  S = await t.S();
+  igual([S.pagos.Seba, S.deudas.Seba], [undefined, SEBA], "desmarcar devuelve la deuda tal cual");
+  ok((await t.txt("#deudas")).includes("Seba"), "Seba otra vez en Deudas pendientes");
+  // ↩️ Deshacer del aviso devuelve pago y deuda a como estaban antes del toque
+  await esperar(BAJA);
+  await t.tap('.pname[data-pay="Seba"]');
+  await t.toast("Seba quedó al día");
+  await t.tap("#toast .tbtn");
+  await t.toast("Seba quedó como antes");
+  S = await t.S();
+  igual([S.pagos.Seba, S.deudas.Seba], [undefined, SEBA], "↩️ Deshacer devuelve pago y deuda");
+  // Con algo anotado después (abono), desmarcar devuelve la deuda sin perder el abono
+  await esperar(BAJA);
+  await t.tap('.pname[data-pay="Seba"]');
+  await t.toast("Seba quedó al día");
+  await t.page.evaluate(() => { abonar("Seba", 1000); save(); renderPagos(); });
+  await esperar(BAJA);
+  await t.tap('.pname[data-pay="Seba"]');
+  S = await t.S();
+  igual(S.deudas.Seba.map((e) => e.monto).sort(), [-1000, 5000, 5000].sort(), "deuda devuelta y abono conservado");
+  // El dato nuevo (pagos.libreta) sobrevive a recargar y a la migración
+  await esperar(BAJA);
+  await t.tap('.pname[data-pay="Seba"]');
+  await t.page.reload();
+  S = await t.S();
+  ok(S.pagos.Seba.libreta && S.pagos.Seba.libreta.antes.length === 3, "la libreta guardada en el pago se conserva al recargar");
+});
+
+await prueba("QA B7: un ↩️ Deshacer viejo no queda bajo 📒 Anotar deuda ni 🔁 Misma lista (cada uno trae el suyo)", async (abrir) => {
+  const t = await abrir(base({ porLado: 8, deudas: { Lucho: [{ fecha: "2026-10-10", concepto: "Cancha", monto: 5000 }] }, ultimaLista: J(16) }));
+  await t.ir("pagos"); await t.tap('[data-saldar="Lucho"]');
+  await t.page.fill("#sMonto", ""); await t.page.locator("#sMonto").pressSequentially("3000");
+  await t.tap("#sOk");
+  await t.toast("Abono de $3.000");
+  await t.tap("details.manual summary");
+  await t.page.fill("#mNombre", "Pedro Pablo Ossandón"); await t.page.locator("#mMonto").pressSequentially("50000");
+  await t.tap("#mAnotar");
+  await t.toast("Anotado: Pedro Pablo Ossandón debe $50.000");
+  ok(!(await t.txt("#toast")).includes("Abono"), "sin el aviso del abono debajo");
+  await t.tap("#toast .tbtn");
+  await t.toast("Deuda de Pedro Pablo Ossandón borrada");
+  let S = await t.S();
+  ok(!S.deudas["Pedro Pablo Ossandón"] && S.deudas.Lucho.length === 2, "↩️ borra la deuda anotada y deja el abono");
+  // 🔁 Misma lista justo después de cerrar
+  await t.page.evaluate((l) => { S.inscritos = l.slice(); S.costoCancha = "48000"; save(); renderTab(); }, J(16));
+  await t.tap(".screen.active [data-cerrar]"); await t.tap("#cOk");
+  await t.toast("Pichanga cerrada");
+  await t.tap("#mismaLista");
+  await t.toast("16 inscritos como la semana pasada");
+  ok(!(await t.txt("#toast")).includes("cerrada"), "sin el aviso del cierre debajo");
+  await t.tap("#toast .tbtn");
+  await t.toast("Lista como estaba");
+  S = await t.S();
+  igual([S.inscritos, Object.keys(S.deudas).length], [[], 17], "↩️ saca a los 16 y no reabre la pichanga (16 deudas del cierre + Lucho)");
+});
+
+const DIECISIETE = ["Juan Pablo Fernández", "Nicolás", "Cristóbal", "Ignacio", "Agustín", "Bastián", "Rodrigo", "Matías", "Vicente", "Benjamín", "Joaquín", "Tomás", "Felipe", "Sebastián", "Diego", "Martín", "Lucas"];
+await prueba("QA B7: ⚖️ Equilibrado y 💾 Guardar partido no muestran el ↩️ de una baja anterior; deshacen lo suyo", async (abrir) => {
+  const t = await abrir(base({ porLado: 8, inscritos: DIECISIETE.slice(), niveles: { Nicolás: 5, Cristóbal: 1, Ignacio: 4, Agustín: 2 } }));
+  await t.ir("equipos"); await t.tap("#azar");
+  await t.ir("convocatoria"); await t.tap('[data-del="Bastián"]');
+  await t.toast("Bastián se bajó");
+  await t.ir("equipos");
+  const antes = (await t.S()).equipos;
+  await t.tap("#equilibrar");
+  await t.toast("Equipos parejos");
+  ok(!(await t.txt("#toast")).includes("Bastián"), "sin el aviso de la baja debajo: " + await t.txt("#toast"));
+  const parejos = (await t.S()).equipos;
+  await t.tap("#toast .tbtn");
+  await t.toast("Equipos como estaban");
+  let S = await t.S();
+  igual(S.equipos, antes, "↩️ vuelven los equipos de antes del ⚖️");
+  ok(!S.inscritos.includes("Bastián"), "Bastián sigue abajo");
+  // 💾 Guardar partido después de bajar a alguien
+  await t.ir("convocatoria"); await t.tap('[data-del="Rodrigo"]');
+  await t.toast("Rodrigo se bajó");
+  await t.ir("post"); t.respuestas.push(true); await t.tap("#guardarPartido");
+  await t.toast("Partido guardado");
+  ok(!(await t.txt("#toast")).includes("Rodrigo"), "sin el aviso de la baja debajo");
+  await t.tap("#toast .tbtn");
+  await t.toast("Partido sin guardar");
+  S = await t.S();
+  igual([S.historial.length, S.post.guardadoId, S.inscritos.includes("Rodrigo")], [0, null, false], "↩️ deshace el guardado, no la baja");
+  igual(await t.txt("#guardarPartido"), "💾 Guardar partido", "botón vuelve a Guardar");
+  void parejos;
+});
+
+await prueba("QA B7: el ↩️ de una baja respeta los equipos que se armaron a mano después", async (abrir) => {
+  const t = await abrir(base({ porLado: 4, inscritos: J(9), equipos: { A: J(4), B: J(8).slice(4) } }));
+  await t.tap('[data-del="J02"]');
+  await t.toast("J02 se bajó");
+  await t.ir("equipos");
+  await t.page.evaluate(() => { swap("J01", "J05"); renderEquipos(); }); // arrastre a mano (sin aviso)
+  const armados = (await t.S()).equipos;
+  await t.tap("#toast .tbtn");
+  await t.toast("J02 volvió");
+  const S = await t.S();
+  igual(S.inscritos, J(9), "J02 vuelve a su lugar");
+  ok(S.equipos.A[0] === armados.A[0] && S.equipos.B[0] === armados.B[0] && armados.A[0] === "J05", "se mantienen los arcos elegidos a mano");
+  ok(S.equipos.A.concat(S.equipos.B).includes("J02") && !S.equipos.A.concat(S.equipos.B).includes("J09"), "J02 en la cancha y J09 de nuevo a la banca");
+});
+
+await prueba("QA B7: el segundo toque de un doble toque no aprieta el ↩️ Deshacer recién aparecido", async (abrir) => {
+  const t = await abrir(base({ porLado: 3, inscritos: SEIS.slice() }));
+  await t.ir("equipos"); await t.tap("#equilibrar");
+  await t.page.waitForSelector("#toast.show .tbtn");
+  const parejos = (await t.S()).equipos;
+  await t.page.locator("#toast .tbtn").click(); // ~inmediato, como el segundo toque
+  igual((await t.S()).equipos, parejos, "los equipos no se deshicieron");
+  await t.tap("#toast .tbtn"); // un toque a propósito sí deshace
+  await t.toast("Equipos como estaban");
+});
+
+await prueba("Migración v2 → v3: un estado v2 se conserva entero (con copia)", async (abrir) => {
+  const v2 = Object.assign(base(), { v: 2, inscritos: ["Ana", "Beto"], pagos: { Ana: { monto: 5000, fecha: "2026-10-16", previo: 2000 }, Beto: { monto: null, fecha: "" } },
+    deudas: { Caro: [{ fecha: "", concepto: "Deuda anterior", monto: null }], Dani: [{ fecha: "2026-10-03", concepto: "Cancha", monto: 7000 }] }, costoCancha: "10000" });
+  const t = await abrir(v2);
+  const S = await t.S();
+  igual(S.v, 3, "versión");
+  igual([S.pagos, S.deudas, S.inscritos], [v2.pagos, v2.deudas, v2.inscritos], "pagos, deudas e inscritos intactos");
+  igual(JSON.parse(await t.page.evaluate((k) => localStorage.getItem(k + "-antes-v3"), KEY)), v2, "copia de los datos v2");
 });
 
 /* ================= Pantallas ================= */
@@ -1063,7 +1231,7 @@ await prueba("B12: el SW no guarda páginas de error y abre desde la caché con 
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.reload();
     ok(await page.evaluate(() => !!navigator.serviceWorker.controller), "SW controla la página");
-    igual(await page.evaluate(() => caches.keys()), ["pichanga-v3"], "caché nueva (pichanga-v3)");
+    igual(await page.evaluate(() => caches.keys()), ["pichanga-v4"], "caché nueva (pichanga-v4)");
     const copia = () => page.evaluate(() => caches.match("./index.html").then((r) => r && r.text()));
     await page.goto(raiz + "jugadores");
     ok((await page.title()) === "404", "la página 404 se muestra tal cual");

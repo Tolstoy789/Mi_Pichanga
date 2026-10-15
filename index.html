@@ -439,7 +439,7 @@ const COLORS = {
   "🟠 Naranjo": ["#ff7a00", "#ffffff"],
 };
 const KEY = "pichanga-v1";
-const SCHEMA = 2;           // versión de la forma de los datos (ver migrar)
+const SCHEMA = 3;           // versión de la forma de los datos (ver migrar). v3: pagos[n].libreta
 const $ = (id) => document.getElementById(id);
 
 const postVacio = () => ({ golesA: 0, golesB: 0, mvp: "", goleador: "", rustico: "", guardadoId: null });
@@ -457,7 +457,8 @@ const defaults = () => ({
   colorA: "⚫ Negro", colorB: "🟢 Peto Flúor",
   banco: { nombre: "", rut: "", banco: "", tipo: "", cuenta: "", mail: "", link: "", qr: "" },
   costoCancha: "", costoTercer: "", // solo dígitos, en pesos
-  pagos: dic(),             // pichanga actual: nombre -> { monto, fecha, previo? } (monto null = pagó, sin monto anotado)
+  pagos: dic(),             // pichanga actual: nombre -> { monto, fecha, previo?, libreta? } (monto null = pagó, sin monto anotado;
+                            //   libreta = { antes, despues }: su deuda anterior, que pagó junto con la cuota, para poder devolverla)
   tercer: dic(),            // nombre -> true si se queda al 🍻
   deudas: dic(),            // libreta: nombre -> [{ fecha, concepto, monto }] (monto > 0 debe, < 0 abono o a favor, null = sin monto)
   ultimaLista: [],          // inscritos de la pichanga anterior (🔁 Misma lista)
@@ -513,13 +514,14 @@ function migrar(o) {
       colorA: tiene(COLORS, p.colorA) ? p.colorA : d.colorA, colorB: tiene(COLORS, p.colorB) ? p.colorB : d.colorB,
     });
   });
+  const entradas = (x) => (Array.isArray(x) ? x : []).filter((e) => e && typeof e === "object").map((e) => ({
+    fecha: esISO(e.fecha) ? e.fecha : "",
+    concepto: e.concepto === "Deuda anterior (monto por confirmar)" ? "Deuda anterior" : String(e.concepto || "Deuda"),
+    monto: e.monto == null || e.monto === "" ? null : Math.round(+e.monto) || 0,
+  }));
   S.deudas = obj(S.deudas);
   Object.keys(S.deudas).forEach((n) => {
-    const es = (Array.isArray(S.deudas[n]) ? S.deudas[n] : []).filter((e) => e && typeof e === "object").map((e) => ({
-      fecha: esISO(e.fecha) ? e.fecha : "",
-      concepto: e.concepto === "Deuda anterior (monto por confirmar)" ? "Deuda anterior" : String(e.concepto || "Deuda"),
-      monto: e.monto == null || e.monto === "" ? null : Math.round(+e.monto) || 0,
-    }));
+    const es = entradas(S.deudas[n]);
     if (es.some((e) => e.monto == null) || es.reduce((s, e) => s + e.monto, 0) !== 0) S.deudas[n] = es; else delete S.deudas[n];
   });
   // v1: morosos {nombre: true} -> libreta con monto desconocido
@@ -532,7 +534,9 @@ function migrar(o) {
     const p = S.pagos[n], m = p && typeof p === "object" ? (p.monto === null ? null : +p.monto) : NaN, previo = p ? +p.previo : 0;
     if (m !== null && !(m >= 0)) return void delete S.pagos[n];
     // { monto: 0 } solo lo dejaba la migración anterior con la cancha sin costo: era un ✅ pagado
-    S.pagos[n] = Object.assign({ monto: m ? Math.round(m) : null, fecha: esISO(p.fecha) ? p.fecha : "" }, previo > 0 && m > previo ? { previo: Math.round(previo) } : {});
+    const lib = obj(p.libreta), libAntes = entradas(lib.antes);
+    S.pagos[n] = Object.assign({ monto: m ? Math.round(m) : null, fecha: esISO(p.fecha) ? p.fecha : "" }, previo > 0 && m > previo ? { previo: Math.round(previo) } : {},
+      libAntes.length ? { libreta: { antes: libAntes, despues: entradas(lib.despues) } } : {});
   });
   // v1: pagado {nombre: true}. Titular: lo que le tocaba pagar (o "pagado sin monto" si la cancha no tenía costo).
   // Quien ya no es titular (se bajó o pasó a suplente después de pagar): ese pago queda a favor, como en la app nueva.
@@ -569,19 +573,26 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch
 save();
 
 // Aviso flotante; con `accion` muestra un botón (ej. ↩️ Deshacer) durante 6 s.
-// Un aviso simple que llega mientras sigue vigente un ↩️ Deshacer no lo borra: se muestra encima.
+// Un aviso simple que llega mientras sigue vigente un ↩️ Deshacer lo conserva (encima, con el aviso viejo en chico)
+// solo si entremedio no hubo otra acción: los datos siguen iguales o cambiaron solos (ver sigueDeshacer).
+// Si el aviso cuenta una acción nueva, el ↩️ viejo se va: no debe parecer que deshace esa acción.
+const huellaTodo = () => JSON.stringify(S);
 function toast(msg, accion) {
   const t = $("toast"), ahora = Date.now();
   let antes = "";
-  if (accion) Object.assign(toast, { accion, msg, hasta: ahora + 6000 });
-  else if (toast.accion && ahora < toast.hasta) { accion = toast.accion; antes = toast.msg; }
+  if (accion) Object.assign(toast, { accion, msg, hasta: ahora + 6000, estado: huellaTodo(), desde: ahora });
+  else if (toast.accion && ahora < toast.hasta && huellaTodo() === toast.estado) { accion = toast.accion; antes = toast.msg; }
   else toast.accion = null;
   t.innerHTML = `<span>${esc(msg)}</span>` + (antes ? `<small class="tprev">${esc(antes)}</small>` : "") +
     (accion ? `<button class="tbtn" type="button">${esc(accion.label)}</button>` : "");
-  if (accion) t.querySelector(".tbtn").onclick = () => { clearTimeout(toast.h); toast.accion = null; t.classList.remove("show"); accion.fn(); };
+  // El ↩️ aparece bajo el dedo: el segundo toque de un doble toque en el botón de la acción no la deshace
+  if (accion) t.querySelector(".tbtn").onclick = () => { if (Date.now() - toast.desde < 450) return; clearTimeout(toast.h); toast.accion = null; t.classList.remove("show"); accion.fn(); };
   t.classList.add("show");
   clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), accion ? Math.max(2600, toast.hasta - ahora) : 2600);
 }
+// Cambio automático, consecuencia de la acción que se puede deshacer (ej. equipos reajustados tras una baja):
+// no es una acción nueva, así que el ↩️ Deshacer sigue vigente.
+function sigueDeshacer() { if (toast.accion) toast.estado = huellaTodo(); }
 // Aviso con ↩️ Deshacer. Solo deshace si lo que tocó la acción no cambió después,
 // para no pisar cambios más nuevos (ej. alguien inscrito justo después).
 function conDeshacer(msg, huella, deshacer) {
@@ -723,7 +734,11 @@ function sheet(html) {
   if (!d.open) { if (d.showModal) d.showModal(); else d.setAttribute("open", ""); sheet.abierta = Date.now(); }
   $("sheetBody").scrollTop = 0;
 }
-function cerrarSheet() { const d = $("sheet"); if (d.open) { if (d.close) d.close(); else d.removeAttribute("open"); } }
+function cerrarSheet() { const d = $("sheet"); if (d.open) { if (d.close) d.close(); else d.removeAttribute("open"); cerrarSheet.at = Date.now(); } }
+// ...y al cerrarse, el segundo toque cae en la pantalla de atrás (un chip, ↩️ Deshacer): tampoco aprieta nada ahí
+["click", "pointerdown"].forEach((ev) => document.addEventListener(ev, (e) => {
+  if (Date.now() - (cerrarSheet.at || 0) < 450 && !($("sheet").open && $("sheet").contains(e.target))) { e.stopPropagation(); e.preventDefault(); }
+}, true));
 // La hoja aparece bajo el dedo: el segundo toque de un doble toque no debe apretar nada en ella
 $("sheet").addEventListener("click", (e) => { if (Date.now() - sheet.abierta < 450) { e.stopPropagation(); e.preventDefault(); } }, true);
 $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet") || e.target.closest("[data-cerrar-sheet]")) cerrarSheet(); });
@@ -775,9 +790,15 @@ function removePlayer(name) {
   let msg = `✖ ${name} se bajó`;
   if (eraTitular && S.inscritos.length >= cupo()) msg += ` · 🔼 ${S.inscritos[cupo() - 1]} sube a titular`;
   if (favor) msg += ` · 💚 su pago de ${plata(favor)} queda a favor`;
-  ultimaBaja = Date.now();
+  ultimaBaja = Date.now(); syncEquipos.ultimo = null;
   save(); renderConvocatoria();
-  conDeshacer(msg, huellaLista, () => { restaurar(antes); toast(`↩️ ${name} volvió a su lugar`); });
+  const eqDespues = JSON.stringify(S.equipos);
+  conDeshacer(msg, huellaLista, () => {
+    // Equipos que la persona armó después de la baja (⚖️, 🎲, arrastrar) se respetan: solo vuelve el jugador
+    const eq = JSON.stringify(S.equipos), propios = eq !== eqDespues && eq !== syncEquipos.ultimo;
+    restaurar(propios ? JSON.stringify(Object.assign(JSON.parse(antes), { equipos: S.equipos })) : antes);
+    toast(`↩️ ${name} volvió a su lugar`);
+  });
 }
 $("agregar").addEventListener("click", () => { addPlayer($("nuevo").value); $("nuevo").value = ""; $("nuevo").focus(); });
 $("nuevo").addEventListener("keydown", (e) => { if (e.key === "Enter") $("agregar").click(); });
@@ -821,8 +842,9 @@ document.addEventListener("click", (e) => {
 $("mismaLista").addEventListener("click", () => {
   const rep = S.ultimaLista.filter((n) => !S.inscritos.includes(n));
   if (!rep.length) return;
-  const sumados = rep.filter((n) => addPlayer(n, true)), conDeuda = sumados.filter(debe);
-  toast(`🔁 ${sumados.length} inscritos como la semana pasada` + (conDeuda.length ? ` · ⚠️ ${conDeuda.length} con deuda` : ""));
+  const antes = foto(), sumados = rep.filter((n) => addPlayer(n, true)), conDeuda = sumados.filter(debe);
+  conDeshacer(`🔁 ${sumados.length} inscritos como la semana pasada` + (conDeuda.length ? ` · ⚠️ ${conDeuda.length} con deuda` : ""), huellaLista,
+    () => { restaurar(antes); toast("↩️ Lista como estaba"); });
 });
 
 function fechaBonita() {
@@ -896,7 +918,7 @@ function crestSVG(bg, fg, letter) {
 // Deja en los equipos solo a los titulares, suma a los nuevos en el equipo más corto y,
 // si se bajó alguien, reacomoda para que no quede 7 vs 3.
 function syncEquipos(avisar = true) {
-  const t = titulares(), E = S.equipos, antes = E.A.length + E.B.length;
+  const t = titulares(), E = S.equipos, antes = E.A.length + E.B.length, previo = JSON.stringify(E);
   E.A = E.A.filter((n, i) => t.includes(n) && E.A.indexOf(n) === i);
   E.B = E.B.filter((n, i) => t.includes(n) && E.B.indexOf(n) === i && !E.A.includes(n));
   const salieron = E.A.length + E.B.length < antes;
@@ -909,14 +931,21 @@ function syncEquipos(avisar = true) {
     const cand = big.slice(1).sort((a, b) => Math.abs(sb - 2 * nivel(a) - ss) - Math.abs(sb - 2 * nivel(b) - ss))[0];
     big.splice(big.indexOf(cand), 1); small.push(cand); movidos++;
   }
+  if (JSON.stringify(E) !== previo) { syncEquipos.ultimo = JSON.stringify(E); sigueDeshacer(); } // lo hizo la app, no la persona
   if (movidos && avisar) toast(`⚖️ Equipos reajustados a ${E.A.length} vs ${E.B.length}. Revísalos o toca ⚖️ Armado Equilibrado`);
   save();
 }
 const suma = (names) => names.reduce((s, n) => s + nivel(n), 0);
 const shuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// ↩️ Deshacer de 🎲 y ⚖️: vuelven los equipos de antes (si nadie tocó la lista ni los equipos después)
+function equiposConDeshacer(msg, antes) {
+  conDeshacer(msg, () => JSON.stringify([S.equipos, S.inscritos, S.porLado]),
+    () => { S.equipos = JSON.parse(antes); save(); renderTab(); toast("↩️ Equipos como estaban"); });
+}
 $("azar").addEventListener("click", () => {
-  const t = shuffle(titulares()); const h = Math.ceil(t.length / 2);
-  S.equipos = { A: t.slice(0, h), B: t.slice(h) }; save(); renderEquipos(); toast("🎲 ¡Equipos mezclados!");
+  if (!titulares().length) return toast("Primero inscribe jugadores 🏃");
+  const antes = JSON.stringify(S.equipos), t = shuffle(titulares()), h = Math.ceil(t.length / 2);
+  S.equipos = { A: t.slice(0, h), B: t.slice(h) }; save(); renderEquipos(); equiposConDeshacer("🎲 ¡Equipos mezclados!", antes);
 });
 // Reparto exacto de menor diferencia: R[i][k] = sumas posibles eligiendo k de los primeros i jugadores.
 // Entre los repartos óptimos se elige uno al azar, así cada toque puede dar equipos distintos.
@@ -944,9 +973,10 @@ function repartoParejo(names) {
 }
 $("equilibrar").addEventListener("click", () => {
   if (!titulares().length) return toast("Primero inscribe jugadores 🏃");
+  const antes = JSON.stringify(S.equipos);
   S.equipos = repartoParejo(titulares()); save(); renderEquipos();
   const d = Math.abs(suma(S.equipos.A) - suma(S.equipos.B));
-  toast(d <= 1 ? "⚖️ Equipos parejos armados · 🧤 arqueros al azar" : `⚖️ Lo más parejo posible (diferencia ${d}) · 🧤 arqueros al azar`);
+  equiposConDeshacer(d <= 1 ? "⚖️ Equipos parejos armados · 🧤 arqueros al azar" : `⚖️ Lo más parejo posible (diferencia ${d}) · 🧤 arqueros al azar`, antes);
 });
 
 // Coordenadas en pantalla de cada jugador: A arriba, B abajo (espejado)
@@ -1211,7 +1241,7 @@ function renderPagos() {
 }
 // Toque en la fila: marca pagado lo que falta; en una fila ya pagada, deshace ese pago (con ↩️ Deshacer)
 function togglePago(n) {
-  const p = pagoDe(n), f = falta(n), pp = porPagar(n);
+  const p = pagoDe(n), f = falta(n), pp = porPagar(n), antes = JSON.stringify([S.pagos, S.deudas]);
   if (!f && !S.pagos[n]) return toast("🏟️ Primero escribe el costo de la cancha");
   if (!f || (!pp && p)) return desmarcarPago(n);
   if (!pp) { // la cuota la cubre su saldo a favor: solo si pagó igual en efectivo
@@ -1220,17 +1250,35 @@ function togglePago(n) {
   } else S.pagos[n] = Object.assign({ monto: p + pp, fecha: hoyISO() }, p ? { previo: p } : {});
   // Pagar la cuota de hoy no borra solo la deuda anterior: se pregunta
   if (debe(n) && confirm(saldo(n) > 0 ? `${n} también debe ${deudaLarga(n)} de fechas anteriores. ¿Pagó eso también?` : `${n} también tiene una deuda anterior sin monto. ¿La pagó también?`)) {
-    saldarDeuda(n); toast(`✅ ${n} quedó al día` + (aFavor(n) ? ` · 💚 conserva ${plata(aFavor(n))} a favor` : ""));
+    // Lo que debía queda guardado en su pago: ↩️ Deshacer o desmarcar el pago se lo devuelven a la libreta
+    const debia = movs(n).slice();
+    saldarDeuda(n);
+    S.pagos[n].libreta = { antes: debia, despues: movs(n).slice() };
+    save(); renderPagos();
+    conDeshacer(`✅ ${n} quedó al día` + (aFavor(n) ? ` · 💚 conserva ${plata(aFavor(n))} a favor` : ""), huellaPagos,
+      () => { restaurarPagos(antes); toast(`↩️ ${n} quedó como antes` + (debe(n) ? `: debe ${deudaCorta(n)}` : "")); });
   }
+}
+const huellaPagos = () => JSON.stringify([S.pagos, S.deudas]);
+function restaurarPagos(f) { const [p, d] = JSON.parse(f); S.pagos = dic(p); S.deudas = dic(d); save(); renderTab(); }
+// Devuelve a la libreta la deuda anterior que se dio por pagada junto con la cuota (sin tocar lo anotado después)
+function devolverLibreta(n, lib) {
+  const quedan = lib.despues.map((e) => JSON.stringify(e));
+  const borradas = lib.antes.filter((e) => { const i = quedan.indexOf(JSON.stringify(e)); if (i < 0) return true; quedan.splice(i, 1); return false; });
+  if (!borradas.length) return;
+  if (JSON.stringify(movs(n)) === JSON.stringify(lib.despues)) return void (S.deudas[n] = lib.antes); // nada nuevo: tal cual estaba
+  S.deudas[n] = borradas.concat(movs(n)).sort((a, b) => (a.fecha || "").localeCompare(b.fecha || ""));
+  limpiar(n);
 }
 function desmarcarPago(n) {
   const r = S.pagos[n], p = pagoDe(n), d = deuda(n);
   if (p > d && !confirm(`${n} pagó ${plata(p)} y la cuota es ${plata(d)}. ¿Borrar su pago?`)) return;
-  const antes = JSON.stringify(S.pagos);
+  const antes = JSON.stringify([S.pagos, S.deudas]);
   if (r.previo > 0) S.pagos[n] = { monto: r.previo, fecha: r.fecha }; else delete S.pagos[n];
+  if (r.libreta) devolverLibreta(n, r.libreta);
   save(); renderPagos();
-  conDeshacer(r.previo > 0 ? `↩️ ${n} vuelve a "pagó ${plata(r.previo)}"` : `⏳ ${n} quedó sin pagar`, () => JSON.stringify(S.pagos),
-    () => { S.pagos = dic(JSON.parse(antes)); save(); renderTab(); });
+  conDeshacer((r.previo > 0 ? `↩️ ${n} vuelve a "pagó ${plata(r.previo)}"` : `⏳ ${n} quedó sin pagar`) + (r.libreta && debe(n) ? ` · ⚠️ vuelve a deber ${deudaCorta(n)}` : ""),
+    huellaPagos, () => restaurarPagos(antes));
 }
 let toquePago = { n: "", t: 0 };
 $("pagos").addEventListener("click", (e) => {
@@ -1374,9 +1422,12 @@ $("mAnotar").addEventListener("click", () => {
   if (!n) return toast("Escribe el nombre de quien debe ✍️");
   if (!m) return toast("Escribe el monto 💵");
   n = S.caseros.concat(S.inscritos, Object.keys(S.deudas)).find((x) => x.toLowerCase() === n.toLowerCase()) || n;
+  const antes = JSON.stringify(S.deudas);
   anotar(n, { fecha: hoyISO(), concepto: $("mConcepto").value.trim() || "Anotada a mano", monto: m });
   ["mNombre", "mMonto", "mConcepto"].forEach((id) => ($(id).value = ""));
-  save(); renderPagos(); toast(debe(n) ? `📒 Anotado: ${n} debe ${deudaCorta(n)}` : `📒 Anotado: se descontó del saldo a favor de ${n}`);
+  save(); renderPagos();
+  conDeshacer(debe(n) ? `📒 Anotado: ${n} debe ${deudaCorta(n)}` : `📒 Anotado: se descontó del saldo a favor de ${n}`, huellaLibreta,
+    () => { S.deudas = dic(JSON.parse(antes)); save(); renderTab(); toast(`↩️ Deuda de ${n} borrada`); });
 });
 
 $("waCobrar").addEventListener("click", () => {
@@ -1468,10 +1519,15 @@ $("guardarPartido").addEventListener("click", () => {
   const act = partidoActual();
   if (estadoPartido() === "nuevo" && !act.golesA && !act.golesB && !act.mvp && !act.goleador && !act.rustico &&
     !confirm(`¿Guardar un 0–0 sin premios del ${fechaCorta(act.fecha)}?`)) return;
+  const antes = JSON.stringify({ historial: S.historial, post: S.post }), mv = new Date(mesVista);
   const r = guardarPartido(); if (!r) return;
   renderPost();
   const { p } = r, res = p.golesA === p.golesB ? "🤝 ¡Empate!" : `🏆 ¡Ganó el Equipo ${p.golesA > p.golesB ? "A" : "B"}!`;
-  toast(r.accion === "guardado" ? `${res} Partido guardado` : `✏️ Partido actualizado: ${p.golesA}–${p.golesB}`);
+  conDeshacer(r.accion === "guardado" ? `${res} Partido guardado` : `✏️ Partido actualizado: ${p.golesA}–${p.golesB}`,
+    () => JSON.stringify([S.historial, S.post, S.equipos, S.inscritos, S.fecha]), () => {
+      const a = JSON.parse(antes); S.historial = a.historial; S.post = a.post; mesVista = mv;
+      save(); renderTab(); toast(r.accion === "guardado" ? "↩️ Partido sin guardar" : "↩️ Partido como estaba");
+    });
 });
 $("mesAnt").addEventListener("click", () => { mesVista.setMonth(mesVista.getMonth() - 1); renderPost(); });
 $("mesSig").addEventListener("click", () => { mesVista.setMonth(mesVista.getMonth() + 1); renderPost(); });
@@ -1495,7 +1551,7 @@ function renderPost() {
   const fuera = AWARDS.map(([, k]) => k).filter((k) => S.post[k] && !enCancha().includes(S.post[k]));
   if (fuera.length) {
     const quienes = [...new Set(fuera.map((k) => S.post[k]))];
-    fuera.forEach((k) => (S.post[k] = "")); save();
+    fuera.forEach((k) => (S.post[k] = "")); save(); sigueDeshacer();
     toast(`🗑️ Premio borrado: ${quienes.join(", ")} ya no está en la cancha`);
   }
   const opts = `<option value="">— Elegir —</option>` + titulares().map((n) => `<option>${esc(n)}</option>`).join("");

@@ -1,6 +1,6 @@
 // Modo sin conexión: la app se sirve desde la caché si no hay internet,
 // y se actualiza sola cuando hay conexión.
-const CACHE = "pichanga-v3";
+const CACHE = "pichanga-v4";
 const APP = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 const ESPERA_RED = 3000; // con señal débil, pasados 3 s se abre la copia guardada
 
