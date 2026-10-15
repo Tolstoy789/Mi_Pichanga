@@ -37,8 +37,9 @@
   .card { background: var(--card); border-radius: 18px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 0 rgba(0,0,0,.18); }
   .card h2 { margin: 0 0 10px; font-size: 18px; }
   label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
-  input, select { width: 100%; font: inherit; padding: 11px 12px; border: 2px solid var(--line); border-radius: 12px; background: #fafcfd; color: var(--ink); }
-  input:focus, select:focus { outline: none; border-color: var(--sky2); }
+  input, select, textarea { width: 100%; font: inherit; padding: 11px 12px; border: 2px solid var(--line); border-radius: 12px; background: #fafcfd; color: var(--ink); }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--sky2); }
+  textarea { min-height: 150px; resize: vertical; font-size: 16px; line-height: 1.35; }
   input[type=date], input[type=time] { padding-left: 10px; padding-right: 8px; min-height: 48px; }
   .row { display: flex; gap: 8px; align-items: center; }
   .row > * { flex: 1; min-width: 0; }
@@ -112,6 +113,8 @@
   .mini { list-style: none; margin: 4px 0 0; padding: 0; font-size: 14px; }
   .mini li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
   .mini li:last-child { border-bottom: 0; }
+  .mini.cobro1 li { align-items: center; }
+  .mini.cobro1 .btn.small { min-height: 44px; flex: none; }
   .check { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 6px 0 0; color: var(--ink); font-size: 15px; font-weight: 800; cursor: pointer; }
   .check input { width: 24px; height: 24px; flex: none; accent-color: var(--grass); }
 
@@ -290,6 +293,7 @@
         <input id="nuevo" placeholder="Nombre del jugador" style="flex:3" autocomplete="off" autocapitalize="words" maxlength="30" enterkeyhint="done">
         <button class="btn" id="agregar" style="flex:1" aria-label="Agregar jugador">+</button>
       </div>
+      <div class="lbl-row" style="justify-content:flex-end"><button type="button" class="linkbtn" id="pegarLista">📋 Pegar lista de WhatsApp</button></div>
       <div class="aviso" id="avisoSuben" hidden><span id="avisoSubenTxt"></span><button class="btn small green" id="avisarSuben">📲 Avisar</button><button class="x" id="cerrarSuben" aria-label="Cerrar aviso">✖</button></div>
       <button class="btn ghost" id="mismaLista" style="width:100%;margin-top:10px" hidden>🔁 Misma lista que la semana pasada</button>
       <div class="lbl-row"><label id="caserosLbl">🏠 Caseros (toca para sumar)</label><button type="button" class="linkbtn" id="editarCaseros" aria-pressed="false">✏️ Editar</button></div>
@@ -399,6 +403,11 @@
         <p style="margin:0 0 6px;font-size:13px;color:var(--muted)">⚽ = entró a jugar (paga cancha) · 🍻 = se queda al tercer tiempo.</p>
         <ul class="list pay" id="pagosSup"></ul>
       </div>
+      <div class="subs bajas" id="pagosBajaBox" hidden>
+        <h2 style="margin:8px 0 2px;font-size:16px">✖ Se bajaron</h2>
+        <p style="margin:0 0 6px;font-size:13px;color:var(--muted)">💸 = se bajó y paga igual su parte de la cancha (así a los demás no les sube la cuota).</p>
+        <ul class="list pay" id="pagosBaja"></ul>
+      </div>
     </div>
 
     <div class="card">
@@ -417,6 +426,7 @@
       </details>
     </div>
     <button class="btn green block" id="waCobrar">💬 Cobrar por WhatsApp</button>
+    <button class="btn ghost block" id="waUno" style="margin-top:12px">📱 Cobrar uno por uno</button>
     <button class="btn ghost block" data-cerrar style="margin-top:12px">🏁 Cerrar pichanga</button>
   </section>
   <!-- PANTALLA 4 -->
@@ -490,7 +500,8 @@ const COLORS = {
   "🟠 Naranjo": ["#ff7a00", "#ffffff"],
 };
 const KEY = "pichanga-v1";
-const SCHEMA = 4;           // versión de la forma de los datos (ver migrar). v3: pagos[n].libreta. v4: promovidos, jugo, post.fecha, 🍻 de suplentes
+const SCHEMA = 5;           // versión de la forma de los datos (ver migrar). v3: pagos[n].libreta. v4: promovidos, jugo, post.fecha, 🍻 de suplentes.
+                            // v5: arqueros, telefonos, bajas y pagaIgual
 const KEY_QR = KEY + "-qr"; // el QR (imagen pesada) se guarda aparte: si no cabe, el resto de los datos igual se guarda
 const $ = (id) => document.getElementById(id);
 
@@ -503,8 +514,10 @@ const defaults = () => ({
   v: SCHEMA,
   fecha: "", hora: "20:00", lugar: "", porLado: 7,
   inscritos: [],            // orden de llegada; los primeros 2*porLado son titulares
-  caseros: ["Carlos", "Seba", "Nico", "Mati", "Mako"],
+  caseros: [],              // se suman solos al inscribir a alguien (sin nombres de ejemplo)
   niveles: dic(),           // nombre -> 1..5
+  arqueros: dic(),          // nombre -> true si juega de arquero (🧤): al armar queda uno en cada equipo
+  telefonos: dic(),         // nombre -> teléfono (opcional) para escribirle directo por WhatsApp
   equipos: { A: [], B: [] },
   colorA: "⚫ Negro", colorB: "🟢 Peto Flúor",
   banco: { nombre: "", rut: "", banco: "", tipo: "", cuenta: "", mail: "", link: "", qr: "" },
@@ -513,6 +526,8 @@ const defaults = () => ({
                             //   libreta = { antes, despues }: su deuda anterior, que pagó junto con la cuota, para poder devolverla)
   tercer: dic(),            // nombre -> true si se queda al 🍻 (titular o suplente)
   jugo: dic(),              // suplente -> true si entró a jugar (paga cancha)
+  bajas: [],                // titulares que se bajaron de esta pichanga (orden en que se bajaron)
+  pagaIgual: dic(),         // de ellos, quienes pagan igual su parte de la cancha (💸)
   promovidos: [],           // suplentes que subieron a titular y falta avisarles (📲 Avisar)
   ultimoRespaldo: "",       // fecha ISO del último ⬇️ Guardar respaldo
   deudas: dic(),            // libreta: nombre -> [{ fecha, concepto, monto }] (monto > 0 debe, < 0 abono o a favor, null = sin monto)
@@ -545,6 +560,10 @@ function migrar(o) {
   S.caseros = nombres(S.caseros, d.caseros);
   S.ultimaLista = nombres(S.ultimaLista);
   S.niveles = obj(S.niveles);
+  S.arqueros = obj(S.arqueros);
+  Object.keys(S.arqueros).forEach((n) => { if (S.arqueros[n] === true && n.trim()) return; delete S.arqueros[n]; });
+  S.telefonos = obj(S.telefonos);
+  Object.keys(S.telefonos).forEach((n) => { const t = telLimpio(S.telefonos[n]); if (t && n.trim()) S.telefonos[n] = t; else delete S.telefonos[n]; });
   const eq = obj(S.equipos);
   S.equipos = { A: nombres(eq.A), B: nombres(eq.B) };
   const b = obj(S.banco); S.banco = d.banco;
@@ -617,6 +636,9 @@ function migrar(o) {
   Object.keys(S.tercer).forEach((n) => { if (S.tercer[n] && conBeer.includes(n)) S.tercer[n] = true; else delete S.tercer[n]; });
   Object.keys(S.jugo).forEach((n) => { if (S.jugo[n] && S.inscritos.includes(n)) S.jugo[n] = true; else delete S.jugo[n]; });
   S.promovidos = nombres(S.promovidos).filter((n) => t.includes(n));
+  S.bajas = nombres(S.bajas).filter((n) => !S.inscritos.includes(n));
+  S.pagaIgual = obj(S.pagaIgual);
+  Object.keys(S.pagaIgual).forEach((n) => { if (S.pagaIgual[n] === true && S.bajas.includes(n)) return; delete S.pagaIgual[n]; });
   delete S.morosos; delete S.pagado;
   S.v = SCHEMA;
   return S;
@@ -820,8 +842,19 @@ function liberarPago(n, fecha) {
 }
 const tagDeuda = (n) => (debe(n) ? ` <span class="tag debt">⚠️ ${saldo(n) > 0 ? deudaCorta(n) : "debe"}</span>` : "");
 
-function openWhatsApp(text) {
-  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+// Teléfono como lo escribió la persona, sin letras ni símbolos raros ("+56 9 1234 5678")
+function telLimpio(v) { const t = String(v ?? "").replace(/[^\d+ ]/g, "").replace(/(?!^)\+/g, "").replace(/\s+/g, " ").trim(); return t.replace(/\D/g, "").length >= 8 ? t : ""; }
+// Número para wa.me: solo dígitos y con código de país (un celular chileno "9 1234 5678" queda 56912345678)
+function waNumero(t) {
+  const d = String(t ?? "").replace(/\D/g, "");
+  if (d.length === 9 && d[0] === "9") return "56" + d;
+  if (d.length === 8) return "569" + d;
+  return d.length >= 8 ? d : "";
+}
+// Con `quien`, si tiene teléfono guardado, el chat se abre directo con esa persona
+function openWhatsApp(text, quien) {
+  const num = quien ? waNumero(S.telefonos[quien]) : "";
+  window.open(`https://wa.me/${num}?text=` + encodeURIComponent(text), "_blank");
 }
 
 /* ---------- Navegación: Atrás vuelve a la pestaña anterior y, desde Convocatoria, sale ----------
@@ -925,6 +958,7 @@ function addPlayer(name, callado) {
   name = conocido(name);
   if (S.inscritos.some((n) => mismo(n, name))) { if (!callado) toast("Ya está inscrito 😉"); return false; }
   S.inscritos.push(name);
+  S.bajas = S.bajas.filter((n) => n !== name); delete S.pagaIgual[name]; // volvió: ya no es una baja
   if (!S.caseros.some((n) => mismo(n, name))) S.caseros.push(name);
   if (!callado) {
     const d = debe(name) ? `⚠️ ${name} debe ${deudaLarga(name)}` : "";
@@ -937,11 +971,11 @@ function addPlayer(name, callado) {
 // Suplentes que pasan a titular: quedan en el aviso "📲 Avisar" hasta que se les avise
 function promover(ns) { ns.forEach((n) => { delete S.jugo[n]; if (!S.promovidos.includes(n)) S.promovidos.push(n); }); }
 // Foto de lo que cambia al bajar a alguien, para poder deshacer
-const foto = () => JSON.stringify({ inscritos: S.inscritos, pagos: S.pagos, tercer: S.tercer, jugo: S.jugo, deudas: S.deudas, equipos: S.equipos, porLado: S.porLado, promovidos: S.promovidos });
-const huellaLista = () => JSON.stringify([S.inscritos, S.pagos, S.tercer, S.jugo, S.deudas, S.porLado]);
+const foto = () => JSON.stringify({ inscritos: S.inscritos, pagos: S.pagos, tercer: S.tercer, jugo: S.jugo, deudas: S.deudas, equipos: S.equipos, porLado: S.porLado, promovidos: S.promovidos, bajas: S.bajas, pagaIgual: S.pagaIgual, caseros: S.caseros });
+const huellaLista = () => JSON.stringify([S.inscritos, S.pagos, S.tercer, S.jugo, S.deudas, S.porLado, S.bajas, S.pagaIgual]);
 function restaurar(f) {
   const r = JSON.parse(f);
-  Object.assign(S, r, { pagos: dic(r.pagos), tercer: dic(r.tercer), jugo: dic(r.jugo), deudas: dic(r.deudas) });
+  Object.assign(S, r, { pagos: dic(r.pagos), tercer: dic(r.tercer), jugo: dic(r.jugo), deudas: dic(r.deudas), pagaIgual: dic(r.pagaIgual) });
   save(); renderTab();
 }
 let ultimaBaja = 0;
@@ -953,6 +987,7 @@ function removePlayer(name) {
   delete S.jugo[name];
   S.inscritos.splice(idx, 1);
   S.promovidos = S.promovidos.filter((n) => n !== name);
+  if (eraTitular && !S.bajas.includes(name)) S.bajas.push(name);
   let msg = `✖ ${name} se bajó`;
   if (eraTitular && S.inscritos.length >= cupo()) {
     const sube = S.inscritos[cupo() - 1];
@@ -960,6 +995,7 @@ function removePlayer(name) {
     promover([sube]);
   }
   if (favor) msg += ` · 💚 su pago de ${plata(favor)} queda a favor`;
+  if (eraTitular && costo("costoCancha")) msg += ` · 💸 Si paga igual, márcalo en Pagos`;
   ultimaBaja = Date.now();
   save(); renderConvocatoria();
   // Si después se tocan los equipos a mano, eso es otra acción y este ↩️ ya no está (ver save):
@@ -1007,7 +1043,7 @@ function renderConvocatoria() {
   // Tocar el nombre permite corregirlo (sin perder su lugar, pagos, nivel ni deudas)
   const li = (n, i) => `<li><span class="num">${i}.</span><button type="button" class="name ren" data-ren="${esc(n)}" title="Cambiar nombre">🏃 ${esc(n)}${
     suben.includes(n) ? ` <span class="tag sube">🔼 subió</span>` : ""}${tagDeuda(n)}</button><button class="x" data-del="${esc(n)}" aria-label="Bajar a ${esc(n)}">✖</button></li>`;
-  $("titulares").innerHTML = t.length ? t.map((n, i) => li(n, i + 1)).join("") : `<li class="empty">Nadie inscrito todavía. ¡Suma a los caseros! 👇👆</li>`;
+  $("titulares").innerHTML = t.length ? t.map((n, i) => li(n, i + 1)).join("") : `<li class="empty">Nadie inscrito todavía. ${S.caseros.length ? "¡Suma a los caseros! 👆" : "Escribe un nombre o pega la lista del grupo 📋"}</li>`;
   $("suplentes").innerHTML = s.length ? s.map((n, i) => li(n, i + 1)).join("") : `<li class="empty">Sin suplentes</li>`;
   $("caseros").classList.toggle("editando", editandoCaseros);
   $("caseros").innerHTML = S.caseros.map((n) => {
@@ -1046,17 +1082,68 @@ $("avisarSuben").addEventListener("click", () => {
   const ns = S.promovidos.filter((n) => titulares().includes(n)); if (!ns.length) return;
   const varios = ns.length > 1;
   openWhatsApp(`🔼 ¡${lista(ns.map(waSafe))}, ${varios ? "quedaron de titulares" : "quedaste de titular"} para la pichanga! ⚽\n\n` +
-    `📅 ${fechaBonita()}\n⏰ ${horaTxt()}\n📍 ${waSafe(lugar() || "Por definir")}\n\n¿${varios ? "Confirman" : "Confirmas"}? 👍`);
+    `📅 ${fechaBonita()}\n⏰ ${horaTxt()}\n📍 ${waSafe(lugar() || "Por definir")}\n\n¿${varios ? "Confirman" : "Confirmas"}? 👍`, varios ? null : ns[0]);
   S.promovidos = []; save(); renderConvocatoria();
 });
 $("cerrarSuben").addEventListener("click", () => { S.promovidos = []; save(); renderConvocatoria(); });
 
+/* 📋 Pegar la lista del grupo: "1. Carlos", "2) Seba ✅", "- Nico" o "Carlos, Seba y Nico" */
+function leerLista(txt) {
+  let ls = String(txt ?? "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (ls.length === 1 && /,| y /.test(ls[0])) ls = ls[0].split(/\s*,\s*|\s+y\s+/);
+  const item = /^(?:\d{1,2}\s*[.)\-:°º]+\s*|[•·\-–▪◦]+\s+)(.*)$/u; // (* no es viñeta: en WhatsApp es negrita)
+  const conMarca = ls.filter((l) => item.test(l));
+  // Si la lista viene numerada (como la que manda la app), se ignoran los títulos y avisos que la rodean
+  const crudos = conMarca.length ? conMarca.map((l) => l.match(item)[1]) : ls.filter((l) => !/:/.test(l));
+  const vistos = new Set(), out = [];
+  crudos.forEach((r) => {
+    if (/nadie a[uú]n|^\(?libre\)?$|^\(?cupo\)?$/i.test(r)) return;
+    const n = limpiarNombre(r.replace(/[*_~`]/g, "").replace(/\((?:confirmad[oa]|ok|va|voy)\)/gi, "")
+      .replace(/^[^\p{L}\p{N}]+/u, "").replace(/[^\p{L}\p{N}.)]+$/u, "")).slice(0, 30).trim();
+    if (!nombreValido(n) || !/\p{L}/u.test(n) || vistos.has(clave(n))) return;
+    vistos.add(clave(n)); out.push(n);
+  });
+  return out;
+}
+$("pegarLista").addEventListener("click", () => {
+  sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>📋 Pegar lista</h2>
+    <p class="sub">Copia la lista del grupo de WhatsApp ("1. Carlos, 2. Seba…") y pégala aquí. Se inscriben en ese orden.</p>
+    <textarea id="plTxt" placeholder="1. Carlos&#10;2. Seba&#10;3. Nico" autocapitalize="words"></textarea>
+    <button class="btn ghost block" id="plPegar" hidden>📋 Pegar lo copiado</button>
+    <p class="sub" id="plNota" style="margin-top:8px"></p>
+    <button class="btn green block" id="plOk" disabled>✅ Inscribir</button>
+    <button class="btn ghost block" data-cerrar-sheet>Cancelar</button>`);
+  const nuevos = () => leerLista($("plTxt").value).map(conocido).filter((n) => !S.inscritos.some((x) => mismo(x, n)));
+  const vista = () => {
+    const todos = leerLista($("plTxt").value), ns = nuevos(), ya = todos.length - ns.length;
+    const libres = Math.max(0, cupo() - S.inscritos.length), sup = Math.max(0, ns.length - libres);
+    $("plOk").disabled = !ns.length;
+    $("plOk").textContent = ns.length ? `✅ Inscribir ${ns.length === 1 ? "a 1 jugador" : ns.length + " jugadores"}` : "✅ Inscribir";
+    $("plNota").textContent = !todos.length ? "" : (ns.length ? `🏃 ${lista(ns)}` : "Todos ya están inscritos") +
+      (ya && ns.length ? ` · ${plural(ya, "ya estaba", "ya estaban")}` : "") + (sup ? ` · ⏳ ${plural(sup, "queda de suplente", "quedan de suplentes")}` : "");
+  };
+  $("plTxt").addEventListener("input", vista);
+  if (navigator.clipboard && navigator.clipboard.readText) {
+    $("plPegar").hidden = false;
+    $("plPegar").addEventListener("click", async () => {
+      try { $("plTxt").value = await navigator.clipboard.readText(); vista(); } catch { toast("Mantén presionado el cuadro y elige Pegar"); $("plTxt").focus(); }
+    });
+  }
+  $("plOk").addEventListener("click", () => {
+    const ns = nuevos(); if (!ns.length) return;
+    const antes = foto(), sumados = ns.filter((n) => addPlayer(n, true)), sup = sumados.filter((n) => suplentes().includes(n)), conDeuda = sumados.filter(debe);
+    cerrarSheet();
+    conDeshacer(`📋 ${plural(sumados.length, "inscrito", "inscritos")}` + (sup.length ? ` · ⏳ ${sup.length} de suplente${sup.length > 1 ? "s" : ""}` : "") + (conDeuda.length ? ` · ⚠️ ${conDeuda.length} con deuda` : ""),
+      huellaLista, () => { restaurar(antes); toast("↩️ Lista como estaba"); });
+  });
+});
+
 /* Renombrar a un jugador o quitarlo de los caseros */
 function renombrar(viejo, nuevo) {
   const uniq = (a) => [...new Set(a.map((n) => (n === viejo ? nuevo : n)))];
-  ["inscritos", "caseros", "ultimaLista", "promovidos"].forEach((k) => (S[k] = uniq(S[k])));
+  ["inscritos", "caseros", "ultimaLista", "promovidos", "bajas"].forEach((k) => (S[k] = uniq(S[k])));
   S.equipos = { A: uniq(S.equipos.A), B: uniq(S.equipos.B) };
-  [S.niveles, S.pagos, S.tercer, S.jugo].forEach((o) => { if (tiene(o, viejo)) { if (!tiene(o, nuevo)) o[nuevo] = o[viejo]; delete o[viejo]; } });
+  [S.niveles, S.pagos, S.tercer, S.jugo, S.arqueros, S.telefonos, S.pagaIgual].forEach((o) => { if (tiene(o, viejo)) { if (!tiene(o, nuevo)) o[nuevo] = o[viejo]; delete o[viejo]; } });
   if (tiene(S.deudas, viejo)) {
     S.deudas[nuevo] = S.deudas[nuevo] ? S.deudas[nuevo].concat(S.deudas[viejo]).sort((a, b) => (a.fecha || "").localeCompare(b.fecha || "")) : S.deudas[viejo];
     delete S.deudas[viejo]; limpiar(nuevo);
@@ -1071,19 +1158,29 @@ function abrirRenombrar(n) {
     <p class="sub">Corrige el nombre sin perder su lugar en la lista, su nivel, sus pagos, sus deudas ni su historial.</p>
     <label for="rNombre">Nombre</label>
     <input id="rNombre" value="${esc(n)}" maxlength="30" autocomplete="off" autocapitalize="words" enterkeyhint="done">
-    <button class="btn block" id="rOk">💾 Guardar nombre</button>
+    <label for="rTel">📱 Teléfono (opcional, para escribirle directo)</label>
+    <input id="rTel" type="tel" inputmode="tel" value="${esc(S.telefonos[n] || "")}" placeholder="+56 9 1234 5678" autocomplete="off" maxlength="20">
+    <label class="check"><input type="checkbox" id="rArq" ${S.arqueros[n] ? "checked" : ""}> 🧤 Juega de arquero</label>
+    <button class="btn block" id="rOk">💾 Guardar</button>
     ${esCasero ? `<button class="btn ghost block" id="rQuitar">🗑️ Quitar de los caseros</button>
     <p class="sub" style="margin-top:6px">${inscrito ? "Sigue inscrito en esta pichanga: solo deja de aparecer como casero." : "Sus deudas y su historial no se borran."}</p>` : ""}
     <button class="btn ghost block" data-cerrar-sheet>Cancelar</button>`);
   const guardar = () => {
-    const nuevo = limpiarNombre($("rNombre").value);
+    const nuevo = limpiarNombre($("rNombre").value), tel = telLimpio($("rTel").value), arq = $("rArq").checked;
     if (!nombreValido(nuevo)) return toast("✍️ Escribe un nombre");
-    if (nuevo === n) return cerrarSheet();
+    if ($("rTel").value.trim() && !tel) return toast("📱 Ese teléfono parece incompleto");
+    // Teléfono y 🧤 se guardan con el nombre de antes; si cambia el nombre, renombrar los lleva al nuevo
+    const extras = () => { if (tel) S.telefonos[n] = tel; else delete S.telefonos[n]; if (arq) S.arqueros[n] = true; else delete S.arqueros[n]; };
+    if (nuevo === n) {
+      const antes = JSON.stringify([S.telefonos, S.arqueros]); extras();
+      if (JSON.stringify([S.telefonos, S.arqueros]) !== antes) { save(); renderTab(); toast(`💾 Datos de ${n} guardados`); }
+      return cerrarSheet();
+    }
     const otro = conocidos().find((x) => x !== n && mismo(x, nuevo));
     if (otro && S.inscritos.includes(otro) && inscrito) return toast(`⚠️ ${otro} ya está inscrito`);
     if (otro && !confirm(`Ya existe "${otro}". ¿Es la misma persona? Se juntan sus deudas, su nivel y su historial como "${otro}".`)) return;
     const final = otro || nuevo, antes = serial();
-    renombrar(n, final); save(); cerrarSheet(); renderTab();
+    extras(); renombrar(n, final); save(); cerrarSheet(); renderTab();
     conDeshacer(otro ? `🤝 ${n} unido con ${final}` : `✏️ ${n} ahora es ${final}`, serial, () => {
       const qr = S.banco.qr; S = migrar(JSON.parse(antes)); S.banco.qr = qr; save(); cargarCampos(); renderTab(); toast("↩️ Nombre como estaba");
     });
@@ -1227,13 +1324,25 @@ const dobleArmar = () => { if (Date.now() - toqueArmar < 450) return true; toque
 $("azar").addEventListener("click", () => {
   if (dobleArmar()) return;
   if (!titulares().length) return toast("Primero inscribe jugadores 🏃");
-  const antes = JSON.stringify(S.equipos), t = shuffle(titulares()), h = Math.ceil(t.length / 2);
-  S.equipos = { A: t.slice(0, h), B: t.slice(h) }; save(); renderEquipos(); equiposConDeshacer("🎲 ¡Equipos mezclados!", antes);
+  const antes = JSON.stringify(S.equipos), [ga, gb] = arquerosDe(titulares()), resto = shuffle(titulares().filter((n) => n !== ga && n !== gb));
+  const A = ga ? [ga] : [], B = gb ? [gb] : [], h = Math.ceil(titulares().length / 2);
+  resto.forEach((n) => (A.length < h ? A : B).push(n));
+  // Sin arquero fijo, el arco de ese equipo se sortea entre sus jugadores
+  S.equipos = { A: ga ? A : shuffle(A), B: gb ? B : shuffle(B) }; save(); renderEquipos();
+  equiposConDeshacer("🎲 ¡Equipos mezclados!" + textoArqueros(ga, gb), antes);
 });
+// 🧤 Arqueros fijos entre los titulares: hasta dos, uno por equipo (si hay más, se sortean). [A, B]
+function arquerosDe(ns) {
+  const g = shuffle(ns.filter((n) => S.arqueros[n])).slice(0, 2);
+  return Math.random() < 0.5 ? [g[0], g[1]] : [g[1], g[0]];
+}
+const textoArqueros = (ga, gb) => (ga && gb ? ` · 🧤 ${ga} y ${gb} al arco` : ga || gb ? ` · 🧤 ${ga || gb} al arco` : "");
 // Reparto exacto de menor diferencia: R[i][k] = sumas posibles eligiendo k de los primeros i jugadores.
 // Entre los repartos óptimos se elige uno al azar, así cada toque puede dar equipos distintos.
-function repartoParejo(names) {
-  const t = shuffle(names), n = t.length, k = Math.ceil(n / 2), lv = t.map(nivel), total = lv.reduce((a, b) => a + b, 0);
+// Los arqueros fijos (ga, gb) ya tienen equipo: se reparte al resto contando su nivel.
+function repartoParejo(names, ga, gb) {
+  const fijos = (ga ? nivel(ga) : 0) - (gb ? nivel(gb) : 0), cupoA = Math.ceil(names.length / 2) - (ga ? 1 : 0);
+  const t = shuffle(names.filter((x) => x !== ga && x !== gb)), n = t.length, k = Math.max(0, Math.min(n, cupoA)), lv = t.map(nivel), total = lv.reduce((a, b) => a + b, 0) - fijos;
   const R = [[new Set([0])]];
   for (let i = 1; i <= n; i++) {
     R[i] = [];
@@ -1251,16 +1360,16 @@ function repartoParejo(names) {
     const sinEl = R[i - 1][j] && R[i - 1][j].has(s), conEl = j > 0 && R[i - 1][j - 1].has(s - lv[i - 1]);
     if (conEl && (!sinEl || Math.random() < 0.5)) { A.push(t[i - 1]); s -= lv[i - 1]; j--; } else B.push(t[i - 1]);
   }
-  // Orden al azar dentro de cada equipo: el arco (índice 0) no depende del nivel
-  return { A: shuffle(A), B: shuffle(B) };
+  // Orden al azar dentro de cada equipo: el arco (índice 0) no depende del nivel (salvo un 🧤 fijo)
+  return { A: ga ? [ga].concat(shuffle(A)) : shuffle(A), B: gb ? [gb].concat(shuffle(B)) : shuffle(B) };
 }
 $("equilibrar").addEventListener("click", () => {
   if (dobleArmar()) return;
   if (!titulares().length) return toast("Primero inscribe jugadores 🏃");
-  const antes = JSON.stringify(S.equipos);
-  S.equipos = repartoParejo(titulares()); save(); renderEquipos();
+  const antes = JSON.stringify(S.equipos), [ga, gb] = arquerosDe(titulares());
+  S.equipos = repartoParejo(titulares(), ga, gb); save(); renderEquipos();
   const d = Math.abs(suma(S.equipos.A) - suma(S.equipos.B));
-  equiposConDeshacer(d <= 1 ? "⚖️ Equipos parejos armados · 🧤 arqueros al azar" : `⚖️ Lo más parejo posible (diferencia ${d}) · 🧤 arqueros al azar`, antes);
+  equiposConDeshacer((d <= 1 ? "⚖️ Equipos parejos armados" : `⚖️ Lo más parejo posible (diferencia ${d})`) + (ga || gb ? textoArqueros(ga, gb) : " · 🧤 arqueros al azar"), antes);
 });
 
 // Coordenadas en pantalla de cada jugador: A arriba, B abajo (espejado). `ancho`: lo que puede ocupar su nombre (% del ancho)
@@ -1322,7 +1431,7 @@ function renderEquipos() {
   const s = suplentes();
   $("bench").innerHTML = `<span class="tag">🪑 BANCA</span>` + (s.length ? s.map((n) => `<span class="b">${esc(n)}</span>`).join("") : `<span style="opacity:.7">Sin suplentes</span>`);
   // Niveles de todos los conocidos: titulares, suplentes y caseros que no vienen esta vez
-  const fila = (n, tag) => `<li><span class="name">${esc(n)}${tag}</span><span class="seg">${
+  const fila = (n, tag) => `<li><span class="name">${esc(n)}${tag}</span><button class="beer gk ${S.arqueros[n] ? "on" : ""}" data-arq="${esc(n)}" aria-pressed="${!!S.arqueros[n]}" aria-label="${esc(n)} juega de arquero">🧤</button><span class="seg">${
     [1, 2, 3, 4, 5].map((k) => `<button data-lvl="${k}" data-n="${esc(n)}" class="${k === nivel(n) ? "on" : ""}" aria-label="${esc(n)}: nivel ${k}">${k}</button>`).join("")
   }</span></li>`;
   const otros = S.caseros.filter((n) => !S.inscritos.includes(n));
@@ -1331,6 +1440,12 @@ function renderEquipos() {
     + otros.map((n) => fila(n, ` <span class="tag cas">🏠 casero</span>`)).join("") || `<li class="empty">Sin jugadores</li>`;
 }
 $("niveles").addEventListener("click", (e) => {
+  const g = e.target.closest("[data-arq]");
+  if (g) {
+    const n = g.dataset.arq; if (S.arqueros[n]) delete S.arqueros[n]; else S.arqueros[n] = true;
+    save(); renderEquipos();
+    return toast(S.arqueros[n] ? `🧤 ${n} es arquero: al armar los equipos va al arco` : `🧤 ${n} ya no va fijo al arco`);
+  }
   const b = e.target.closest("[data-lvl]"); if (!b) return;
   S.niveles[b.dataset.n] = +b.dataset.lvl; save(); renderEquipos();
 });
@@ -1622,13 +1737,16 @@ $("copiarBanco").addEventListener("click", async () => {
 ["costoCancha", "costoTercer"].forEach((k) => campoPlata($(k), (v) => { S[k] = v; saveLuego(); renderPagos(); }));
 const costo = (k) => +S[k] || 0;
 // Pagan cancha los titulares y los suplentes que entraron a jugar (⚽); el 🍻 lo pagan los que se quedan (titulares o suplentes)
+// Quien se bajó y "paga igual" (💸) también se cuenta para dividir la cancha: así los demás no pagan su parte
 const jugadores = () => titulares().concat(suplentes().filter((n) => S.jugo[n]));
+const pagaIgual = () => S.bajas.filter((n) => S.pagaIgual[n] && !S.inscritos.includes(n));
+const pagadores = () => jugadores().concat(pagaIgual());
 const quedan = () => S.inscritos.filter((n) => S.tercer[n]);
-const cobrados = () => { const j = jugadores(); return S.inscritos.filter((n) => j.includes(n) || S.tercer[n]); }; // tienen cuota hoy
+const cobrados = () => { const j = jugadores(); return S.inscritos.filter((n) => j.includes(n) || S.tercer[n]).concat(pagaIgual()); }; // tienen cuota hoy
 // Lo que le toca hoy: la cancha entre los que juegan y el 🍻 entre quienes se quedan, en pesos enteros
 // que suman exacto el total (las primeras de la lista pagan $1 más si no da justo; ver parte)
 const deuda = (n) => {
-  const j = jugadores(), q = quedan();
+  const j = pagadores(), q = quedan();
   return (j.includes(n) ? parte(costo("costoCancha"), j.length, j.indexOf(n)) : 0) + (S.tercer[n] ? parte(costo("costoTercer"), q.length, q.indexOf(n)) : 0);
 };
 // "Cancha por persona": $3.769 y, si no da justo, cuántos pagan $1 más para completar el total
@@ -1646,7 +1764,7 @@ const sinRepartir = () => (costo("costoTercer") > 0 && !quedan().length ? costo(
 
 function renderPagos() {
   const t = cobrados();
-  $("porCancha").innerHTML = cuotaTxt(costo("costoCancha"), jugadores().length);
+  $("porCancha").innerHTML = cuotaTxt(costo("costoCancha"), pagadores().length);
   $("porTercer").innerHTML = cuotaTxt(costo("costoTercer"), quedan().length);
   const sr = sinRepartir();
   $("avisoTercer").hidden = !sr;
@@ -1655,10 +1773,10 @@ function renderPagos() {
   const cub = t.reduce((s, n) => s + cubre(n), 0), pend = t.reduce((s, n) => s + porPagar(n), 0);
   $("recaudado").hidden = !total;
   $("recaudado").textContent = `💵 Recaudado ${plata(rec)} de ${plata(total)}` + (cub ? ` · 💚 ${plata(cub)} con saldo a favor` : "") + (pend ? ` · falta ${plata(pend)}` : " 🎉");
-  const fila = (n, i, sup) => {
+  const fila = (n, i, sup, baja) => {
     const d = deuda(n), p = pagoDe(n), f = falta(n), c = cubre(n), pp = f - c, cobra = t.includes(n);
     let cls = "pending", st;
-    if (sup && !cobra && !S.pagos[n]) { cls = ""; st = `<small>no paga</small>`; }
+    if ((sup || baja) && !cobra && !S.pagos[n]) { cls = ""; st = `<small>no paga</small>`; }
     else if (!d && !S.pagos[n]) st = `<small>sin costo</small>`;
     else if (!f) { cls = "paid"; st = "✅ PAGADO" + (p > d ? `<small>a favor ${plata(p - d)}</small>` : ""); }
     else if (!pp) { cls = "paid"; st = p ? `✅ PAGADO<small>+ 💚 ${plata(c)} a favor</small>` : `💚 CUBIERTO<small>con su saldo a favor</small>`; }
@@ -1666,10 +1784,11 @@ function renderPagos() {
     else st = (c ? `<small>💚 usa ${plata(c)} a favor</small>` : "") + `⏳ ${plata(pp)}`;
     const resto = aFavor(n) - c;
     const tag = debe(n) ? `<span class="tag debt">⚠️ ${saldo(n) > 0 ? "debe " + deudaCorta(n) : "deuda anterior"}</span>` : resto > 0 ? `<span class="tag favor">💚 ${plata(resto)} a favor</span>` : "";
-    return `<li class="${cls}${sup ? " sup" : ""}">
+    return `<li class="${cls}${sup || baja ? " sup" : ""}">
       <button class="pname" data-pay="${esc(n)}">${i + 1}. ${esc(n)}${tag ? "<br>" + tag : ""}</button>
       ${sup ? `<button class="beer ${S.jugo[n] ? "on" : ""}" data-jugo="${esc(n)}" aria-pressed="${!!S.jugo[n]}" aria-label="${esc(n)} entró a jugar (paga cancha)">⚽</button>` : ""}
-      <button class="beer ${S.tercer[n] ? "on" : ""}" data-beer="${esc(n)}" aria-pressed="${!!S.tercer[n]}" aria-label="${esc(n)} se queda al tercer tiempo">🍻</button>
+      ${baja ? `<button class="beer ${S.pagaIgual[n] ? "on" : ""}" data-igual="${esc(n)}" aria-pressed="${!!S.pagaIgual[n]}" aria-label="${esc(n)} se bajó y paga igual">💸</button>`
+        : `<button class="beer ${S.tercer[n] ? "on" : ""}" data-beer="${esc(n)}" aria-pressed="${!!S.tercer[n]}" aria-label="${esc(n)} se queda al tercer tiempo">🍻</button>`}
       <button class="state ${cls ? "" : "nada"}" data-pay="${esc(n)}">${st}</button>
     </li>`;
   };
@@ -1677,14 +1796,16 @@ function renderPagos() {
   const sp = suplentes();
   $("pagosSupBox").hidden = !sp.length;
   $("pagosSup").innerHTML = sp.map((n, i) => fila(n, i, true)).join("");
+  $("pagosBajaBox").hidden = !S.bajas.length;
+  $("pagosBaja").innerHTML = S.bajas.map((n, i) => fila(n, i, false, true)).join("");
   renderDeudas();
   renderBank();
 }
 // Toque en la fila: marca pagado lo que falta; en una fila ya pagada, deshace ese pago (con ↩️ Deshacer)
 function togglePago(n) {
   const p = pagoDe(n), f = falta(n), pp = porPagar(n), antes = JSON.stringify([S.pagos, S.deudas]);
-  if (!cobrados().includes(n) && !S.pagos[n]) return toast(`⏳ ${n} es suplente: marca ⚽ si entró a jugar o 🍻 si se queda al tercer tiempo`);
-  if (!f && !S.pagos[n]) return toast(S.tercer[n] && !costo("costoTercer") && !jugadores().includes(n) ? "🍻 Primero escribe el costo del tercer tiempo" : "🏟️ Primero escribe el costo de la cancha");
+  if (!cobrados().includes(n) && !S.pagos[n]) return toast(S.bajas.includes(n) ? `✖ ${n} se bajó: marca 💸 si paga igual su parte` : `⏳ ${n} es suplente: marca ⚽ si entró a jugar o 🍻 si se queda al tercer tiempo`);
+  if (!f && !S.pagos[n]) return toast(S.tercer[n] && !costo("costoTercer") && !pagadores().includes(n) ? "🍻 Primero escribe el costo del tercer tiempo" : "🏟️ Primero escribe el costo de la cancha");
   if (!f || (!pp && p)) return desmarcarPago(n);
   if (!pp) { // la cuota la cubre su saldo a favor: solo si pagó igual en efectivo
     if (!confirm(`💚 ${n} tiene la cuota cubierta con su saldo a favor (${plata(aFavor(n))}). ¿Pagó en efectivo igual? El saldo a favor le queda para la próxima.`)) return;
@@ -1723,8 +1844,8 @@ function desmarcarPago(n) {
     huellaPagos, () => restaurarPagos(antes));
 }
 let toquePago = { n: "", t: 0 };
-["pagos", "pagosSup"].forEach((id) => $(id).addEventListener("click", (e) => {
-  const p = e.target.closest("[data-pay]"), b = e.target.closest("[data-beer]"), j = e.target.closest("[data-jugo]");
+["pagos", "pagosSup", "pagosBaja"].forEach((id) => $(id).addEventListener("click", (e) => {
+  const p = e.target.closest("[data-pay]"), b = e.target.closest("[data-beer]"), j = e.target.closest("[data-jugo]"), g = e.target.closest("[data-igual]");
   if (p) {
     // Un doble toque no marca y desmarca (ni borra lo que ya había pagado)
     if (p.dataset.pay === toquePago.n && Date.now() - toquePago.t < 450) return;
@@ -1733,7 +1854,11 @@ let toquePago = { n: "", t: 0 };
   }
   if (b) { const n = b.dataset.beer; if (S.tercer[n]) delete S.tercer[n]; else S.tercer[n] = true; }
   if (j) { const n = j.dataset.jugo; if (S.jugo[n]) delete S.jugo[n]; else S.jugo[n] = true; }
-  if (p || b || j) { save(); renderPagos(); }
+  if (g) {
+    const n = g.dataset.igual; if (S.pagaIgual[n]) delete S.pagaIgual[n]; else S.pagaIgual[n] = true;
+    if (S.pagaIgual[n] && !costo("costoCancha")) toast("🏟️ Escribe el costo de la cancha para calcular su parte");
+  }
+  if (p || b || j || g) { save(); renderPagos(); }
 }));
 
 /* Libreta: ⚠️ Deudas pendientes */
@@ -1826,7 +1951,7 @@ function abrirSaldar(n) {
   };
   ["sFijar", "sMonto"].forEach((id) => { if ($(id)) campoPlata($(id), etiqueta); });
   etiqueta();
-  $("sRecordar").addEventListener("click", () => openWhatsApp(recordatorio(n)));
+  $("sRecordar").addEventListener("click", () => openWhatsApp(recordatorio(n), n));
   const hecho = (antes, msg) => {
     save(); cerrarSheet(); renderTab();
     conDeshacer(msg, huellaLibreta, () => { S.deudas = dic(JSON.parse(antes)); save(); renderTab(); });
@@ -1857,6 +1982,36 @@ function recordatorio(n) {
   if (saldo(n) < 0) msg += `\n\n💚 Tienes ${plata(aFavor(n))} a favor.`;
   const bt = bankText(); if (bt) msg += `\n\n*Datos para transferir:*\n${bt}`;
   return msg + `\n\n¡Gracias, crack! 🙌`;
+}
+// Cobro de la cuota de hoy para una sola persona (directo a su chat si tiene teléfono)
+function cobroIndividual(n) {
+  const j = pagadores().includes(n), cc = j ? parte(costo("costoCancha"), pagadores().length, pagadores().indexOf(n)) : 0, ct = deuda(n) - cc;
+  const det = [cc && `🏟️ Cancha: ${plata(cc)}`, ct && `🍻 Tercer tiempo: ${plata(ct)}`, pagoDe(n) && `✅ Ya pagaste: −${plata(pagoDe(n))}`, cubre(n) && `💚 Saldo a favor: −${plata(cubre(n))}`].filter(Boolean);
+  let msg = `Hola ${waSafe(n)} 👋 Te escribo por la pichanga del ${fechaBonita()} ⚽\n\n` + (S.bajas.includes(n) ? "Te bajaste, pero quedamos en que pagabas igual tu parte 🙏\n" : "") +
+    `*Te toca pagar ${plata(porPagar(n))}*` + (det.length > 1 ? `\n${det.join("\n")}` : "");
+  if (debe(n)) msg += `\n\n⚠️ Además tienes pendiente ${deudaLarga(n)} de fechas anteriores.`;
+  const bt = bankText(); if (bt) msg += `\n\n*Datos para transferir:*\n${bt}`;
+  if (S.banco.qr) msg += `\n\n📲 Si prefieres, te mando el QR.`;
+  return msg + `\n\n¡Gracias, crack! 🙌`;
+}
+// 📱 Cobrar uno por uno: un mensaje para cada uno (directo a su chat si tiene teléfono guardado)
+$("waUno").addEventListener("click", () => abrirCobroUno());
+function abrirCobroUno() {
+  const hoy = cobrados().filter((n) => porPagar(n) > 0), antes = deudores().filter((n) => !hoy.includes(n));
+  if (!hoy.length && !antes.length) return toast(!S.inscritos.length && !S.bajas.length ? "No hay jugadores inscritos 🏃" : !costo("costoCancha") && !costo("costoTercer") ? "🏟️ Primero escribe el costo de la cancha" : "🎉 ¡Todos pagaron!");
+  const fila = (n, monto, tipo) => `<li><span>${S.telefonos[n] ? "📱" : "👤"} ${esc(n)}<br><small style="color:var(--muted)">${monto}</small></span>
+    <button class="btn small green" data-uno="${esc(n)}" data-tipo="${tipo}">💬 Cobrar</button></li>`;
+  sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>📱 Cobrar uno por uno</h2>
+    <p class="sub">Cada mensaje lleva su monto y tus datos de pago. 📱 = tiene teléfono guardado: se abre su chat directo. Para guardarlo, toca su nombre en Convocatoria.</p>
+    <ul class="mini box cobro1">${hoy.map((n) => fila(n, `Hoy: ${plata(porPagar(n))}` + (debe(n) ? ` · ⚠️ debe ${deudaCorta(n)}` : ""), "hoy")).join("")}${
+      antes.map((n) => fila(n, `⚠️ Debe ${deudaCorta(n)}`, "antes")).join("")}</ul>
+    <button class="btn ghost block" data-cerrar-sheet>Listo</button>`);
+  $("sheetBody").querySelector(".cobro1").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-uno]"); if (!b) return;
+    const n = b.dataset.uno;
+    openWhatsApp(b.dataset.tipo === "hoy" ? cobroIndividual(n) : recordatorio(n), n);
+    b.textContent = "✅ Enviado"; b.classList.replace("green", "ghost");
+  });
 }
 campoPlata($("mMonto"), () => {});
 $("mAnotar").addEventListener("click", () => {
@@ -2130,18 +2285,18 @@ function abrirCierre() {
   }));
 }
 function cerrarPichanga({ guardar, deudas, prox }) {
-  const antes = JSON.stringify(S), fecha = S.fecha || hoyISO(), t = cobrados(), j = jugadores();
+  const antes = JSON.stringify(S), fecha = S.fecha || hoyISO(), t = cobrados(), j = jugadores(), pi = pagaIgual();
   if (guardar && !guardarPartido()) return; // canceló el reemplazo: no se cierra nada
   let anotadas = 0;
   t.forEach((n) => {
-    const c = cubre(n), pp = porPagar(n), s = sobra(n), concepto = !j.includes(n) ? "🍻 Tercer tiempo" : S.tercer[n] ? "Cancha + 🍻" : "Cancha";
+    const c = cubre(n), pp = porPagar(n), s = sobra(n), concepto = pi.includes(n) ? "Cancha (se bajó y paga igual)" : !j.includes(n) ? "🍻 Tercer tiempo" : S.tercer[n] ? "Cancha + 🍻" : "Cancha";
     if (c) anotar(n, { fecha, concepto: `${concepto} (pagada con saldo a favor)`, monto: c }); // el saldo a favor se usa siempre
     if (deudas && pp > 0) { anotar(n, { fecha, concepto: concepto + (pagoDe(n) || c ? " (saldo)" : ""), monto: pp }); anotadas++; }
     if (s > 0) anotar(n, { fecha, concepto: "Pagó de más (a favor)", monto: -s });
   });
   Object.keys(S.pagos).forEach((n) => { if (!t.includes(n)) liberarPago(n, fecha); });
   S.ultimaLista = S.inscritos.slice();
-  Object.assign(S, { fecha: prox || masDias(fecha, 7), inscritos: [], equipos: { A: [], B: [] }, pagos: dic(), tercer: dic(), jugo: dic(), promovidos: [], costoTercer: "", post: postVacio() });
+  Object.assign(S, { fecha: prox || masDias(fecha, 7), inscritos: [], equipos: { A: [], B: [] }, pagos: dic(), tercer: dic(), jugo: dic(), promovidos: [], bajas: [], pagaIgual: dic(), costoTercer: "", post: postVacio() });
   save(); cargarCampos(); cerrarSheet();
   if (tab === "s-convocatoria") renderConvocatoria(); else goTab("s-convocatoria");
   conDeshacer(`🏁 Pichanga cerrada` + (anotadas ? ` · 📒 ${anotadas} ${anotadas === 1 ? "deuda anotada" : "deudas anotadas"}` : "") + ` · Próxima: ${fechaCorta(S.fecha)}`,
