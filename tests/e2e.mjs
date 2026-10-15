@@ -8,7 +8,17 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const FILE = "file://" + path.join(ROOT, "index.html");
+// La app se sirve por http (como en GitHub Pages): con file:// Chromium a veces pierde lo guardado al recargar
+const servidor = http.createServer((req, res) => {
+  const rel = decodeURIComponent(new URL(req.url, "http://x").pathname.slice(1)) || "index.html", f = path.join(ROOT, rel);
+  if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+  const tipos = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".webmanifest": "application/manifest+json", ".png": "image/png" };
+  res.writeHead(200, { "content-type": tipos[path.extname(f)] || "application/octet-stream" });
+  fs.createReadStream(f).pipe(res);
+});
+await new Promise((r) => servidor.listen(0, "127.0.0.1", r));
+servidor.unref();
+const FILE = `http://127.0.0.1:${servidor.address().port}/index.html`;
 const KEY = "pichanga-v1";
 const SOLO = process.argv[2] ? new RegExp(process.argv[2], "i") : null;
 
@@ -23,8 +33,11 @@ function igual(a, b, msg) {
   const ja = JSON.stringify(a), jb = JSON.stringify(b);
   if (ja !== jb) throw new Error(`${msg}: esperaba ${jb}, obtuve ${ja}`);
 }
-async function prueba(nombre, fn) {
-  if (SOLO && !SOLO.test(nombre)) return;
+// Las pruebas se registran y después corren de a varias en paralelo (contextos aislados del mismo navegador);
+// los resultados se imprimen en el orden en que están escritas.
+const PRUEBAS = [], PARALELO = +process.env.PARALELO || 4;
+function prueba(nombre, fn) { if (!SOLO || SOLO.test(nombre)) PRUEBAS.push({ nombre, fn }); }
+async function correr1({ nombre, fn }) {
   const abiertas = [];
   try {
     let reloj;
@@ -33,17 +46,25 @@ async function prueba(nombre, fn) {
       new Promise((_, no) => { reloj = setTimeout(() => no(new Error(`la prueba superó ${LIMITE_PRUEBA / 1000} s`)), LIMITE_PRUEBA); }),
     ]).finally(() => clearTimeout(reloj));
     for (const t of abiertas) ok(!t.errores.length, "errores en la página: " + t.errores.join(" | "));
-    pasan++; console.log(`✔ ${nombre}`);
+    pasan++; return `✔ ${nombre}`;
   } catch (e) {
-    fallan++; console.log(`✘ ${nombre}\n    ${String(e.message || e).split("\n").slice(0, process.env.DEBUG ? 25 : 1).join("\n    ")}`);
+    fallan++; return `✘ ${nombre}\n    ${String(e.message || e).split("\n").slice(0, process.env.DEBUG ? 25 : 1).join("\n    ")}`;
   } finally {
     for (const t of abiertas) await t.ctx.close().catch(() => {});
   }
 }
+async function correrTodas() {
+  const salida = new Array(PRUEBAS.length);
+  let sig = 0, impreso = 0;
+  const imprimir = () => { while (impreso < salida.length && salida[impreso] != null) console.log(salida[impreso++]); };
+  await Promise.all(Array.from({ length: PARALELO }, async () => {
+    while (sig < PRUEBAS.length) { const i = sig++; salida[i] = await correr1(PRUEBAS[i]); imprimir(); }
+  }));
+}
 
 // Abre la app con un estado guardado (o vacía). Devuelve helpers para manejarla.
 async function abrir(estado, { width = 390, height = 844, url = FILE } = {}) {
-  const ctx = await browser.newContext({ viewport: { width, height }, hasTouch: true });
+  const ctx = await browser.newContext({ viewport: { width, height }, hasTouch: true, serviceWorkers: "block" });
   ctx.setDefaultTimeout(5000); ctx.setDefaultNavigationTimeout(10000);
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   const page = await ctx.newPage();
@@ -54,11 +75,11 @@ async function abrir(estado, { width = 390, height = 844, url = FILE } = {}) {
   await page.addInitScript(([k, s]) => {
     window.__wa = [];
     window.open = (u) => { window.__wa.push(decodeURIComponent(String(u).split("text=")[1] || "")); return null; };
-    if (s != null && !sessionStorage.getItem("__sembrado")) { sessionStorage.setItem("__sembrado", "1"); localStorage.setItem(k, typeof s === "string" ? s : JSON.stringify(s)); }
+    if (s != null && !localStorage.getItem("__sembrado")) { localStorage.setItem("__sembrado", "1"); localStorage.setItem(k, typeof s === "string" ? s : JSON.stringify(s)); }
   }, [KEY, estado ?? null]);
   await page.goto(url);
   Object.assign(t, {
-    S: () => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY),
+    S: () => page.evaluate((k) => { window.guardarYa?.(); return JSON.parse(localStorage.getItem(k)); }, KEY),
     ir: async (tab) => { await t.hoja(); await page.click(`nav.tabs button[data-go="s-${tab}"]`); },
     wa: () => page.evaluate(() => window.__wa),
     txt: (sel) => page.locator(sel).first().innerText(),
@@ -113,7 +134,7 @@ const BAJA = 500; // pausa entre bajas (protección de doble toque)
 await prueba("Migración: datos con la forma antigua se convierten sin perder nada", async (abrir) => {
   const t = await abrir(VIEJO);
   const S = await t.S();
-  igual(S.v, 3, "versión");
+  igual(S.v, 4, "versión");
   for (const k of ["fecha", "hora", "lugar", "porLado", "inscritos", "caseros", "niveles", "equipos", "colorA", "colorB", "banco"]) igual(S[k], VIEJO[k], k);
   igual(S.costoCancha, "42000", "costo cancha con punto de miles");
   igual(S.costoTercer, "12000", "costo tercer tiempo");
@@ -127,7 +148,7 @@ await prueba("Migración: datos con la forma antigua se convierten sin perder na
   igual([S.post.golesA, S.post.golesB, S.post.mvp, S.post.guardadoId], [2, 1, "Ana", null], "post");
   igual(S.historial[0].id, 111, "historial intacto");
   igual(S.historial[0].mvp, "Ana", "historial premio");
-  const copia = await t.page.evaluate((k) => localStorage.getItem(k + "-antes-v3"), KEY);
+  const copia = await t.page.evaluate((k) => localStorage.getItem(k + "-antes-v4"), KEY);
   igual(JSON.parse(copia), VIEJO, "copia intacta de los datos antiguos");
   igual(await t.page.inputValue("#hora"), "21:00", "hora en pantalla");
   ok((await t.txt("#titulares")).includes("Caro ⚠️ debe"), "⚠️ de Caro en Convocatoria");
@@ -163,7 +184,7 @@ await prueba("Migración: faltan claves anidadas o vienen dañadas", async (abri
 await prueba("Migración: datos ilegibles no se pierden (se respaldan) y la app abre", async (abrir) => {
   const t = await abrir("{malo");
   igual(await t.page.evaluate((k) => localStorage.getItem(k + "-danado"), KEY), "{malo", "copia del dato dañado");
-  igual((await t.S()).v, 3, "estado nuevo");
+  igual((await t.S()).v, 4, "estado nuevo");
 });
 
 await prueba("Migración: restaurar un respaldo antiguo (.json) lo convierte", async (abrir) => {
@@ -175,7 +196,7 @@ await prueba("Migración: restaurar un respaldo antiguo (.json) lo convierte", a
   await t.toast("Respaldo restaurado");
   const S = await t.S();
   fs.unlinkSync(f);
-  igual(S.v, 3, "versión");
+  igual(S.v, 4, "versión");
   ok(S.deudas.Pablo && S.pagos.Ana.monto === 19000, "morosos y pagos convertidos");
 });
 
@@ -218,7 +239,7 @@ await prueba("B2/F1: Cerrar pichanga guarda el partido pendiente, anota deudas y
   const S = await t.S();
   igual(S.historial.length, 1, "partido guardado");
   igual([S.historial[0].golesA, S.historial[0].golesB, S.historial[0].mvp, S.historial[0].fecha], [3, 1, "Ana", "2026-10-17"], "resultado y premio");
-  igual(S.post, { golesA: 0, golesB: 0, mvp: "", goleador: "", rustico: "", guardadoId: null }, "marcador y premios limpios");
+  igual(S.post, { golesA: 0, golesB: 0, mvp: "", goleador: "", rustico: "", guardadoId: null, fecha: "" }, "marcador y premios limpios");
   igual(S.deudas.Ana, [{ fecha: "2026-10-17", concepto: "Cancha", monto: 5000 }], "deuda de Ana con monto y fecha");
   igual([S.fecha, S.hora, S.lugar, S.costoCancha, S.costoTercer], ["2026-10-24", "21:00", "Cancha 3", "30000", ""], "próxima fecha con la misma hora, lugar y costo");
   igual([S.inscritos, S.pagos, S.tercer, S.equipos], [[], {}, {}, { A: [], B: [] }], "lista y pagos limpios");
@@ -1069,6 +1090,7 @@ await prueba("QA F2: '¿Pagó eso también?' tiene ↩️ Deshacer y desmarcar e
   // El dato nuevo (pagos.libreta) sobrevive a recargar y a la migración
   await esperar(BAJA);
   await t.tap('.pname[data-pay="Seba"]');
+  await t.toast("Seba quedó al día"); // el toque terminó (con su confirmación) antes de recargar
   await t.page.reload();
   S = await t.S();
   ok(S.pagos.Seba.libreta && S.pagos.Seba.libreta.antes.length === 3, "la libreta guardada en el pago se conserva al recargar");
@@ -1266,21 +1288,23 @@ await prueba("QA B7: inscribir, tocar un chip, pagar, 🍻 o sumar un gol quitan
   await t.tap("#toast .tbtn"); await t.toast("Nico volvió");
 });
 
-await prueba("Migración v2 → v3: un estado v2 se conserva entero (con copia)", async (abrir) => {
+await prueba("Migración v2 → v4: un estado v2 se conserva entero (con copia)", async (abrir) => {
   const v2 = Object.assign(base(), { v: 2, inscritos: ["Ana", "Beto"], pagos: { Ana: { monto: 5000, fecha: "2026-10-16", previo: 2000 }, Beto: { monto: null, fecha: "" } },
     deudas: { Caro: [{ fecha: "", concepto: "Deuda anterior", monto: null }], Dani: [{ fecha: "2026-10-03", concepto: "Cancha", monto: 7000 }] }, costoCancha: "10000" });
   const t = await abrir(v2);
   const S = await t.S();
-  igual(S.v, 3, "versión");
+  igual(S.v, 4, "versión");
   igual([S.pagos, S.deudas, S.inscritos], [v2.pagos, v2.deudas, v2.inscritos], "pagos, deudas e inscritos intactos");
-  igual(JSON.parse(await t.page.evaluate((k) => localStorage.getItem(k + "-antes-v3"), KEY)), v2, "copia de los datos v2");
+  igual(JSON.parse(await t.page.evaluate((k) => localStorage.getItem(k + "-antes-v4"), KEY)), v2, "copia de los datos v2");
 });
 
 /* ================= Pantallas ================= */
 await prueba("Pantallas: sin scroll horizontal, toques ≥ 44px e inputs ≥ 16px a 320 y 390", async (abrir) => {
   const estado = base({ porLado: 7, inscritos: [...J(14), "Supl"], caseros: [...J(14), "Pablo", "Supl"], costoCancha: "49000", costoTercer: "20000", tercer: { J01: true },
     pagos: { J02: { monto: 1000, fecha: "" } }, deudas: { Pablo: [{ fecha: "2026-10-10", concepto: "Cancha + 🍻", monto: 19000 }], J03: [{ fecha: "", concepto: "Deuda anterior (monto por confirmar)", monto: null }] },
-    ultimaLista: ["Otro"], post: { golesA: 10, golesB: 12, mvp: "", goleador: "", rustico: "", guardadoId: null } });
+    ultimaLista: ["Otro"], post: { golesA: 10, golesB: 12, mvp: "", goleador: "", rustico: "", guardadoId: null }, v: 4, promovidos: ["J14"],
+    banco: Object.assign(base().banco, { qr: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" }),
+    historial: [{ id: 5, fecha: new Date().toISOString().slice(0, 8) + "02", golesA: 1, golesB: 0, A: ["J01"], B: ["J02"], mvp: "J01" }] });
   for (const width of [320, 390]) {
     const t = await abrir(estado, { width, height: width === 320 ? 568 : 844 });
     const medir = (sels) => t.page.evaluate((sels) => {
@@ -1296,10 +1320,10 @@ await prueba("Pantallas: sin scroll horizontal, toques ≥ 44px e inputs ≥ 16p
       return malos;
     }, sels);
     const tactiles = {
-      convocatoria: [".x", ".chip:not(.in)", "#mismaLista", "#menos", "#mas", "#agregar"],
+      convocatoria: [".x", ".chip:not(.in)", "#mismaLista", "#menos", "#mas", "#agregar", "#titulares .ren", "#editarCaseros", "#avisarSuben", "#cerrarSuben"],
       equipos: ["#azar", "#equilibrar", "#colorA", "#colorB", ".levels summary", ".levels .seg button"],
-      pagos: [".beer", ".state", ".pname", "[data-saldar]", "#waCobrar", "[data-cerrar]", "#s-pagos summary", "#copiarBanco"],
-      post: ["[data-gol]", "#guardarPartido", "[data-cerrar]", "#mesAnt", "#mesSig", "#aMvp", "#waStats"],
+      pagos: [".beer", ".state", ".pname", "[data-saldar]", "#waCobrar", "[data-cerrar]", "#s-pagos summary", "#copiarBanco", "#compartirQr", "#quitarQr", "[data-jugo]"],
+      post: ["[data-gol]", "#guardarPartido", "[data-cerrar]", "#mesAnt", "#mesSig", "#aMvp", "#waStats", "#pFecha", "#historial .fecha", "#historial .x"],
     };
     for (const [tab, sels] of Object.entries(tactiles)) {
       await t.ir(tab);
@@ -1315,6 +1339,483 @@ await prueba("Pantallas: sin scroll horizontal, toques ≥ 44px e inputs ≥ 16p
     m = await medir(["#cOk", "#cEditar", "#sheet .check"]);
     ok(!m.length, `${width}px cerrar: ${m.join(", ")}`);
   }
+});
+
+/* ================= Ronda 2a: detalles menores (bugs 2-16, 21-36, 44-55, 58-66, 69-78) ================= */
+const LARGOS = ["Sebastián Ignacio", "Maximiliano", "Juan Pablo Fernández", "Juan Pablo González", "Cristóbal", "Francisco Javier Muñoz", "Felipe Ossandón",
+  "Rodrigo Hernández", "Diego Rojas", "Matías Ignacio", "Tomás", "Benjamín Andrés", "Vicente", "Agustín", "Joaquín", "Martín", "Ignacio", "Lucas", "Gaspar",
+  "Bastián", "Nicolás", "Andrés", "Oscar Supl", "Pedro Supl", "Leo Supl", "Pancho Supl", "Gonzalo Supl", "Lucho Supl", "Rafa Supl", "Tito Supl", "Coke Supl"];
+const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const esteMes = (dia) => hoy().slice(0, 8) + String(dia).padStart(2, "0");
+
+await prueba("R2 bug 2: '−' y '+' avisan quién baja o sube (con ↩️) y se desactivan en 3 y 11", async (abrir) => {
+  const t = await abrir(base({ inscritos: J(14) }));
+  await t.tap("#menos");
+  await t.toast("J13 y J14 pasan a suplentes");
+  ok(await t.page.locator("#toast .tbtn").isVisible(), "trae ↩️ Deshacer");
+  await t.tap("#toast .tbtn");
+  igual((await t.S()).porLado, 7, "↩️ vuelve a 7 vs 7");
+  await t.tap("#menos"); await t.tap("#mas");
+  await t.toast("J13 y J14 suben a titular");
+  ok(await t.page.locator("#avisoSuben").isVisible(), "aviso de los que suben");
+  const t2 = await abrir(base({ porLado: 11 }));
+  ok(await t2.page.locator("#mas").isDisabled(), "+ desactivado en 11");
+  const t3 = await abrir(base({ porLado: 3 }));
+  ok(await t3.page.locator("#menos").isDisabled(), "− desactivado en 3");
+});
+
+await prueba("R2 bugs 3, 4, 14, 15: nombres repetidos con mayúsculas, tildes, espacios, NFD o invisibles", async (abrir) => {
+  const t = await abrir(base({ caseros: ["Carlos", "José"], niveles: { Carlos: 5 }, deudas: { Carlos: [{ fecha: "", concepto: "Deuda anterior", monto: null }] } }));
+  const sumar = async (n) => { await t.page.fill("#nuevo", n); await t.tap("#agregar"); };
+  await sumar("carlos");
+  igual((await t.S()).inscritos, ["Carlos"], "'carlos' se inscribe como el casero 'Carlos'");
+  ok((await t.txt('#caseros [data-add="Carlos"]')).startsWith("✓"), "chip de Carlos marcado");
+  for (const n of ["Juan Pérez", "Juan  Pérez", " juan perez ", "Mati", "Matí", "José", "​", "​​ ", "Carlos​"]) await sumar(n);
+  igual((await t.S()).inscritos, ["Carlos", "Juan Pérez", "Mati", "José"], "sin duplicados ni fantasmas (José NFD = casero José)");
+  ok((await t.txt('#caseros [data-add="José"]')).startsWith("✓"), "chip de José marcado");
+  await sumar("pedro "); await sumar("Pedro");
+  igual(await t.page.inputValue("#nuevo"), "Pedro", "un nombre repetido no se borra del campo");
+  await t.page.fill("#nuevo", ""); await t.tap("#agregar");
+  await t.toast("Escribe el nombre");
+  igual(await t.txt("#agregar"), "+", "botón con un + blanco");
+  igual(await t.page.$eval("#agregar", (b) => getComputedStyle(b).color), "rgb(255, 255, 255)", "+ en blanco");
+});
+
+await prueba("R2 bug 5: renombrar sin perder lugar, pago, nivel ni deuda; quitar caseros; unir duplicados", async (abrir) => {
+  const t = await abrir(base({ porLado: 3, inscritos: ["Ana", "Jaun", "Caro"], caseros: ["Ana", "Jaun", "Caro", "Juan", "Tipo"], niveles: { Jaun: 5 }, costoCancha: "3000",
+    pagos: { Jaun: { monto: 1000, fecha: "" } }, deudas: { Jaun: [{ fecha: "2026-10-03", concepto: "Cancha", monto: 2000 }], Juan: [{ fecha: "2026-09-26", concepto: "Cancha", monto: 500 }] },
+    equipos: { A: ["Ana", "Jaun"], B: ["Caro"] } }));
+  await t.tap('#titulares [data-ren="Jaun"]');
+  await t.hoja(); await t.page.fill("#rNombre", "Juanito");
+  await t.tap("#rOk");
+  let S = await t.S();
+  igual(S.inscritos, ["Ana", "Juanito", "Caro"], "mismo lugar en la lista");
+  igual([S.niveles.Juanito, S.pagos.Juanito.monto, S.deudas.Juanito[0].monto, S.equipos.A[1]], [5, 1000, 2000, "Juanito"], "nivel, pago, deuda y equipo");
+  ok(!S.caseros.includes("Jaun") && S.caseros.includes("Juanito"), "casero renombrado");
+  // Unir con un casero que ya existe (otra grafía de la misma persona)
+  await t.tap('#titulares [data-ren="Juanito"]');
+  await t.hoja(); await t.page.fill("#rNombre", "juan");
+  await t.tap("#rOk");
+  S = await t.S();
+  igual(S.inscritos, ["Ana", "Juan", "Caro"], "unido con Juan");
+  igual(S.deudas.Juan.map((e) => e.monto), [500, 2000], "deudas juntas");
+  ok(t.dialogos.some((d) => d.includes("misma persona")), "pregunta antes de unir");
+  // Quitar un casero
+  await t.tap("#editarCaseros");
+  await t.tap('#caseros [data-ren="Tipo"]');
+  await t.hoja(); await t.tap("#rQuitar");
+  ok(!(await t.S()).caseros.includes("Tipo"), "Tipo ya no es casero");
+  await t.tap("#toast .tbtn");
+  ok((await t.S()).caseros.includes("Tipo"), "↩️ lo devuelve");
+});
+
+await prueba("R2 bug 6: quien sube de suplente queda en un aviso con 📲 Avisar (aunque haya dos bajas seguidas)", async (abrir) => {
+  const t = await abrir(base({ inscritos: J(16) }));
+  await t.tap('[data-del="J01"]'); await esperar(BAJA); await t.tap('[data-del="J02"]');
+  igual(await t.txt("#avisoSubenTxt"), "🔼 J15 y J16 subieron a titular", "aviso con los dos");
+  ok((await t.txt("#titulares")).includes("J15 🔼 subió"), "marcados en la lista");
+  await t.page.reload();
+  ok(await t.page.locator("#avisoSuben").isVisible(), "el aviso sigue al recargar");
+  await t.tap("#avisarSuben");
+  const m = (await t.wa())[0];
+  ok(m.includes("J15 y J16, quedaron de titulares") && m.includes("Sábado, 17 de octubre"), "mensaje para avisarles: " + m.split("\n")[0]);
+  ok(await t.page.locator("#avisoSuben").isHidden(), "el aviso se va al avisar");
+});
+
+await prueba("R2 bugs 8-11, 13: convocatoria sin 'Por definir hrs', singular, lugar en blanco, fecha pasada y nombres con * _ ~", async (abrir) => {
+  const t = await abrir(base({ fecha: "2025-01-05", hora: "", lugar: "   ", inscritos: ["*Negro*", "_Flaco_", "~Chino~", ...J(10)] }));
+  ok(await t.page.locator("#mapLink").isHidden(), "sin lugar no hay botón Mapa");
+  ok((await t.txt("#avisoFecha")).includes("ya pasó"), "aviso de fecha pasada");
+  await t.tap("#waConvocar");
+  ok(t.dialogos.some((d) => d.includes("ya pasó")), "pregunta antes de convocar a una fecha pasada");
+  const m = (await t.wa())[0];
+  ok(m.includes("⏰ Por definir\n"), "hora por definir sin 'hrs'");
+  ok(m.includes("📍 Por definir\n") && !m.includes("🗺️"), "lugar en blanco = por definir, sin mapa");
+  ok(m.includes("2025"), "fecha de otro año con el año");
+  ok(m.includes("*Queda 1 cupo.*"), "singular: " + m.slice(-40));
+  ok(m.includes("1. ∗Negro∗") && m.includes("2. ＿Flaco＿") && m.includes("3. ∼Chino∼"), "nombres sin marcas de formato");
+  igual(await t.txt("#cupos"), "1 cupo libre", "badge en singular");
+});
+
+await prueba("R2 bug 12: nombres larguísimos no desbordan la pantalla (lista, chips, Pagos)", async (abrir) => {
+  const largo = "A".repeat(60);
+  for (const [width, height] of [[390, 844], [320, 568]]) {
+    const t = await abrir(base({ inscritos: [largo, "Beto"], caseros: [largo, "Beto"], costoCancha: "10000" }), { width, height });
+    for (const tab of ["convocatoria", "equipos", "pagos", "post"]) {
+      await t.ir(tab);
+      igual(await t.page.evaluate(() => document.scrollingElement.scrollWidth), width, `${width}px ${tab}: sin scroll horizontal`);
+    }
+    await t.ir("convocatoria");
+    const x = await t.page.locator(`[data-del="${largo}"]`).boundingBox();
+    ok(x.x + x.width <= width, `${width}px: ✖ a la vista`);
+    igual(await t.page.getAttribute("#nuevo", "maxlength"), "30", "el campo limita el largo");
+  }
+});
+
+await prueba("R2 bugs 21, 22: soltar fuera de la cancha cancela; un equipo no pasa de N", async (abrir) => {
+  const t = await abrir(base({ inscritos: J(14), equipos: { A: J(7), B: J(14).slice(7) } }));
+  await t.ir("equipos");
+  const arrastrar = async (sel, a) => {
+    const b = await t.page.locator(sel).boundingBox();
+    await t.page.mouse.move(b.x + b.width / 2, b.y + 15); await t.page.mouse.down();
+    await t.page.mouse.move(b.x + b.width / 2 + 5, b.y + 30, { steps: 3 });
+    await t.page.mouse.move(a.x, a.y, { steps: 8 }); await t.page.mouse.up();
+  };
+  const antes = (await t.S()).equipos;
+  const banca = await t.page.locator("#bench").boundingBox();
+  await t.page.locator("#bench").scrollIntoViewIfNeeded();
+  await arrastrar('.player[data-p="J02"]', { x: banca.x + 20, y: (await t.page.locator("#bench").boundingBox()).y + 10 });
+  igual((await t.S()).equipos, antes, "soltar en la banca no cambia nada");
+  const pitch = await t.page.locator("#pitch").boundingBox();
+  await arrastrar('.player[data-p="J02"]', { x: pitch.x + 6, y: pitch.y + pitch.height * 0.97 });
+  igual((await t.S()).equipos, antes, "con 7 vs 7 no se puede pasar a 6 vs 8");
+  await t.toast("ya tiene 7");
+  const t2 = await abrir(base({ inscritos: J(12), equipos: { A: J(6), B: J(12).slice(6) } }));
+  await t2.ir("equipos");
+  const p2 = await t2.page.locator("#pitch").boundingBox();
+  const b2 = await t2.page.locator('.player[data-p="J03"]').boundingBox();
+  await t2.page.mouse.move(b2.x + b2.width / 2, b2.y + 15); await t2.page.mouse.down();
+  await t2.page.mouse.move(p2.x + 6, p2.y + p2.height * 0.75, { steps: 10 }); await t2.page.mouse.up();
+  igual((await t2.S()).equipos.B.length, 7, "con espacio sí pasa");
+  await t2.toast("5 vs 7");
+});
+
+// Cajas que se tapan: placa de un jugador sobre la camiseta o la placa de otro
+const choques = (t) => t.page.evaluate(() => {
+  const els = [...document.querySelectorAll(".player")].map((p) => ({ n: p.dataset.p, kit: p.querySelector(".kit").getBoundingClientRect(), pl: p.querySelector(".plate").getBoundingClientRect() }));
+  const cruza = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+  const out = [];
+  els.forEach((a) => els.forEach((b) => { if (a !== b && (cruza(a.pl, b.kit) || (a.n < b.n && cruza(a.pl, b.pl)))) out.push(`${a.n}/${b.n}`); }));
+  const pr = document.getElementById("pitch").getBoundingClientRect();
+  els.forEach((a) => { if (a.pl.bottom > pr.bottom + 1 || a.kit.top < pr.top - 1) out.push(`${a.n} fuera`); });
+  return out;
+});
+await prueba("R2 bug 23: cancha legible con 7, 10 y 11 por lado, a 320 y 390 (sin placas encimadas)", async (abrir) => {
+  for (const por of [7, 10, 11]) for (const [width, height] of [[390, 844], [320, 568]]) {
+    const ins = LARGOS.slice(0, por * 2);
+    const t = await abrir(base({ porLado: por, inscritos: ins, equipos: { A: ins.slice(0, por), B: ins.slice(por) } }), { width, height });
+    await t.ir("equipos");
+    const c = await choques(t);
+    ok(!c.length, `${por}v${por} a ${width}px: ${c.slice(0, 5).join(", ")}`);
+    if (por === 7 && width === 390) {
+      const cortados = await t.page.evaluate(() => [...document.querySelectorAll(".plate .nm")].filter((e) => e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
+      igual(cortados, [], "7v7 a 390: ningún nombre cortado");
+    }
+    const jp = await t.page.$$eval(".plate .nm", (es) => es.map((e) => e.textContent).filter((x) => x.startsWith("Juan Pablo")));
+    igual(new Set(jp).size, jp.length, `${por}v${por} ${width}px: los dos Juan Pablo se distinguen (${jp.join(" / ")})`);
+  }
+});
+
+await prueba("R2 bugs 24, 29, 30: imagen compartida sin nombres encimados, banca en renglones, fuente de respaldo y sin roundRect", async (abrir) => {
+  const ins = LARGOS.slice(0, 31);
+  const t = await abrir(base({ porLado: 11, inscritos: ins, equipos: { A: ins.slice(0, 11), B: ins.slice(11, 22) }, lugar: "Complejo Deportivo Municipal de Ñuñoa, Cancha Sintética N° 3" }));
+  await t.ir("equipos");
+  const r = await t.page.evaluate(() => {
+    const textos = [], fuentes = new Set(), P = CanvasRenderingContext2D.prototype, orig = P.fillText;
+    P.fillText = function (txt, x, y, mw) { fuentes.add(this.font); textos.push({ txt: String(txt), x, y, w: this.measureText(txt).width, f: this.font }); return orig.call(this, txt, x, y, mw); };
+    delete P.roundRect;
+    const c = cancha();
+    P.fillText = orig;
+    return { textos, fuentes: [...fuentes], H: c.height };
+  });
+  ok(r.fuentes.every((f) => /sans-serif/.test(f)), "todas las fuentes con respaldo sans-serif: " + r.fuentes.find((f) => !/sans-serif/.test(f)));
+  const nombres = r.textos.filter((x) => /23px/.test(x.f));
+  const malos = [];
+  nombres.forEach((a) => nombres.forEach((b) => { if (a !== b && Math.abs(a.y - b.y) < 20 && Math.abs(a.x - b.x) < (a.w + b.w) / 2 + 4) malos.push(a.txt + "/" + b.txt); }));
+  ok(!malos.length, "nombres encimados en la imagen: " + malos.slice(0, 4).join(", "));
+  const banca = r.textos.filter((x) => /28px/.test(x.f));
+  ok(banca.length >= 2 && banca.every((x) => x.w <= 960), `banca en ${banca.length} renglones legibles`);
+  ok(r.textos.some((x) => x.txt.startsWith("Complejo") && x.txt.endsWith("…")), "lugar largo con …");
+  // Sin roundRect (iOS 15): la imagen igual se arma y se descarga
+  await t.page.evaluate(() => { delete CanvasRenderingContext2D.prototype.roundRect; navigator.canShare = () => false; });
+  await t.tap("#compartirCancha");
+  await t.toast("Imagen descargada");
+});
+
+await prueba("R2 bugs 25, 26, 33, 34, 35: colores distintos, arquero distinguible, formación por equipo, DEL en 3v3, aviso sin jugadores", async (abrir) => {
+  const t = await abrir(base({ porLado: 7, inscritos: J(13), equipos: { A: J(6), B: J(13).slice(6) } }));
+  await t.ir("equipos");
+  igual(await t.txt("#formTxt"), "2-2-1 | 3-2-1", "formación de cada equipo");
+  await t.page.selectOption("#colorB", "⚫ Negro");
+  await t.toast("intercambiados");
+  const S = await t.S();
+  igual([S.colorA, S.colorB], ["🟢 Peto Flúor", "⚫ Negro"], "colores intercambiados");
+  igual(await t.page.inputValue("#colorA"), "🟢 Peto Flúor", "select A actualizado");
+  await t.page.selectOption("#colorA", "🟡 Amarillo"); await t.page.selectOption("#colorB", "🟠 Naranjo");
+  const gk = await t.page.$eval('.player[data-p="J01"] .kit path', (p) => p.getAttribute("fill"));
+  ok(!["#ffb300", "#ffd600", "#ff7a00"].includes(gk), "arquero de otro color: " + gk);
+  const t2 = await abrir(base({ porLado: 3, inscritos: J(6), equipos: { A: J(3), B: J(6).slice(3) } }));
+  await t2.ir("equipos");
+  igual(await t2.page.$$eval(".kitw .pos", (es) => es.map((e) => e.textContent)), ["ARQ", "DEF", "DEL", "ARQ", "DEF", "DEL"], "3 vs 3 con DEF y DEL");
+  const t3 = await abrir(base());
+  await t3.ir("equipos");
+  await t3.tap("#equilibrar"); await t3.toast("Primero inscribe jugadores");
+  await t3.tap("#azar"); await t3.toast("Primero inscribe jugadores");
+});
+
+await prueba("R2 bugs 27, 28: arrastre interrumpido vuelve a su lugar; el suplente entra en el lugar del que se bajó", async (abrir) => {
+  const t = await abrir(base({ inscritos: J(15), equipos: { A: J(7), B: J(14).slice(7) } }));
+  await t.ir("equipos");
+  const r = await t.page.evaluate(async () => {
+    const el = document.querySelector('.player[data-p="J02"]'), b = el.getBoundingClientRect(), x = b.x + b.width / 2, y = b.y + 10;
+    const ev = (tipo, o) => new PointerEvent(tipo, Object.assign({ bubbles: true, pointerId: 1, isPrimary: true, clientX: x, clientY: y, pointerType: "touch" }, o));
+    el.dispatchEvent(ev("pointerdown"));
+    el.dispatchEvent(ev("pointermove", { clientX: x + 80, clientY: y + 60 }));
+    const otro = document.querySelector('.player[data-p="J05"]');
+    otro.dispatchEvent(ev("pointerdown", { pointerId: 2, isPrimary: false })); // segundo dedo
+    el.dispatchEvent(ev("pointercancel"));
+    await new Promise((r) => setTimeout(r, 50));
+    return { arrastrando: document.querySelectorAll(".player.dragging, .player.sel, .zone.drop").length, sel: selected };
+  });
+  igual(r, { arrastrando: 0, sel: null }, "sin jugador pegado, selección ni zona resaltada");
+  await t.ir("convocatoria");
+  await t.tap('[data-del="J01"]');
+  await t.ir("equipos");
+  const S = await t.S();
+  igual(S.equipos.A[0], "J15", "J15 entra al arco en el lugar de J01");
+  await t.toast("J15 entra por J01");
+});
+
+await prueba("R2 bugs 31, 32: niveles con nombres largos y para suplentes y caseros", async (abrir) => {
+  const largo = "MaximilianoAlejandroGonzalezRojas";
+  const t = await abrir(base({ porLado: 3, inscritos: [largo, ...J(6)], caseros: [largo, ...J(6), "Casero"] }), { width: 320, height: 568 });
+  await t.ir("equipos");
+  await t.tap(".levels summary");
+  const w = await t.page.$$eval(`.levels .seg button[data-n="${largo}"]`, (bs) => bs.map((b) => Math.round(b.getBoundingClientRect().width)));
+  igual(w, [44, 44, 44, 44, 44], "botones 1-5 enteros");
+  const filas = await t.page.$$eval("#niveles li", (ls) => ls.map((l) => l.querySelector(".name").textContent));
+  ok(filas.some((f) => f.includes("J06") && f.includes("suplente")) && filas.some((f) => f.includes("Casero") && f.includes("casero")), "suplente y casero en la lista");
+  await t.tap('.seg button[data-n="J06"][data-lvl="5"]');
+  igual((await t.S()).niveles.J06, 5, "nivel de un suplente");
+});
+
+await prueba("R2 bugs 47, 48, 50, 51: compartir y quitar el QR, sin imagen rota, imagen ilegible avisa", async (abrir) => {
+  const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+  const t = await abrir(base());
+  await t.ir("pagos");
+  ok(await t.page.locator("#qrView").isHidden() && await t.page.locator("#qrAcciones").isHidden(), "sin QR no se ve imagen rota ni botones");
+  const f = path.join(os.tmpdir(), `qr-malo-${process.pid}.png`);
+  fs.writeFileSync(f, "esto no es una imagen");
+  await t.page.locator("#s-pagos details summary").first().click();
+  await t.page.setInputFiles("#bQr", f);
+  await t.toast("No pude leer esa imagen");
+  igual(await t.page.inputValue("#bQr"), "", "el campo se limpia");
+  fs.writeFileSync(f, Buffer.from(PNG.split(",")[1], "base64"));
+  await t.page.setInputFiles("#bQr", f);
+  await t.toast("QR guardado");
+  fs.unlinkSync(f);
+  igual(await t.page.evaluate(() => localStorage.getItem("pichanga-v1-qr").startsWith("data:image/png")), true, "QR guardado en su propia clave");
+  igual((await t.S()).banco.qr, "", "los datos principales no cargan la imagen");
+  await t.page.evaluate(() => { navigator.canShare = () => false; });
+  await t.tap("#compartirQr");
+  await t.toast("QR descargado");
+  await t.tap("#quitarQr");
+  ok(await t.page.locator("#qrView").isHidden(), "QR quitado");
+  await t.S();
+  igual(await t.page.evaluate(() => localStorage.getItem("pichanga-v1-qr")), null, "y borrado del teléfono");
+  await t.tap("#toast .tbtn");
+  ok(await t.page.locator("#qrView").isVisible(), "↩️ lo devuelve");
+  await t.ir("convocatoria"); await t.page.reload(); await t.ir("pagos");
+  ok(await t.page.locator("#qrView").isVisible(), "sigue tras recargar");
+});
+
+await prueba("R2 bugs 52, 53, 54: copiar sin datos, cobrar sin inscritos y costos negativos", async (abrir) => {
+  const t = await abrir(base());
+  await t.ir("pagos");
+  await t.page.evaluate(() => navigator.clipboard.writeText("lo de antes").catch(() => {}));
+  await t.tap("#copiarBanco");
+  await t.toast("Primero agrega tus datos");
+  ok(await t.page.locator("#bNombre").isVisible(), "abre Editar datos");
+  await t.page.fill("#bNombre", "Juan"); await t.page.dispatchEvent("#bNombre", "input");
+  await t.page.evaluate(() => { Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true }); });
+  await t.tap("#copiarBanco");
+  await t.page.waitForFunction(() => /copia/i.test(document.getElementById("toast").textContent));
+  await t.page.locator("#costoCancha").pressSequentially("-5000");
+  igual(await t.page.inputValue("#costoCancha"), "5.000", "sin signo negativo");
+  await t.tap("#waCobrar");
+  await t.toast("No hay jugadores inscritos");
+});
+
+await prueba("R2 bug 55: suplentes en Pagos: 🍻 y ⚽ jugó (las cuotas siguen sumando exacto)", async (abrir) => {
+  const t = await abrir(base({ v: 4, porLado: 7, inscritos: J(15), costoCancha: "49000", costoTercer: "12000", tercer: { J01: true, J02: true } }));
+  await t.ir("pagos");
+  ok(await t.page.locator("#pagosSup [data-beer='J15']").isVisible(), "el suplente tiene 🍻");
+  await t.tap("#pagosSup [data-beer='J15']");
+  ok((await t.txt("#pagosSup")).includes("$4.000"), "J15 paga su parte del 🍻: " + await t.txt("#pagosSup"));
+  await t.tap("#pagosSup [data-jugo='J15']");
+  const r = await t.page.evaluate(() => ({ suma: cobrados().reduce((s, n) => s + deuda(n), 0), j15: deuda("J15") }));
+  igual(r.suma, 61000, "cancha + 🍻 suman exacto");
+  igual(r.j15, 3266 + 4000, "J15 paga cancha entre 15 y 🍻 entre 3");
+  await t.tap("#pagosSup [data-pay='J15']");
+  igual((await t.S()).pagos.J15.monto, 7266, "se le marca el pago");
+  await t.page.reload();
+  igual((await t.S()).tercer.J15, true, "el 🍻 del suplente se guarda");
+});
+
+await prueba("R2 bug 58: datos dañados (banco null, equipos sin B, partido sin fecha) no rompen la app ni Restaurar", async (abrir) => {
+  const t = await abrir({ banco: null, equipos: { A: ["Ana"] }, post: null, colorA: "🟣", inscritos: ["Ana", "Beto"], historial: [{ golesA: 1 }, { id: "x", fecha: esteMes(3), golesA: 2, golesB: 0 }] });
+  for (const tab of ["equipos", "pagos", "post", "convocatoria"]) await t.ir(tab);
+  const S = await t.S();
+  igual([S.historial.length, Number.isSafeInteger(S.historial[1].id)], [2, true], "partidos con id (el sin fecha se conserva)");
+  const f = path.join(os.tmpdir(), `respaldo-bueno-${process.pid}.json`);
+  fs.writeFileSync(f, JSON.stringify({ app: "pichanga", version: 4, datos: base({ inscritos: ["Zeta"] }) }));
+  await t.ir("post"); await t.page.setInputFiles("#importar", f);
+  await t.toast("Respaldo restaurado");
+  fs.unlinkSync(f);
+  igual((await t.S()).inscritos, ["Zeta"], "Restaurar funciona");
+});
+
+await prueba("R2 bugs 59, 60, 64: ranking con empates, historial por fecha y victorias con el color de cada partido", async (abrir) => {
+  const P = (id, dia, ga, gb, mvp, cA = "⚫ Negro") => ({ id, fecha: esteMes(dia), lugar: "", golesA: ga, golesB: gb, colorA: cA, colorB: "🟢 Peto Flúor", A: ["Ana"], B: ["Beto"], mvp, goleador: "", rustico: "" });
+  const t = await abrir(base({ colorA: "🔴 Rojo", historial: [P(1, 20, 2, 0, "Beto"), P(2, 5, 1, 0, "Ana"), P(3, 12, 0, 0, "Caro")] }));
+  await t.ir("post");
+  const rk = await t.txt("#ranking");
+  ok(["Ana", "Beto", "Caro"].every((n) => rk.includes(n)), "los tres empatados en el ranking: " + rk);
+  const fechas = await t.page.$$eval("#historial .fecha", (es) => es.map((e) => e.textContent));
+  igual(fechas.map((f) => +f.replace(/\D/g, "")), [20, 12, 5], "del más reciente al más antiguo");
+  const colores = await t.page.$$eval("#statsBar span", (es) => es.map((e) => getComputedStyle(e).backgroundColor));
+  ok(colores.includes("rgb(27, 27, 27)") && !colores.includes("rgb(229, 57, 53)"), "las victorias de Negro se ven en negro: " + colores);
+  await t.tap("#waStats");
+  const m = (await t.wa())[0];
+  ok(m.includes("Equipo A: 2 victorias") && m.includes("Equipo B: 0 victorias") && m.includes("Ana (1), Beto (1), Caro (1)"), "WhatsApp con la misma lógica");
+  ok(m.indexOf("• 20/") < m.indexOf("• 05/"), "últimos partidos por fecha");
+});
+
+await prueba("R2 bugs 62, 63: fecha del partido visible y editable; votación con ejemplo válido, fecha real y resultado", async (abrir) => {
+  const t = await abrir(base({ fecha: "", porLado: 3, inscritos: SEIS.slice(), equipos: { A: SEIS.slice(0, 3), B: SEIS.slice(3) } }));
+  await t.ir("post");
+  igual(await t.page.inputValue("#pFecha"), hoy(), "sin fecha en Convocatoria: hoy");
+  await t.tap('[data-gol="A,1"]'); await t.tap('[data-gol="B,1"]');
+  await t.tap("#waVotar");
+  const m = (await t.wa())[0];
+  ok(m.includes("Equipo A 1 - 1 Equipo B"), "resultado actual");
+  ok(!m.includes("Por definir"), "con fecha real");
+  const ej = m.match(/Ejemplo: \*([\d, ]+)\*/)[1].split(",").map(Number);
+  ok(ej.every((n) => n >= 1 && n <= 6) && new Set(ej).size === 3, "ejemplo con números que existen: " + ej);
+  const ayer = (() => { const d = new Date(Date.now() - 864e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+  await t.page.fill("#pFecha", ayer); await t.page.dispatchEvent("#pFecha", "change");
+  await t.tap("#guardarPartido");
+  igual((await t.S()).historial[0].fecha, ayer, "se guarda con la fecha elegida");
+  await t.toast("📆");
+  await t.page.goto(FILE + "#post"); // el mes del partido (por si ayer fue otro mes)
+  await t.hoja();
+  await t.page.evaluate((f) => { mesVista = new Date(f + "T12:00:00"); mesVista.setDate(1); renderPost(); }, ayer);
+  await t.tap("#historial .fecha");
+  await t.hoja(); await t.page.fill("#hFecha", hoy()); await t.tap("#hOk");
+  igual((await t.S()).historial[0].fecha, hoy(), "fecha corregida desde el historial");
+});
+
+await prueba("R2 bug 65: cancelar Restaurar y elegir el mismo archivo vuelve a preguntar", async (abrir) => {
+  const t = await abrir(base());
+  const f = path.join(os.tmpdir(), `respaldo-otra-vez-${process.pid}.json`);
+  fs.writeFileSync(f, JSON.stringify({ app: "pichanga", version: 4, datos: base({ inscritos: ["Zeta"] }) }));
+  await t.ir("post");
+  t.respuestas.push(false);
+  await t.page.setInputFiles("#importar", f);
+  await t.page.waitForFunction(() => document.getElementById("importar").value === "");
+  await t.page.setInputFiles("#importar", f);
+  await t.toast("Respaldo restaurado");
+  fs.unlinkSync(f);
+  igual(t.dialogos.filter((d) => d.includes("Reemplazar")).length, 2, "preguntó las dos veces");
+});
+
+await prueba("R2 bug 66: a 320 px los premios muestran el nombre completo", async (abrir) => {
+  const t = await abrir(base({ porLado: 3, inscritos: ["Juan Pablo Fernández", "Juan Pablo González", "Ana", "Beto", "Caro", "Dani"] }), { width: 320, height: 568 });
+  await t.ir("post");
+  await t.page.selectOption("#aMvp", "Juan Pablo Fernández");
+  const w = await t.page.$eval("#aMvp", (s) => s.getBoundingClientRect().width);
+  ok(w >= 240, "select a lo ancho: " + w);
+});
+
+await prueba("R2 bugs 69, 78: se guarda una vez por ráfaga de teclas; sin espacio se avisa y no se pierde en silencio", async (abrir) => {
+  const t = await abrir(base());
+  const escrituras = await t.page.evaluate(() => new Promise((r) => {
+    let c = 0; const o = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) { if (k === "pichanga-v1") c++; return o.call(this, k, v); };
+    const el = document.getElementById("lugar"); el.value = "";
+    for (const ch of "Cancha Los Leones") { el.value += ch; el.dispatchEvent(new Event("input")); }
+    setTimeout(() => r(c), 400);
+  }));
+  igual(escrituras, 1, "17 teclas = una escritura");
+  igual((await t.S()).lugar, "Cancha Los Leones", "lo escrito queda guardado");
+  // Escribir y salir enseguida (antes de la escritura diferida): se guarda al salir
+  const alSalir = await t.page.evaluate(() => {
+    const el = document.getElementById("lugar"); el.value = "Otra cancha"; el.dispatchEvent(new Event("input"));
+    const antes = JSON.parse(localStorage.getItem("pichanga-v1")).lugar;
+    dispatchEvent(new Event("pagehide"));
+    return [antes, JSON.parse(localStorage.getItem("pichanga-v1")).lugar];
+  });
+  igual(alSalir, ["Cancha Los Leones", "Otra cancha"], "lo pendiente se escribe al salir");
+  // Memoria llena
+  await t.page.evaluate(() => { Storage.prototype.setItem = function () { throw new DOMException("lleno", "QuotaExceededError"); }; });
+  await t.page.fill("#nuevo", "Pedro"); await t.tap("#agregar");
+  await t.page.waitForFunction(() => !document.getElementById("avisoGuardar").hidden, null, { timeout: 2000 });
+  ok((await t.txt("#avisoGuardar")).includes("No se pudo guardar"), "aviso visible");
+});
+
+await prueba("R2 bug 72: el aviso no bloquea toques y no sigue en la pestaña siguiente", async (abrir) => {
+  const t = await abrir(base({ inscritos: J(14), equipos: { A: J(7), B: J(14).slice(7) } }));
+  await t.ir("equipos");
+  await t.tap('.player[data-p="J02"]');
+  await t.toast("toca a otro jugador");
+  igual(await t.page.$eval("#toast", (e) => getComputedStyle(e).pointerEvents), "none", "el aviso deja pasar los toques");
+  await t.ir("pagos");
+  ok(!(await t.page.$eval("#toast", (e) => e.classList.contains("show"))), "el aviso se cierra al cambiar de pestaña");
+});
+
+await prueba("R2 bugs 74, 75: recordatorio de respaldo y la app vuelve a la última pestaña", async (abrir) => {
+  const t = await abrir(base({ historial: [{ id: 1, fecha: esteMes(3), golesA: 1, golesB: 0, A: [], B: [] }] }));
+  await t.ir("post");
+  ok((await t.txt("#respaldoInfo")).includes("Todavía no guardas"), "avisa que no hay respaldo");
+  await t.tap("#exportar");
+  await t.page.waitForFunction(() => document.getElementById("respaldoInfo").textContent.includes("hoy"));
+  ok((await t.S()).ultimoRespaldo.startsWith(new Date().toISOString().slice(0, 4)), "fecha del respaldo guardada");
+  await t.ir("pagos");
+  await t.page.reload();
+  ok(await t.page.locator("#s-pagos").isVisible(), "recargar sigue en Pagos");
+  await t.page.goto(FILE); // el sistema cerró la app: se abre sin pestaña en la URL
+  ok(await t.page.locator("#s-pagos").isVisible(), "vuelve a Pagos");
+});
+
+await prueba("R2 bug 76: dos ventanas abiertas no se borran los cambios", async (abrir) => {
+  const t = await abrir(base({ porLado: 3, inscritos: SEIS.slice(), equipos: { A: SEIS.slice(0, 3), B: SEIS.slice(3) } }));
+  const p2 = await t.ctx.newPage();
+  await p2.goto(FILE);
+  await t.page.fill("#nuevo", "A1"); await t.tap("#agregar");
+  await t.page.evaluate(() => guardarYa());
+  await p2.waitForFunction(() => S.inscritos.includes("A1"));
+  await p2.click('nav.tabs button[data-go="s-post"]');
+  await p2.click('[data-gol="A,1"]'); await p2.click("#guardarPartido");
+  await p2.evaluate(() => guardarYa());
+  await t.page.waitForFunction(() => S.historial.length === 1);
+  await t.page.fill("#nuevo", "A3"); await t.tap("#agregar");
+  const S = await t.S();
+  igual([S.historial.length, S.inscritos.includes("A1"), S.inscritos.includes("A3")], [1, true, true], "el partido de la otra ventana se conserva");
+});
+
+await prueba("R2 bug 77: el service worker solo borra cachés viejas de Pichanga", async () => {
+  const vm = await import("node:vm");
+  const borradas = [], h = {};
+  const ctx = { self: { addEventListener: (ev, fn) => (h[ev] = fn), location: new URL("https://x.github.io/Mi_Pichanga/sw.js"), clients: { claim: async () => {} }, skipWaiting: () => {} },
+    caches: { keys: async () => ["otra-app-v3", "pichanga-v1", "pichanga-v6", "pichangas-de-otro"], delete: async (k) => borradas.push(k) }, URL, location: { origin: "https://x.github.io" } };
+  vm.default.runInNewContext(fs.readFileSync(path.join(ROOT, "sw.js"), "utf8"), ctx);
+  let p; h.activate({ waitUntil: (x) => (p = x) }); await p;
+  igual(borradas, ["pichanga-v1"], "solo la versión vieja de esta app");
+});
+
+await prueba("R2 migración: v3 con QR dentro y sin campos nuevos queda en v4 sin perder nada", async (abrir) => {
+  const QR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+  const v3 = base({ inscritos: J(16), tercer: { J01: true, J15: true }, banco: Object.assign(base().banco, { nombre: "Juan", qr: QR }), post: { golesA: 1, golesB: 0, mvp: "J01", goleador: "", rustico: "", guardadoId: null } });
+  const t = await abrir(v3);
+  const S = await t.S();
+  igual(S.v, 4, "versión 4");
+  igual([S.promovidos, S.jugo, S.ultimoRespaldo, S.post.fecha, S.post.mvp], [[], {}, "", "", "J01"], "campos nuevos con valores por defecto");
+  igual(S.tercer, { J01: true }, "🍻 viejo de un suplente no se cobra (antes no existía)");
+  igual(await t.page.evaluate(() => localStorage.getItem("pichanga-v1-qr")), QR, "el QR pasa a su propia clave");
+  igual(S.banco.nombre, "Juan", "datos del banco");
+  igual(JSON.parse(await t.page.evaluate(() => localStorage.getItem("pichanga-v1-antes-v4"))).banco.qr, QR, "copia intacta de los datos v3");
+  await t.ir("pagos");
+  ok(await t.page.locator("#qrView").isVisible(), "el QR se sigue viendo");
 });
 
 /* ================= B12: service worker ================= */
@@ -1347,7 +1848,7 @@ await prueba("B12: el SW no guarda páginas de error y abre desde la caché con 
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.reload();
     ok(await page.evaluate(() => !!navigator.serviceWorker.controller), "SW controla la página");
-    igual(await page.evaluate(() => caches.keys()), ["pichanga-v5"], "caché nueva (pichanga-v5)");
+    igual(await page.evaluate(() => caches.keys()), ["pichanga-v6"], "caché nueva (pichanga-v6)");
     const copia = () => page.evaluate(() => caches.match("./index.html").then((r) => r && r.text()));
     await page.goto(raiz + "jugadores");
     ok((await page.title()) === "404", "la página 404 se muestra tal cual");
@@ -1374,6 +1875,8 @@ await prueba("B12: el SW no guarda páginas de error y abre desde la caché con 
   }
 });
 
+await correrTodas();
 await browser.close();
+servidor.closeAllConnections?.(); servidor.close();
 console.log(`\n${pasan} pasan, ${fallan} fallan`);
 process.exit(fallan ? 1 : 0);

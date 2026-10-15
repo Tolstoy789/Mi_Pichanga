@@ -53,9 +53,21 @@
   .stepper { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 4px; }
   .stepper .val { font-family: "Lilita One"; font-size: 30px; min-width: 120px; text-align: center; }
   .stepper .btn { width: 52px; height: 52px; font-size: 26px; border-radius: 50%; padding: 0; }
+  .stepper .btn:disabled { opacity: .35; }
+  #agregar { font: 400 30px "Lilita One", Nunito, sans-serif; line-height: 1; color: #fff; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .chip { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; border: 2px solid var(--line); background: #f5f8fa; color: var(--ink); border-radius: 999px; padding: 6px 12px; font: 800 13px Nunito, sans-serif; cursor: pointer; }
+  .chip { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px; max-width: 100%; overflow-wrap: anywhere; text-align: left; min-height: 44px; border: 2px solid var(--line); background: #f5f8fa; color: var(--ink); border-radius: 999px; padding: 6px 12px; font: 800 13px Nunito, sans-serif; cursor: pointer; }
   .chip.in { opacity: .4; pointer-events: none; }
+  .chips.editando .chip, .chips.editando .chip.in { opacity: 1; pointer-events: auto; border-style: dashed; border-color: var(--sky2); }
+  .lbl-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .lbl-row label { margin: 8px 0 0; }
+  .linkbtn { background: none; border: 0; color: var(--sky); font: 800 14px Nunito, sans-serif; min-height: 44px; padding: 0 4px; cursor: pointer; }
+  .list .name.ren { background: none; border: 0; padding: 0; margin: 0; text-align: left; font: 800 16px Nunito, sans-serif; color: var(--ink); min-height: 44px; cursor: pointer; overflow-wrap: anywhere; }
+  .tag.sube { background: #e3f2fd; color: #0d47a1; }
+  .aviso { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; background: #e3f2fd; color: #0d47a1; border-radius: 12px; padding: 6px 6px 6px 12px; margin-top: 10px; font-size: 14px; font-weight: 800; }
+  .aviso span { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; }
+  .aviso .btn.small { min-height: 44px; }
+  .banner { position: sticky; top: 0; z-index: 9; margin: 0 auto 10px; max-width: 448px; background: #fff3e0; color: #8a4b00; border-radius: 14px; padding: 10px 12px; font-size: 14px; font-weight: 800; box-shadow: 0 4px 0 rgba(0,0,0,.18); }
   .tag { display: inline-block; border-radius: 999px; padding: 1px 7px; font-size: 12px; font-weight: 800; white-space: nowrap; vertical-align: 1px; }
   .tag.debt { background: #ffebee; color: #b71c1c; }
   .tag.favor { background: #e8f5e9; color: #1b5e20; }
@@ -64,7 +76,7 @@
   .list li { display: flex; align-items: center; gap: 8px; padding: 9px 4px; border-bottom: 1px solid var(--line); }
   .list li:last-child { border-bottom: 0; }
   .list .num { width: 24px; color: var(--muted); font-weight: 800; }
-  .list .name { flex: 1; font-weight: 800; min-width: 0; overflow-wrap: break-word; }
+  .list .name { flex: 1; font-weight: 800; min-width: 0; overflow-wrap: anywhere; }
   .x { background: none; border: 0; font-size: 18px; cursor: pointer; color: var(--muted); min-width: 44px; min-height: 44px; margin: -6px -4px -6px 0; border-radius: 12px; }
   .x:active { background: #eef3f7; }
   .pill { font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: #eef3f7; }
@@ -105,7 +117,12 @@
 
   /* Cancha */
   .board { background: linear-gradient(180deg, #102a43, #0b1d2e); color: #fff; border-radius: 18px; padding: 12px; box-shadow: 0 6px 0 rgba(0,0,0,.25); }
-  .board .teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+  .board .teams { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+  @media (max-width: 360px) { /* el "N vs N" arriba: cada select tiene el ancho para mostrar el color completo */
+    .board .teams { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .board .teams .vs { grid-column: 1 / -1; order: -1; }
+    .board .teams .vs small { display: inline; margin-left: 6px; }
+  }
   .board .team { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .board .crest { width: 44px; height: 44px; }
   .board .tname { font-family: "Lilita One"; font-size: 16px; letter-spacing: 1px; }
@@ -124,14 +141,18 @@
   .pitch .zone { position: absolute; left: 0; right: 0; height: 50%; transition: background .15s; }
   .pitch .zone.a { top: 0; } .pitch .zone.b { bottom: 0; }
   .pitch .zone.drop { background: rgba(255,255,255,.14); }
+  .pitch { --kit: 36px; --nm: 10.5px; }
+  .pitch.compacta { --kit: 28px; --nm: 9.5px; }
   .player { position: absolute; width: 22%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; cursor: grab; user-select: none; touch-action: none; transition: left .35s ease, top .35s ease; z-index: 2; }
   .player.dragging { transition: none; z-index: 6; cursor: grabbing; }
   .player.dragging .kit { transform: scale(1.15); }
   .player.target .kit, .player.sel .kit { filter: drop-shadow(0 0 0 #ffc107) drop-shadow(0 0 6px #ffc107); }
-  .kit { width: 40px; height: 40px; filter: drop-shadow(0 3px 2px rgba(0,0,0,.45)); transition: transform .15s; }
-  .plate { margin-top: 1px; display: flex; align-items: stretch; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 3px rgba(0,0,0,.35); max-width: 100%; }
-  .plate .pos { font: 800 9px Nunito; padding: 2px 4px; display: grid; place-items: center; }
-  .plate .nm { background: rgba(10,22,34,.85); color: #fff; font: 800 10.5px Nunito; padding: 1px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 74px; }
+  .kitw { position: relative; display: flex; }
+  .kitw .pos { position: absolute; left: calc(100% - 9px); top: 0; font: 800 8px Nunito, sans-serif; padding: 1px 3px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.4); letter-spacing: .3px; }
+  .kit { width: var(--kit); height: var(--kit); filter: drop-shadow(0 3px 2px rgba(0,0,0,.45)); transition: transform .15s; }
+  /* El nombre usa todo el ancho que le toca en su línea, hasta en 2 renglones */
+  .plate { margin-top: 1px; display: flex; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 3px rgba(0,0,0,.35); max-width: 100%; background: rgba(10,22,34,.85); }
+  .plate .nm { color: #fff; font: 800 var(--nm)/1.15 Nunito, sans-serif; padding: 1px 4px; text-align: center; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
   .pitch .empty-msg { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-weight: 800; text-align: center; padding: 20px; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
   .bench { display: flex; align-items: center; gap: 8px; margin-top: 14px; background: rgba(10,22,34,.55); color: #fff; padding: 8px 10px; border-radius: 12px; font: 800 12px Nunito; overflow-x: auto; }
   .bench .tag { color: var(--gold); white-space: nowrap; }
@@ -139,6 +160,8 @@
   .hint { color: #fff; font-size: 12px; text-align: center; opacity: .85; margin: 10px 0; }
   .levels .list li { flex-wrap: wrap; row-gap: 4px; }
   .levels .list li .name { flex: 1 1 auto; max-width: 100%; } /* si el nombre no cabe al lado, los botones bajan */
+  .levels .tag.sup { background: #fff8e1; color: #8a5a00; }
+  .levels .tag.cas { background: #eef3f7; color: var(--muted); }
   .levels .list li .seg { display: flex; flex: none; border: 2px solid var(--line); border-radius: 10px; overflow: hidden; }
   .levels .list li .seg button { border: 0; background: #fff; font: 800 15px Nunito; width: 44px; height: 44px; cursor: pointer; color: var(--muted); border-left: 1px solid var(--line); }
   .levels .list li .seg button:first-child { border-left: 0; }
@@ -155,6 +178,13 @@
     .score .goals b { order: -1; flex-basis: 100%; line-height: 1; }
   }
   .score .dash { font-family: "Lilita One"; font-size: 30px; color: var(--gold); }
+  .pfecha { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .pfecha label { margin: 0; color: #9fb3c8; font-weight: 800; white-space: nowrap; }
+  .pfecha input { flex: 1; min-width: 0; background: #1b3550; color: #fff; border-color: #334e68; color-scheme: dark; }
+  @media (max-width: 380px) { .pfecha { flex-wrap: wrap; gap: 4px; } .pfecha label { flex-basis: 100%; } }
+  .rank .who { font-weight: 800; }
+  .rank .who small { color: var(--muted); font-weight: 600; font-size: 12px; }
+  .hist .fecha { width: 64px; flex: none; color: var(--sky); font-weight: 800; font-size: 13px; background: none; border: 0; min-height: 44px; padding: 0; text-align: left; cursor: pointer; text-decoration: underline dotted; }
   .award { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .award:last-child { border-bottom: 0; }
   .award .ic { font-size: 28px; width: 40px; text-align: center; }
@@ -175,7 +205,7 @@
   .hist .name { overflow-wrap: break-word; }
   @media (max-width: 380px) { /* el MVP baja a su propia línea en vez de cortarse */
     .hist li { flex-wrap: wrap; row-gap: 0; }
-    .hist .name { order: 1; flex-basis: 100%; padding-left: 56px; margin-top: -6px; }
+    .hist .name { order: 1; flex-basis: 100%; padding-left: 64px; margin-top: -6px; }
     .hist .w { margin-left: auto; }
   }
   .hist .res { font-family: "Lilita One"; font-size: 18px; min-width: 54px; text-align: center; }
@@ -196,6 +226,12 @@
   .pay .state small { display: block; font-size: 11.5px; color: var(--muted); }
   .beer { font-size: 20px; width: 44px; height: 44px; flex: none; background: none; border: 0; border-radius: 12px; cursor: pointer; filter: grayscale(1); opacity: .35; }
   .beer.on { filter: none; opacity: 1; }
+  .pay .state.nada { cursor: default; color: var(--muted); }
+  @media (max-width: 380px) { /* suplentes: el nombre arriba y ⚽ 🍻 y el monto abajo */
+    .pay li.sup { flex-wrap: wrap; }
+    .pay li.sup .pname { flex-basis: 100%; }
+    .pay li.sup .state { margin-left: auto; }
+  }
   .totals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
   .totals div { background: #f5f8fa; border-radius: 12px; padding: 8px; text-align: center; font-size: 12px; color: var(--muted); }
   .totals b { display: block; font-family: "Lilita One"; font-weight: 400; color: var(--ink); font-size: 20px; }
@@ -222,9 +258,10 @@
 </head>
 <body>
 <header class="top"><h1>⚽ pichanga.app ⚽</h1></header>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <main>
+  <div class="banner" id="avisoGuardar" role="alert" hidden></div>
   <!-- PANTALLA 1 -->
   <section class="screen active" id="s-convocatoria">
     <h2 class="title">📅 NUEVA PICHANGA ⚽</h2>
@@ -233,10 +270,11 @@
         <div style="flex:1.35"><label for="fecha">📆 Fecha</label><input type="date" id="fecha"></div>
         <div><label for="hora">⏰ Hora</label><input type="time" id="hora"></div>
       </div>
-      <label>📍 Lugar</label>
+      <p class="note alerta" id="avisoFecha" hidden></p>
+      <label for="lugar">📍 Lugar</label>
       <div class="row">
         <input id="lugar" placeholder="Complejo El Campito, Cancha 3" style="flex:3">
-        <a class="btn small ghost" id="mapLink" target="_blank" rel="noopener" style="flex:1;text-decoration:none">🗺️ Mapa</a>
+        <a class="btn small ghost" id="mapLink" target="_blank" rel="noopener" style="flex:1;text-decoration:none;white-space:nowrap">🗺️ Mapa</a>
       </div>
       <label style="text-align:center;margin-top:14px">¿Cuántos por lado? 👥</label>
       <div class="stepper">
@@ -249,11 +287,12 @@
     <div class="card">
       <h2>🏃 Inscritos <span class="badge" id="cupos"></span></h2>
       <div class="row">
-        <input id="nuevo" placeholder="Nombre del jugador" style="flex:3" autocomplete="off">
-        <button class="btn" id="agregar" style="flex:1" aria-label="Agregar jugador">➕</button>
+        <input id="nuevo" placeholder="Nombre del jugador" style="flex:3" autocomplete="off" autocapitalize="words" maxlength="30" enterkeyhint="done">
+        <button class="btn" id="agregar" style="flex:1" aria-label="Agregar jugador">+</button>
       </div>
+      <div class="aviso" id="avisoSuben" hidden><span id="avisoSubenTxt"></span><button class="btn small green" id="avisarSuben">📲 Avisar</button><button class="x" id="cerrarSuben" aria-label="Cerrar aviso">✖</button></div>
       <button class="btn ghost" id="mismaLista" style="width:100%;margin-top:10px" hidden>🔁 Misma lista que la semana pasada</button>
-      <label>🏠 Caseros (toca para sumar)</label>
+      <div class="lbl-row"><label id="caserosLbl">🏠 Caseros (toca para sumar)</label><button type="button" class="linkbtn" id="editarCaseros" aria-pressed="false">✏️ Editar</button></div>
       <div class="chips" id="caseros"></div>
       <ul class="list" id="titulares" style="margin-top:10px"></ul>
       <div class="subs" id="subsBox">
@@ -331,6 +370,10 @@
         <label>Código QR (imagen)</label><input type="file" id="bQr" accept="image/*">
       </details>
       <img class="qr" id="qrView" alt="QR de pago" hidden>
+      <div class="row" id="qrAcciones" style="margin-top:8px" hidden>
+        <button class="btn small ghost" id="compartirQr">📲 Compartir QR</button>
+        <button class="btn small ghost" id="quitarQr">🗑️ Quitar QR</button>
+      </div>
     </div>
 
     <div class="card">
@@ -351,6 +394,11 @@
       <h2>📋 Estado de pago</h2>
       <p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Toca el nombre para marcar ✅ pagado (se guarda cuánto pagó). 🍻 = se queda al tercer tiempo.</p>
       <ul class="list pay" id="pagos"></ul>
+      <div class="subs" id="pagosSupBox" hidden>
+        <h2 style="margin:8px 0 2px;font-size:16px">⏳ Suplentes</h2>
+        <p style="margin:0 0 6px;font-size:13px;color:var(--muted)">⚽ = entró a jugar (paga cancha) · 🍻 = se queda al tercer tiempo.</p>
+        <ul class="list pay" id="pagosSup"></ul>
+      </div>
     </div>
 
     <div class="card">
@@ -382,6 +430,7 @@
         <div class="side"><svg class="crest" id="pCrestB" viewBox="0 0 64 64" style="width:40px;height:40px"></svg>
           <div class="goals"><button class="btn orange" data-gol="B,-1">−</button><b id="golesB">0</b><button class="btn" data-gol="B,1">+</button></div></div>
       </div>
+      <div class="pfecha"><label for="pFecha">📆 Fecha del partido</label><input type="date" id="pFecha"></div>
     </div>
 
     <div class="card" style="margin-top:12px">
@@ -411,6 +460,7 @@
     <div class="card" style="margin-top:14px">
       <h2>💾 Respaldo</h2>
       <p style="margin:0 0 10px;font-size:13px;color:var(--muted)">Los datos viven en este teléfono. Guarda un respaldo para no perder el historial o para pasarlo a otro celular.</p>
+      <p class="note" id="respaldoInfo" hidden></p>
       <div class="row">
         <button class="btn ghost" id="exportar">⬇️ Guardar respaldo</button>
         <label class="btn ghost" style="margin:0;color:var(--ink);font-size:15px">⬆️ Restaurar<input type="file" id="importar" accept="application/json,.json" hidden></label>
@@ -440,10 +490,11 @@ const COLORS = {
   "🟠 Naranjo": ["#ff7a00", "#ffffff"],
 };
 const KEY = "pichanga-v1";
-const SCHEMA = 3;           // versión de la forma de los datos (ver migrar). v3: pagos[n].libreta
+const SCHEMA = 4;           // versión de la forma de los datos (ver migrar). v3: pagos[n].libreta. v4: promovidos, jugo, post.fecha, 🍻 de suplentes
+const KEY_QR = KEY + "-qr"; // el QR (imagen pesada) se guarda aparte: si no cabe, el resto de los datos igual se guarda
 const $ = (id) => document.getElementById(id);
 
-const postVacio = () => ({ golesA: 0, golesB: 0, mvp: "", goleador: "", rustico: "", guardadoId: null });
+const postVacio = () => ({ golesA: 0, golesB: 0, mvp: "", goleador: "", rustico: "", guardadoId: null, fecha: "" });
 // Diccionario sin prototipo: un jugador llamado "constructor" o "__proto__" es una clave más
 const dic = (x) => Object.assign(Object.create(null), x && typeof x === "object" && !Array.isArray(x) ? x : {});
 const tiene = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -460,7 +511,10 @@ const defaults = () => ({
   costoCancha: "", costoTercer: "", // solo dígitos, en pesos
   pagos: dic(),             // pichanga actual: nombre -> { monto, fecha, previo?, libreta? } (monto null = pagó, sin monto anotado;
                             //   libreta = { antes, despues }: su deuda anterior, que pagó junto con la cuota, para poder devolverla)
-  tercer: dic(),            // nombre -> true si se queda al 🍻
+  tercer: dic(),            // nombre -> true si se queda al 🍻 (titular o suplente)
+  jugo: dic(),              // suplente -> true si entró a jugar (paga cancha)
+  promovidos: [],           // suplentes que subieron a titular y falta avisarles (📲 Avisar)
+  ultimoRespaldo: "",       // fecha ISO del último ⬇️ Guardar respaldo
   deudas: dic(),            // libreta: nombre -> [{ fecha, concepto, monto }] (monto > 0 debe, < 0 abono o a favor, null = sin monto)
   ultimaLista: [],          // inscritos de la pichanga anterior (🔁 Misma lista)
   post: postVacio(), historial: [],
@@ -502,10 +556,13 @@ function migrar(o) {
   if (!esISO(S.fecha)) S.fecha = "";
   ["costoCancha", "costoTercer"].forEach((k) => { const n = pesos(S[k]); S[k] = n ? String(n) : ""; });
   S.tercer = obj(S.tercer);
+  S.jugo = obj(S.jugo);
+  S.ultimoRespaldo = typeof S.ultimoRespaldo === "string" ? S.ultimoRespaldo : "";
   const po = obj(S.post), gid = +po.guardadoId;
   S.post = Object.assign(postVacio(), {
     golesA: Math.max(0, parseInt(po.golesA, 10) || 0), golesB: Math.max(0, parseInt(po.golesB, 10) || 0),
     mvp: str(po.mvp), goleador: str(po.goleador), rustico: str(po.rustico), guardadoId: Number.isSafeInteger(gid) && gid > 0 ? gid : null,
+    fecha: esISO(po.fecha) ? po.fecha : "",
   });
   // Historial: id numérico y único (se usa en el HTML y para borrar), goles enteros
   const ids = new Set();
@@ -555,41 +612,93 @@ function migrar(o) {
     if (cc && !t.includes(n)) (S.deudas[n] = S.deudas[n] || []).push({ fecha: S.fecha, concepto: "Pagó y no jugó (a favor)", monto: -monto });
     else S.pagos[n] = { monto: cc ? monto : null, fecha: "" };
   });
-  // 🍻 solo para titulares (la app antigua dejaba la marca pegada a quien se bajaba)
-  Object.keys(S.tercer).forEach((n) => { if (S.tercer[n] && t.includes(n)) S.tercer[n] = true; else delete S.tercer[n]; });
+  // 🍻: antes de v4 solo valía para titulares (la app antigua dejaba la marca pegada a quien se bajaba); desde v4 también suplentes
+  const conBeer = o.v >= 4 ? S.inscritos : t;
+  Object.keys(S.tercer).forEach((n) => { if (S.tercer[n] && conBeer.includes(n)) S.tercer[n] = true; else delete S.tercer[n]; });
+  Object.keys(S.jugo).forEach((n) => { if (S.jugo[n] && S.inscritos.includes(n)) S.jugo[n] = true; else delete S.jugo[n]; });
+  S.promovidos = nombres(S.promovidos).filter((n) => t.includes(n));
   delete S.morosos; delete S.pagado;
   S.v = SCHEMA;
   return S;
 }
 
+// Lee los datos guardados (y el QR, que vive en su propia clave) y los lleva a la forma actual
+function cargar(raw) {
+  const o = raw ? JSON.parse(raw) : {};
+  const st = migrar(o);
+  let qr = null; try { qr = localStorage.getItem(KEY_QR); } catch {}
+  if (qr != null) st.banco.qr = qr; // si no hay clave aparte, vale el QR de los datos antiguos
+  return { st, o };
+}
 let S;
 {
   let raw = null;
   try {
     raw = localStorage.getItem(KEY);
-    const o = raw ? JSON.parse(raw) : {};
+    const { st, o } = cargar(raw);
     // Copia intacta de los datos antiguos antes de cambiarles la forma
     if (raw && !(o.v >= SCHEMA)) { try { localStorage.setItem(`${KEY}-antes-v${SCHEMA}`, raw); } catch {} }
-    S = migrar(o);
+    S = st;
   } catch {
     if (raw) { try { localStorage.setItem(`${KEY}-danado`, raw); } catch {} }
     S = migrar({});
   }
 }
+// Los datos sin el QR (la imagen pesa cientos de KB: no se copia en cada tecla)
+const serial = () => JSON.stringify(S, function (k, v) { return k === "qr" && this === S.banco ? "" : v; });
 // Guardar un cambio que no es el de la acción con ↩️ Deshacer (ni su consecuencia automática, ver sigueDeshacer)
-// es una acción nueva: el ↩️ viejo se va para que no parezca que deshace lo último que se hizo
-const save = () => {
-  const json = JSON.stringify(S);
-  if (toast.accion && json !== toast.estado) olvidarDeshacer();
-  try { localStorage.setItem(KEY, json); } catch {}
+// es una acción nueva: el ↩️ viejo se va para que no parezca que deshace lo último que se hizo.
+// save() escribe en el teléfono al tiro; saveLuego() (mientras se escribe en un campo) un instante después,
+// así varias teclas seguidas son una sola escritura. Lo pendiente se escribe siempre al salir de la app.
+let ultimoGuardado = null, qrGuardado = null;
+const save = () => { if (toast.accion && serial() !== toast.estado) olvidarDeshacer(); guardarYa(); };
+const saveLuego = () => {
+  if (toast.accion && serial() !== toast.estado) olvidarDeshacer();
+  clearTimeout(save.h); save.h = setTimeout(guardarYa, 300);
 };
-save();
+function guardarYa() {
+  clearTimeout(save.h); save.h = null;
+  const json = serial(), qr = S.banco.qr || "", fallas = [];
+  if (json !== ultimoGuardado) {
+    try { localStorage.setItem(KEY, json); ultimoGuardado = json; } catch { fallas.push("datos"); }
+  }
+  if (qr !== qrGuardado) {
+    try { if (qr) localStorage.setItem(KEY_QR, qr); else localStorage.removeItem(KEY_QR); qrGuardado = qr; } catch { fallas.push("qr"); }
+  }
+  avisoGuardar(fallas);
+}
+// Si el teléfono no tiene espacio, se avisa (y no desaparece hasta que se pueda guardar)
+function avisoGuardar(fallas) {
+  const b = $("avisoGuardar");
+  if (!b) return;
+  b.hidden = !fallas.length;
+  b.textContent = fallas.includes("datos")
+    ? "⚠️ No se pudo guardar en este teléfono (memoria llena). Tus últimos cambios se perderán al cerrar: quita el QR en 💰 Pagos o guarda un respaldo."
+    : "⚠️ El QR no cupo en la memoria del teléfono: se verá hasta que cierres la app. Prueba con una imagen más chica.";
+}
+["pagehide", "beforeunload"].forEach((ev) => addEventListener(ev, guardarYa));
+document.addEventListener("visibilitychange", () => { if (document.hidden) guardarYa(); });
+document.addEventListener("focusout", () => { if (save.h) guardarYa(); }, true); // al salir de un campo, lo escrito ya queda guardado
+guardarYa();
+// Otra ventana de Pichanga (la app instalada y una pestaña del navegador) guardó cambios: se cargan aquí,
+// para que la próxima vez que esta guarde no borre lo que hizo la otra
+addEventListener("storage", (e) => {
+  if (e.storageArea !== localStorage) return;
+  if (e.key === KEY_QR) { S.banco.qr = qrGuardado = e.newValue || ""; renderTab(); return; }
+  if (e.key !== KEY || e.newValue == null || e.newValue === ultimoGuardado) return;
+  const pendiente = !!save.h;
+  clearTimeout(save.h); save.h = null;
+  try { const qr = S.banco.qr; S = migrar(JSON.parse(e.newValue)); S.banco.qr = qr; } catch { return; }
+  ultimoGuardado = e.newValue;
+  toast.accion = null; cerrarSheet(); cargarCampos(); renderTab();
+  toast(pendiente ? "⚠️ Pichanga está abierta en otra ventana: se cargó lo que guardó esa. Revisa tu último cambio" : "🔄 Datos actualizados desde otra ventana de Pichanga");
+});
 
 // Aviso flotante; con `accion` muestra un botón (ej. ↩️ Deshacer) durante 6 s.
 // Un aviso simple que llega mientras sigue vigente un ↩️ Deshacer lo conserva (encima, con el aviso viejo en chico)
 // solo si entremedio no hubo otra acción: los datos siguen iguales o cambiaron solos (ver sigueDeshacer).
 // Si el aviso cuenta una acción nueva, el ↩️ viejo se va: no debe parecer que deshace esa acción.
-const huellaTodo = () => JSON.stringify(S);
+const huellaTodo = serial;
 function toast(msg, accion) {
   const t = $("toast"), ahora = Date.now();
   let antes = "";
@@ -631,6 +740,20 @@ const nivel = (n) => S.niveles[n] || 3;
 const hoyISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const masDias = (iso, n) => { const d = new Date((iso || hoyISO()) + "T12:00:00"); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const fechaCorta = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : "antes");
+const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+const lugar = () => (S.lugar || "").trim();
+
+// Nombres: sin espacios dobles ni caracteres invisibles, y una "clave" que ignora mayúsculas y tildes
+// ("José", "jose" y "José" escrito con tilde combinada son la misma persona)
+const limpiarNombre = (s) => String(s ?? "").normalize("NFC")
+  .replace(/[\u0000-\u001F\u007F-\u009F\u00AD\u200B\u200C\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g, "")
+  .replace(/\s+/g, " ").trim();
+const clave = (s) => limpiarNombre(s).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+const mismo = (a, b) => clave(a) === clave(b);
+const nombreValido = (s) => /[\p{L}\p{N}\p{S}]/u.test(s);
+// En WhatsApp *, _, ~ y ` dan formato: en los nombres se cambian por caracteres que se ven igual
+const waSafe = (s) => String(s ?? "").replace(/\*/g, "∗").replace(/_/g, "＿").replace(/~/g, "∼").replace(/`/g, "ˋ");
+const lista = (ns) => (ns.length > 1 ? ns.slice(0, -1).join(", ") + " y " + ns[ns.length - 1] : ns.join(""));
 
 // Campo de plata: acepta "49.000", guarda solo dígitos y muestra con punto de miles
 function campoPlata(el, alCambiar) {
@@ -712,6 +835,9 @@ function show(id) {
   tab = TABS.includes(id) ? id : TABS[0];
   document.querySelectorAll("nav.tabs button").forEach((x) => x.classList.toggle("active", x.dataset.go === tab));
   document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === tab));
+  // Un aviso de la pestaña anterior no queda tapando esta (el ↩️ Deshacer sí se mantiene sus segundos)
+  if (!toast.accion) { clearTimeout(toast.h); $("toast").classList.remove("show"); }
+  try { localStorage.setItem(KEY + "-tab", JSON.stringify({ tab, t: Date.now() })); } catch {}
   renderTab();
   window.scrollTo(0, 0);
 }
@@ -763,28 +889,43 @@ $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet") || e.t
 
 /* ---------- Pantalla 1: Convocatoria ---------- */
 ["fecha", "hora", "lugar"].forEach((k) => {
-  $(k).addEventListener("input", () => { S[k] = $(k).value; save(); updateMap(); });
+  $(k).addEventListener("input", () => { S[k] = $(k).value; saveLuego(); updateMap(); avisoFecha(); });
+});
+// Un lugar con solo espacios es "Por definir"
+$("lugar").addEventListener("change", () => {
+  const v = $("lugar").value.trim().replace(/\s+/g, " ");
+  if (v !== $("lugar").value) { $("lugar").value = S.lugar = v; save(); updateMap(); }
 });
 function cargarCampos() {
   ["fecha", "hora", "lugar"].forEach((k) => ($(k).value = S[k]));
   ["costoCancha", "costoTercer"].forEach((k) => ($(k).value = miles(S[k])));
   Object.entries(bankMap).forEach(([id, k]) => ($(id).value = S.banco[k] || ""));
   $("colorA").value = S.colorA; $("colorB").value = S.colorB;
-  updateMap();
+  updateMap(); avisoFecha();
 }
 function updateMap() {
-  $("mapLink").href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(S.lugar || "cancha de fútbol");
+  const l = lugar();
+  $("mapLink").hidden = !l; // sin lugar no hay mapa que abrir
+  $("mapLink").href = l ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(l) : "#";
 }
+function avisoFecha() {
+  const pasada = !!S.fecha && S.fecha < hoyISO();
+  $("avisoFecha").hidden = !pasada;
+  $("avisoFecha").textContent = pasada ? `⚠️ Esa fecha ya pasó (${fechaBonita()}). Revisa el 📆 antes de convocar.` : "";
+}
+const horaTxt = () => (S.hora ? `${S.hora} hrs` : "Por definir");
 
-// Un nombre ya conocido escrito con otras mayúsculas ("juan" por "Juan") es la misma persona:
-// se usa la forma guardada, para no partir su deuda ni su chip en dos
-const conocido = (name) => S.inscritos.concat(S.caseros, Object.keys(S.deudas)).find((x) => x.toLowerCase() === name.toLowerCase()) || name;
+// Un nombre ya conocido escrito distinto ("juan", "Juan  ", "Júan") es la misma persona:
+// se usa la forma guardada, para no partir su deuda, su nivel ni su chip en dos
+const conocidos = () => [...new Set(S.inscritos.concat(S.caseros, Object.keys(S.deudas), Object.keys(S.niveles)))];
+const conocido = (name) => conocidos().find((x) => mismo(x, name)) || name;
 function addPlayer(name, callado) {
-  name = conocido(name.trim().replace(/\s+/g, " "));
-  if (!name) return false;
-  if (S.inscritos.some((n) => n.toLowerCase() === name.toLowerCase())) { if (!callado) toast("Ya está inscrito 😉"); return false; }
+  name = limpiarNombre(name);
+  if (!nombreValido(name)) { if (!callado) toast("✍️ Escribe el nombre del jugador"); return false; }
+  name = conocido(name);
+  if (S.inscritos.some((n) => mismo(n, name))) { if (!callado) toast("Ya está inscrito 😉"); return false; }
   S.inscritos.push(name);
-  if (!S.caseros.some((n) => n.toLowerCase() === name.toLowerCase())) S.caseros.push(name);
+  if (!S.caseros.some((n) => mismo(n, name))) S.caseros.push(name);
   if (!callado) {
     const d = debe(name) ? `⚠️ ${name} debe ${deudaLarga(name)}` : "";
     if (S.inscritos.length > cupo()) toast(`⏳ ${name} quedó de suplente` + (d ? ` · ${d}` : ""));
@@ -793,12 +934,14 @@ function addPlayer(name, callado) {
   save(); renderConvocatoria();
   return true;
 }
+// Suplentes que pasan a titular: quedan en el aviso "📲 Avisar" hasta que se les avise
+function promover(ns) { ns.forEach((n) => { delete S.jugo[n]; if (!S.promovidos.includes(n)) S.promovidos.push(n); }); }
 // Foto de lo que cambia al bajar a alguien, para poder deshacer
-const foto = () => JSON.stringify({ inscritos: S.inscritos, pagos: S.pagos, tercer: S.tercer, deudas: S.deudas, equipos: S.equipos, porLado: S.porLado });
-const huellaLista = () => JSON.stringify([S.inscritos, S.pagos, S.tercer, S.deudas, S.porLado]);
+const foto = () => JSON.stringify({ inscritos: S.inscritos, pagos: S.pagos, tercer: S.tercer, jugo: S.jugo, deudas: S.deudas, equipos: S.equipos, porLado: S.porLado, promovidos: S.promovidos });
+const huellaLista = () => JSON.stringify([S.inscritos, S.pagos, S.tercer, S.jugo, S.deudas, S.porLado]);
 function restaurar(f) {
   const r = JSON.parse(f);
-  Object.assign(S, r, { pagos: dic(r.pagos), tercer: dic(r.tercer), deudas: dic(r.deudas) });
+  Object.assign(S, r, { pagos: dic(r.pagos), tercer: dic(r.tercer), jugo: dic(r.jugo), deudas: dic(r.deudas) });
   save(); renderTab();
 }
 let ultimaBaja = 0;
@@ -807,9 +950,15 @@ function removePlayer(name) {
   if (idx < 0) return;
   const antes = foto(), eraTitular = idx < cupo();
   const favor = liberarPago(name); // antes de sacarlo: su cuota todavía cuenta
+  delete S.jugo[name];
   S.inscritos.splice(idx, 1);
+  S.promovidos = S.promovidos.filter((n) => n !== name);
   let msg = `✖ ${name} se bajó`;
-  if (eraTitular && S.inscritos.length >= cupo()) msg += ` · 🔼 ${S.inscritos[cupo() - 1]} sube a titular`;
+  if (eraTitular && S.inscritos.length >= cupo()) {
+    const sube = S.inscritos[cupo() - 1];
+    msg += ` · 🔼 ${sube} sube a titular`;
+    promover([sube]);
+  }
   if (favor) msg += ` · 💚 su pago de ${plata(favor)} queda a favor`;
   ultimaBaja = Date.now();
   save(); renderConvocatoria();
@@ -817,69 +966,156 @@ function removePlayer(name) {
   // aquí los equipos solo pueden haber cambiado solos (reajuste al abrir Equipos), y vuelven como estaban
   conDeshacer(msg, huellaLista, () => { restaurar(antes); toast(`↩️ ${name} volvió a su lugar`); });
 }
-$("agregar").addEventListener("click", () => { addPlayer($("nuevo").value); $("nuevo").value = ""; $("nuevo").focus(); });
+$("agregar").addEventListener("click", () => {
+  // Si no se pudo inscribir (repetido, vacío) lo escrito se queda para corregirlo
+  if (addPlayer($("nuevo").value)) $("nuevo").value = "";
+  $("nuevo").focus();
+});
 $("nuevo").addEventListener("keydown", (e) => { if (e.key === "Enter") $("agregar").click(); });
-$("mas").addEventListener("click", () => { if (S.porLado < 11) { S.porLado++; save(); renderConvocatoria(); } });
+$("mas").addEventListener("click", () => {
+  if (S.porLado >= 11) return;
+  const antes = titulares();
+  S.porLado++;
+  const suben = titulares().filter((n) => !antes.includes(n));
+  promover(suben);
+  save(); renderConvocatoria();
+  toast(suben.length ? `🔼 ${lista(suben)} ${suben.length > 1 ? "suben" : "sube"} a titular` : `👥 Ahora ${S.porLado} vs ${S.porLado}`);
+});
 $("menos").addEventListener("click", () => {
   if (S.porLado <= 3) return;
   const bajan = S.inscritos.slice(cupo() - 2, cupo()), pagaron = bajan.filter((n) => pagoDe(n) > 0);
   if (pagaron.length && !confirm(pagaron.length === 1
     ? `${pagaron[0]} ya pagó y pasaría a suplente. Su pago queda como saldo a favor 💚. ¿Seguir?`
     : `${pagaron.join(" y ")} ya pagaron y pasarían a suplentes. Sus pagos quedan como saldo a favor 💚. ¿Seguir?`)) return;
+  const antes = foto();
   bajan.forEach((n) => liberarPago(n));
   S.porLado--;
+  S.promovidos = S.promovidos.filter((n) => !bajan.includes(n));
   save(); renderConvocatoria();
-  if (bajan.length) toast(`⏳ ${bajan.join(" y ")} ${bajan.length > 1 ? "pasan" : "pasa"} a suplente`);
+  if (bajan.length) conDeshacer(`⏳ ${lista(bajan)} ${bajan.length > 1 ? "pasan a suplentes" : "pasa a suplente"}`, huellaLista,
+    () => { restaurar(antes); toast(`↩️ ${S.porLado} vs ${S.porLado} otra vez`); });
+  else toast(`👥 Ahora ${S.porLado} vs ${S.porLado}`);
 });
 
+let editandoCaseros = false;
 function renderConvocatoria() {
   $("porLado").textContent = `${S.porLado} vs ${S.porLado}`;
+  $("menos").disabled = S.porLado <= 3; $("mas").disabled = S.porLado >= 11;
   const libres = Math.max(0, cupo() - S.inscritos.length);
   $("cupos").textContent = libres ? `${libres} ${libres === 1 ? "cupo libre" : "cupos libres"}` : "¡Completo!";
-  const li = (n, i) => `<li><span class="num">${i}.</span><span class="name">🏃 ${esc(n)}${tagDeuda(n)}</span><button class="x" data-del="${esc(n)}" aria-label="Bajar a ${esc(n)}">✖</button></li>`;
-  const t = titulares(), s = suplentes();
+  const t = titulares(), s = suplentes(), suben = S.promovidos.filter((n) => t.includes(n));
+  // Tocar el nombre permite corregirlo (sin perder su lugar, pagos, nivel ni deudas)
+  const li = (n, i) => `<li><span class="num">${i}.</span><button type="button" class="name ren" data-ren="${esc(n)}" title="Cambiar nombre">🏃 ${esc(n)}${
+    suben.includes(n) ? ` <span class="tag sube">🔼 subió</span>` : ""}${tagDeuda(n)}</button><button class="x" data-del="${esc(n)}" aria-label="Bajar a ${esc(n)}">✖</button></li>`;
   $("titulares").innerHTML = t.length ? t.map((n, i) => li(n, i + 1)).join("") : `<li class="empty">Nadie inscrito todavía. ¡Suma a los caseros! 👇👆</li>`;
   $("suplentes").innerHTML = s.length ? s.map((n, i) => li(n, i + 1)).join("") : `<li class="empty">Sin suplentes</li>`;
+  $("caseros").classList.toggle("editando", editandoCaseros);
   $("caseros").innerHTML = S.caseros.map((n) => {
-    const dentro = S.inscritos.includes(n);
+    if (editandoCaseros) return `<button type="button" class="chip" data-ren="${esc(n)}">✏️ ${esc(n)}${tagDeuda(n)}</button>`;
+    const dentro = S.inscritos.some((x) => mismo(x, n));
     return `<button type="button" class="chip ${dentro ? "in" : ""}" data-add="${esc(n)}">${dentro ? "✓" : "+"} ${esc(n)}${tagDeuda(n)}</button>`;
-  }).join("");
+  }).join("") || `<span class="empty">Sin caseros: se suman solos al inscribir a alguien</span>`;
+  $("caserosLbl").textContent = editandoCaseros ? "✏️ Toca un casero para renombrarlo o quitarlo" : "🏠 Caseros (toca para sumar)";
+  $("editarCaseros").textContent = editandoCaseros ? "✅ Listo" : "✏️ Editar";
+  $("editarCaseros").setAttribute("aria-pressed", String(editandoCaseros));
+  $("avisoSuben").hidden = !suben.length;
+  $("avisoSubenTxt").textContent = suben.length ? `🔼 ${lista(suben)} ${suben.length > 1 ? "subieron" : "subió"} a titular` : "";
   // El botón no desaparece al completar la lista (si se fuera, los chips subirían bajo el dedo)
-  const rep = S.ultimaLista.filter((n) => !S.inscritos.includes(n));
+  const rep = S.ultimaLista.filter((n) => !S.inscritos.some((x) => mismo(x, n)));
   $("mismaLista").hidden = !S.ultimaLista.length;
   $("mismaLista").disabled = !rep.length;
   $("mismaLista").textContent = rep.length ? `🔁 Misma lista que la semana pasada (${rep.length})` : "✅ Ya están todos los de la semana pasada";
-  updateMap();
+  updateMap(); avisoFecha();
 }
+$("editarCaseros").addEventListener("click", () => { editandoCaseros = !editandoCaseros; renderConvocatoria(); });
 document.addEventListener("click", (e) => {
   // Un doble toque en ✖ no debe bajar también al que sube a esa fila
   const d = e.target.closest("[data-del]"); if (d) { if (Date.now() - ultimaBaja > 450) removePlayer(d.dataset.del); return; }
+  const r = e.target.closest("[data-ren]"); if (r) return abrirRenombrar(r.dataset.ren);
   const a = e.target.closest("[data-add]"); if (a) addPlayer(a.dataset.add);
 });
 $("mismaLista").addEventListener("click", () => {
-  const rep = S.ultimaLista.filter((n) => !S.inscritos.includes(n));
+  const rep = S.ultimaLista.filter((n) => !S.inscritos.some((x) => mismo(x, n)));
   if (!rep.length) return;
   const antes = foto(), sumados = rep.filter((n) => addPlayer(n, true)), conDeuda = sumados.filter(debe);
   conDeshacer(`🔁 ${sumados.length} inscritos como la semana pasada` + (conDeuda.length ? ` · ⚠️ ${conDeuda.length} con deuda` : ""), huellaLista,
     () => { restaurar(antes); toast("↩️ Lista como estaba"); });
 });
+// 📲 Avisar a los que subieron de suplente a titular
+$("avisarSuben").addEventListener("click", () => {
+  const ns = S.promovidos.filter((n) => titulares().includes(n)); if (!ns.length) return;
+  const varios = ns.length > 1;
+  openWhatsApp(`🔼 ¡${lista(ns.map(waSafe))}, ${varios ? "quedaron de titulares" : "quedaste de titular"} para la pichanga! ⚽\n\n` +
+    `📅 ${fechaBonita()}\n⏰ ${horaTxt()}\n📍 ${waSafe(lugar() || "Por definir")}\n\n¿${varios ? "Confirman" : "Confirmas"}? 👍`);
+  S.promovidos = []; save(); renderConvocatoria();
+});
+$("cerrarSuben").addEventListener("click", () => { S.promovidos = []; save(); renderConvocatoria(); });
 
-function fechaBonita() {
-  if (!S.fecha) return "Por definir";
-  const d = new Date(S.fecha + "T12:00:00");
-  const txt = d.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
+/* Renombrar a un jugador o quitarlo de los caseros */
+function renombrar(viejo, nuevo) {
+  const uniq = (a) => [...new Set(a.map((n) => (n === viejo ? nuevo : n)))];
+  ["inscritos", "caseros", "ultimaLista", "promovidos"].forEach((k) => (S[k] = uniq(S[k])));
+  S.equipos = { A: uniq(S.equipos.A), B: uniq(S.equipos.B) };
+  [S.niveles, S.pagos, S.tercer, S.jugo].forEach((o) => { if (tiene(o, viejo)) { if (!tiene(o, nuevo)) o[nuevo] = o[viejo]; delete o[viejo]; } });
+  if (tiene(S.deudas, viejo)) {
+    S.deudas[nuevo] = S.deudas[nuevo] ? S.deudas[nuevo].concat(S.deudas[viejo]).sort((a, b) => (a.fecha || "").localeCompare(b.fecha || "")) : S.deudas[viejo];
+    delete S.deudas[viejo]; limpiar(nuevo);
+  }
+  const premios = (p) => ["mvp", "goleador", "rustico"].forEach((k) => { if (p[k] === viejo) p[k] = nuevo; });
+  premios(S.post);
+  S.historial.forEach((p) => { p.A = uniq(p.A); p.B = uniq(p.B); premios(p); });
+}
+function abrirRenombrar(n) {
+  const esCasero = S.caseros.includes(n), inscrito = S.inscritos.includes(n);
+  sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>✏️ ${esc(n)}</h2>
+    <p class="sub">Corrige el nombre sin perder su lugar en la lista, su nivel, sus pagos, sus deudas ni su historial.</p>
+    <label for="rNombre">Nombre</label>
+    <input id="rNombre" value="${esc(n)}" maxlength="30" autocomplete="off" autocapitalize="words" enterkeyhint="done">
+    <button class="btn block" id="rOk">💾 Guardar nombre</button>
+    ${esCasero ? `<button class="btn ghost block" id="rQuitar">🗑️ Quitar de los caseros</button>
+    <p class="sub" style="margin-top:6px">${inscrito ? "Sigue inscrito en esta pichanga: solo deja de aparecer como casero." : "Sus deudas y su historial no se borran."}</p>` : ""}
+    <button class="btn ghost block" data-cerrar-sheet>Cancelar</button>`);
+  const guardar = () => {
+    const nuevo = limpiarNombre($("rNombre").value);
+    if (!nombreValido(nuevo)) return toast("✍️ Escribe un nombre");
+    if (nuevo === n) return cerrarSheet();
+    const otro = conocidos().find((x) => x !== n && mismo(x, nuevo));
+    if (otro && S.inscritos.includes(otro) && inscrito) return toast(`⚠️ ${otro} ya está inscrito`);
+    if (otro && !confirm(`Ya existe "${otro}". ¿Es la misma persona? Se juntan sus deudas, su nivel y su historial como "${otro}".`)) return;
+    const final = otro || nuevo, antes = serial();
+    renombrar(n, final); save(); cerrarSheet(); renderTab();
+    conDeshacer(otro ? `🤝 ${n} unido con ${final}` : `✏️ ${n} ahora es ${final}`, serial, () => {
+      const qr = S.banco.qr; S = migrar(JSON.parse(antes)); S.banco.qr = qr; save(); cargarCampos(); renderTab(); toast("↩️ Nombre como estaba");
+    });
+  };
+  $("rOk").addEventListener("click", guardar);
+  $("rNombre").addEventListener("keydown", (e) => { if (e.key === "Enter") guardar(); });
+  if ($("rQuitar")) $("rQuitar").addEventListener("click", () => {
+    const antes = JSON.stringify(S.caseros);
+    S.caseros = S.caseros.filter((x) => x !== n); save(); cerrarSheet(); renderConvocatoria();
+    conDeshacer(`🗑️ ${n} ya no es casero`, () => JSON.stringify(S.caseros), () => { S.caseros = JSON.parse(antes); save(); renderConvocatoria(); toast(`↩️ ${n} volvió a los caseros`); });
+  });
+}
+
+// Fecha legible: "Sábado, 17 de octubre" (con el año si no es el actual)
+function fechaBonita(iso = S.fecha) {
+  if (!iso) return "Por definir";
+  const d = new Date(iso + "T12:00:00");
+  const txt = d.toLocaleDateString("es-CL", Object.assign({ weekday: "long", day: "numeric", month: "long" },
+    d.getFullYear() !== new Date().getFullYear() ? { year: "numeric" } : {}));
   return txt.charAt(0).toUpperCase() + txt.slice(1);
 }
 $("waConvocar").addEventListener("click", () => {
-  const t = titulares(), s = suplentes();
+  if (S.fecha && S.fecha < hoyISO() && !confirm(`La fecha de la pichanga (${fechaBonita()}) ya pasó. ¿Enviar la convocatoria igual?`)) return;
+  const t = titulares(), s = suplentes(), l = lugar();
   const libres = cupo() - t.length;
-  let msg = `⚽ *NUEVA PICHANGA* ⚽\n\n📅 ${fechaBonita()}\n⏰ ${S.hora || "Por definir"} hrs\n📍 ${S.lugar || "Por definir"}\n`;
-  if (S.lugar) msg += `🗺️ ${$("mapLink").href}\n`;
+  let msg = `⚽ *NUEVA PICHANGA* ⚽\n\n📅 ${fechaBonita()}\n⏰ ${horaTxt()}\n📍 ${l ? waSafe(l) : "Por definir"}\n`;
+  if (l) msg += `🗺️ ${$("mapLink").href}\n`;
   msg += `👥 ${S.porLado} vs ${S.porLado}\n\n*Inscritos (${t.length}/${cupo()}):*\n`;
-  msg += t.map((n, i) => `${i + 1}. ${n}`).join("\n") || "_(nadie aún)_";
-  if (libres > 0) msg += `\n\n🔥 *Quedan ${libres} cupos.* ¡Anótate!`;
+  msg += t.map((n, i) => `${i + 1}. ${waSafe(n)}`).join("\n") || "_(nadie aún)_";
+  if (libres > 0) msg += `\n\n🔥 *${libres === 1 ? "Queda 1 cupo" : `Quedan ${libres} cupos`}.* ¡Anótate!`;
   else msg += `\n\n✅ *¡Cupos completos!*`;
-  if (s.length) msg += `\n\n⏳ *Suplentes:*\n` + s.map((n, i) => `${i + 1}. ${n}`).join("\n");
+  if (s.length) msg += `\n\n⏳ *Suplentes:*\n` + s.map((n, i) => `${i + 1}. ${waSafe(n)}`).join("\n");
   openWhatsApp(msg);
 });
 
@@ -887,32 +1123,47 @@ $("waConvocar").addEventListener("click", () => {
 const colorOpts = Object.keys(COLORS).map((c) => `<option>${c}</option>`).join("");
 $("colorA").innerHTML = colorOpts; $("colorB").innerHTML = colorOpts;
 $("colorA").value = S.colorA; $("colorB").value = S.colorB;
-$("colorA").addEventListener("change", () => { S.colorA = $("colorA").value; save(); renderEquipos(); });
-$("colorB").addEventListener("change", () => { S.colorB = $("colorB").value; save(); renderEquipos(); });
+// Los dos equipos nunca quedan del mismo color: si se elige el del otro, se intercambian
+["A", "B"].forEach((t) => $("color" + t).addEventListener("change", () => {
+  const o = t === "A" ? "B" : "A", v = $("color" + t).value;
+  if (v === S["color" + o]) {
+    S["color" + o] = S["color" + t]; $("color" + o).value = S["color" + o];
+    toast(`🔁 Colores intercambiados: el Equipo ${o} ahora es ${S["color" + o]}`);
+  }
+  S["color" + t] = v; save(); renderEquipos();
+}));
 
 // Camiseta: misma silueta para la pantalla y para la imagen exportada
 const SHIRT = "M21 6 L27 3 Q32 9 37 3 L43 6 L58 14 L53 27 L46 24 L46 60 L18 60 L18 24 L11 27 L6 14 Z";
-const GK = ["#ffb300", "#1b1b1b"];
+// Arquero: el primer color de la lista que no se parezca a ninguno de los dos equipos (con amarillo o naranjo, el ámbar no sirve)
+const GKS = [["#ffb300", "#1b1b1b"], ["#8e24aa", "#ffffff"], ["#00bfa5", "#06302a"], ["#ec407a", "#ffffff"]];
+const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const distColor = (a, b) => { const x = rgb(a), y = rgb(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
+const gkColor = () => GKS.find(([bg]) => [S.colorA, S.colorB].every((c) => distColor(bg, COLORS[c][0]) > 80)) || GKS[1];
 // Líneas de campo según jugadores por equipo (sin contar arquero)
 const LINES = { 1: [], 2: [1], 3: [2], 4: [2, 1], 5: [2, 2], 6: [2, 2, 1], 7: [3, 2, 1], 8: [3, 3, 1], 9: [3, 3, 2], 10: [4, 3, 2], 11: [4, 4, 2] };
 function lines(n) {
   if (LINES[n]) return LINES[n];
   const out = n - 1, l = []; let r = out; while (r > 0) { const k = Math.min(4, r); l.push(k); r -= k; } return l;
 }
-// Posiciones en coordenadas de cancha (x 0-100, y 0-100) para un equipo que defiende el arco de arriba
-function slots(n) {
+// Posiciones en coordenadas de cancha (x 0-100, y 0-100) para un equipo que defiende el arco de arriba.
+// `h` = media altura de un jugador (camiseta + nombre) en % del largo de la cancha: las líneas se separan
+// lo justo para que ningún nombre tape la camiseta de la línea siguiente, y la última no cruza la mitad.
+function slots(n, h = 6) {
   if (!n) return [];
-  const pos = [{ x: 50, y: 5.5, gk: true }];
-  const ls = lines(n);
+  const g = h + 0.6, ls = lines(n), L = Math.max(1, ls.length);
+  const paso = Math.min(L <= 2 ? 16 : 13, (50 - h - g) / L);
+  const pos = [{ x: 50, y: g, gk: true, cnt: 1 }];
   ls.forEach((cnt, i) => {
-    const y = ls.length === 1 ? 24 : 17 + (22 * i) / (ls.length - 1);
-    for (let k = 0; k < cnt; k++) pos.push({ x: (100 / (cnt + 1)) * (k + 1), y });
+    for (let k = 0; k < cnt; k++) pos.push({ x: (100 / (cnt + 1)) * (k + 1), y: g + paso * (i + 1), cnt });
   });
   return pos;
 }
 function posLabel(i, n) {
   if (i === 0) return "ARQ";
   const ls = lines(n); let acc = 1;
+  // Una sola línea (3 vs 3, 4 vs 4 desparejo): mitad atrás, mitad adelante; nunca todos DEF
+  if (ls.length === 1) return ls[0] === 1 || i - 1 >= Math.floor(ls[0] / 2) ? "DEL" : "DEF";
   for (let li = 0; li < ls.length; li++) {
     if (i < acc + ls[li]) return li === 0 ? "DEF" : li === ls.length - 1 ? "DEL" : "MED";
     acc += ls[li];
@@ -932,14 +1183,24 @@ function crestSVG(bg, fg, letter) {
     <text x="32" y="42" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="26" fill="${fg}">${letter}</text>`;
 }
 
-// Deja en los equipos solo a los titulares, suma a los nuevos en el equipo más corto y,
-// si se bajó alguien, reacomoda para que no quede 7 vs 3.
+// Deja en los equipos solo a los titulares. El que sube de la banca entra en el lugar (y la posición) del que
+// se fue, también al arco; los demás nuevos van al equipo más corto y, si se bajó alguien, se reacomoda
+// para que no quede 7 vs 3.
 function syncEquipos(avisar = true) {
   const t = titulares(), E = S.equipos, antes = E.A.length + E.B.length, previo = JSON.stringify(E);
-  E.A = E.A.filter((n, i) => t.includes(n) && E.A.indexOf(n) === i);
-  E.B = E.B.filter((n, i) => t.includes(n) && E.B.indexOf(n) === i && !E.A.includes(n));
+  const vistos = new Set(), unico = (n) => !vistos.has(n) && vistos.add(n);
+  E.A = E.A.filter(unico); E.B = E.B.filter(unico);
+  const nuevos = t.filter((n) => !vistos.has(n)), cambios = [];
+  ["A", "B"].forEach((k) => {
+    E[k] = E[k].map((n, i) => {
+      if (t.includes(n) || !nuevos.length) return t.includes(n) ? n : null;
+      const entra = nuevos.shift();
+      cambios.push(`🔁 ${entra} entra por ${n} en el Equipo ${k}` + (i === 0 ? " (🧤 al arco)" : ""));
+      return entra;
+    }).filter((n) => n !== null);
+  });
   const salieron = E.A.length + E.B.length < antes;
-  t.forEach((n) => { if (!E.A.includes(n) && !E.B.includes(n)) (E.A.length <= E.B.length ? E.A : E.B).push(n); });
+  nuevos.forEach((n) => (E.A.length <= E.B.length ? E.A : E.B).push(n));
   let movidos = 0;
   while (salieron && Math.abs(E.A.length - E.B.length) > 1) {
     const [big, small] = E.A.length > E.B.length ? [E.A, E.B] : [E.B, E.A];
@@ -950,6 +1211,7 @@ function syncEquipos(avisar = true) {
   }
   if (JSON.stringify(E) !== previo) sigueDeshacer(); // lo hizo la app, no la persona
   if (movidos && avisar) toast(`⚖️ Equipos reajustados a ${E.A.length} vs ${E.B.length}. Revísalos o toca ⚖️ Armado Equilibrado`);
+  else if (cambios.length && avisar) toast(cambios.join(" · "));
   save();
 }
 const suma = (names) => names.reduce((s, n) => s + nivel(n), 0);
@@ -1001,19 +1263,36 @@ $("equilibrar").addEventListener("click", () => {
   equiposConDeshacer(d <= 1 ? "⚖️ Equipos parejos armados · 🧤 arqueros al azar" : `⚖️ Lo más parejo posible (diferencia ${d}) · 🧤 arqueros al azar`, antes);
 });
 
-// Coordenadas en pantalla de cada jugador: A arriba, B abajo (espejado)
-function layout() {
+// Coordenadas en pantalla de cada jugador: A arriba, B abajo (espejado). `ancho`: lo que puede ocupar su nombre (% del ancho)
+function layout(h) {
   const out = [];
   ["A", "B"].forEach((team) => {
-    const names = S.equipos[team], sl = slots(names.length);
+    const names = S.equipos[team], sl = slots(names.length, h);
     names.forEach((n, i) => {
-      const p = sl[i] || { x: 50, y: 30 };
-      out.push({ n, team, i, gk: i === 0, x: team === "A" ? p.x : 100 - p.x, y: team === "A" ? p.y * 0.98 + 1 : 99 - p.y * 0.98 });
+      const p = sl[i] || { x: 50, y: 30, cnt: 1 };
+      out.push({ n, team, i, gk: i === 0, x: team === "A" ? p.x : 100 - p.x, y: team === "A" ? p.y : 100 - p.y, ancho: Math.min(32, 100 / (p.cnt + 1) - 1.5) });
     });
   });
   return out;
 }
 
+// En la cancha, dos nombres que empiezan igual ("Juan Pablo Fernández" y "Juan Pablo González") se acortan
+// a "Juan Pablo F." y "Juan Pablo G.", para que se distingan aunque no quepan enteros
+function nombresCancha(ns) {
+  const out = Object.create(null), ini = (n) => clave(n).slice(0, 8);
+  ns.forEach((n) => {
+    const ws = n.split(" ");
+    out[n] = ws.length > 1 && n.length > 12 && ns.some((o) => o !== n && ini(o) === ini(n)) ? ws.slice(0, -1).join(" ") + " " + ws[ws.length - 1][0] + "." : n;
+  });
+  return out;
+}
+// Tamaño de los jugadores según el espacio: en pantallas angostas o con 9+ por lado, camisetas más chicas
+function medidasCancha() {
+  const p = $("pitch"), W = p.clientWidth || Math.min(448, innerWidth - 32), H = p.clientHeight || W * 108 / 68;
+  const compacta = W < 340 || Math.max(S.equipos.A.length, S.equipos.B.length) >= 9;
+  const kit = compacta ? 28 : 36, nm = compacta ? 9.5 : 10.5, alto = kit + 1 + 2 * Math.ceil(nm * 1.15) + 4;
+  return { compacta, h: (alto / 2 / H) * 100 };
+}
 function renderEquipos() {
   selected = null; // al redibujar no queda ninguna selección "fantasma"
   const [bgA, fgA] = COLORS[S.colorA], [bgB, fgB] = COLORS[S.colorB];
@@ -1021,13 +1300,18 @@ function renderEquipos() {
   $("crestB").innerHTML = crestSVG(bgB, fgB, "B");
   const nA = S.equipos.A.length, nB = S.equipos.B.length;
   $("vsTxt").textContent = `${nA} vs ${nB}`;
-  $("formTxt").textContent = nA ? lines(nA).join("-") : "";
-  const ps = layout();
+  // Formación de cada equipo (si son distintas, las dos)
+  const fA = nA ? lines(nA).join("-") || "🧤" : "—", fB = nB ? lines(nB).join("-") || "🧤" : "—";
+  $("formTxt").textContent = fA === fB ? fA : `${fA} | ${fB}`;
+  const m = medidasCancha(), gk = gkColor();
+  $("pitch").classList.toggle("compacta", m.compacta);
+  const ps = layout(m.h), corto = nombresCancha(ps.map((p) => p.n));
   $("players").innerHTML = ps.length ? ps.map((p) => {
-    const [bg, fg] = p.gk ? GK : COLORS[p.team === "A" ? S.colorA : S.colorB];
+    const [bg, fg] = p.gk ? gk : COLORS[p.team === "A" ? S.colorA : S.colorB];
     const [tb, tf] = COLORS[p.team === "A" ? S.colorA : S.colorB];
-    return `<div class="player" data-p="${esc(p.n)}" style="left:${p.x}%;top:${p.y}%">${kitSVG(bg, fg, p.i + 1)}
-      <div class="plate"><span class="pos" style="background:${tb};color:${tf}">${posLabel(p.i, p.team === "A" ? nA : nB)}</span><span class="nm">${esc(p.n)}</span></div></div>`;
+    return `<div class="player" data-p="${esc(p.n)}" title="${esc(p.n)}" style="left:${p.x}%;top:${p.y}%;width:${p.ancho}%">
+      <div class="kitw">${kitSVG(bg, fg, p.i + 1)}<span class="pos" style="background:${tb};color:${tf}">${posLabel(p.i, p.team === "A" ? nA : nB)}</span></div>
+      <div class="plate"><span class="nm">${esc(corto[p.n])}</span></div></div>`;
   }).join("") : `<div class="empty-msg">Inscribe jugadores en 📅 Convocatoria para armar los equipos</div>`;
   const sum = (t) => S.equipos[t].reduce((s, n) => s + nivel(n), 0);
   const a = sum("A"), b = sum("B"), tot = a + b || 1;
@@ -1037,9 +1321,14 @@ function renderEquipos() {
   $("balance").textContent = !a && !b ? "—" : Math.abs(diff) <= 1 ? "✔ Parejo" : `Ventaja ${diff > 0 ? "A" : "B"} +${Math.abs(diff)}`;
   const s = suplentes();
   $("bench").innerHTML = `<span class="tag">🪑 BANCA</span>` + (s.length ? s.map((n) => `<span class="b">${esc(n)}</span>`).join("") : `<span style="opacity:.7">Sin suplentes</span>`);
-  $("niveles").innerHTML = titulares().map((n) => `<li><span class="name">${esc(n)}</span><span class="seg">${
-    [1,2,3,4,5].map((k) => `<button data-lvl="${k}" data-n="${esc(n)}" class="${k === nivel(n) ? "on" : ""}">${k}</button>`).join("")
-  }</span></li>`).join("") || `<li class="empty">Sin jugadores</li>`;
+  // Niveles de todos los conocidos: titulares, suplentes y caseros que no vienen esta vez
+  const fila = (n, tag) => `<li><span class="name">${esc(n)}${tag}</span><span class="seg">${
+    [1, 2, 3, 4, 5].map((k) => `<button data-lvl="${k}" data-n="${esc(n)}" class="${k === nivel(n) ? "on" : ""}" aria-label="${esc(n)}: nivel ${k}">${k}</button>`).join("")
+  }</span></li>`;
+  const otros = S.caseros.filter((n) => !S.inscritos.includes(n));
+  $("niveles").innerHTML = titulares().map((n) => fila(n, "")).join("")
+    + s.map((n) => fila(n, ` <span class="tag sup">⏳ suplente</span>`)).join("")
+    + otros.map((n) => fila(n, ` <span class="tag cas">🏠 casero</span>`)).join("") || `<li class="empty">Sin jugadores</li>`;
 }
 $("niveles").addEventListener("click", (e) => {
   const b = e.target.closest("[data-lvl]"); if (!b) return;
@@ -1047,11 +1336,32 @@ $("niveles").addEventListener("click", (e) => {
 });
 
 const teamOf = (n) => (S.equipos.A.includes(n) ? "A" : S.equipos.B.includes(n) ? "B" : null);
-function move(name, to) {
+// Pasa a alguien al otro equipo, en el lugar libre más cercano a donde se soltó (x, y en % de la cancha).
+// Un equipo no puede pasar de N jugadores: para eso está el intercambio.
+function move(name, to, x, y) {
   const from = teamOf(name);
-  if (!from || from === to) return;
+  if (!from || from === to) return false;
+  if (S.equipos[to].length >= S.porLado) {
+    toast(`🚫 El Equipo ${to} ya tiene ${S.equipos[to].length}. Suelta a ${name} sobre un jugador para intercambiarlos`);
+    return false;
+  }
+  const eraArquero = S.equipos[from][0] === name;
   S.equipos[from] = S.equipos[from].filter((n) => n !== name);
-  S.equipos[to].push(name); save();
+  const dest = S.equipos[to];
+  let i = dest.length;
+  if (x != null) {
+    const sl = slots(dest.length + 1, medidasCancha().h); let mejor = Infinity;
+    sl.forEach((p, k) => {
+      const px = to === "A" ? p.x : 100 - p.x, py = to === "A" ? p.y : 100 - p.y, d = Math.hypot(px - x, (py - y) * 1.6);
+      if (d < mejor) { mejor = d; i = k; }
+    });
+  }
+  dest.splice(i, 0, name); save();
+  let msg = `➡️ ${name} pasa al Equipo ${to} · ${S.equipos.A.length} vs ${S.equipos.B.length}`;
+  if (i === 0 && dest.length > 1) msg += ` · 🧤 al arco`;
+  if (eraArquero && S.equipos[from].length) msg += ` · 🧤 ${S.equipos[from][0]} va al arco del ${from}`;
+  toast(msg);
+  return true;
 }
 function swap(a, b) {
   const ta = teamOf(a), tb = teamOf(b);
@@ -1067,10 +1377,12 @@ let drag = null, selected = null;
 function targetAt(x, y, self) {
   return document.elementsFromPoint(x, y).map((el) => el.closest && el.closest(".player")).find((el) => el && el !== self) || null;
 }
+const dentroCancha = (e) => { const r = $("pitch").getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; };
 $("pitch").addEventListener("pointerdown", (e) => {
+  if (drag || !e.isPrimary) return; // un segundo dedo no empieza otro arrastre
   const p = e.target.closest(".player"); if (!p) return deseleccionar(); // tocar el pasto cancela la selección
-  drag = { name: p.dataset.p, el: p, x: e.clientX, y: e.clientY, moved: false, over: null };
-  p.setPointerCapture(e.pointerId);
+  drag = { name: p.dataset.p, el: p, x: e.clientX, y: e.clientY, moved: false, over: null, id: e.pointerId };
+  try { p.setPointerCapture(e.pointerId); } catch {}
 });
 $("pitch").addEventListener("pointermove", (e) => {
   if (!drag) return;
@@ -1081,31 +1393,72 @@ $("pitch").addEventListener("pointermove", (e) => {
   const over = targetAt(e.clientX, e.clientY, drag.el);
   if (drag.over && drag.over !== over) drag.over.classList.remove("target");
   drag.over = over; if (over) over.classList.add("target");
-  const r = $("pitch").getBoundingClientRect(), top = e.clientY < r.top + r.height / 2;
-  $("zoneA").classList.toggle("drop", !over && top); $("zoneB").classList.toggle("drop", !over && !top);
+  // Fuera de la cancha no se resalta nada: soltar ahí cancela
+  const r = $("pitch").getBoundingClientRect(), top = e.clientY < r.top + r.height / 2, dentro = dentroCancha(e);
+  $("zoneA").classList.toggle("drop", !over && dentro && top); $("zoneB").classList.toggle("drop", !over && dentro && !top);
 });
 $("pitch").addEventListener("pointerup", (e) => {
-  if (!drag) return;
+  if (!drag || e.pointerId !== drag.id) return;
   const d = drag; drag = null;
   $("zoneA").classList.remove("drop"); $("zoneB").classList.remove("drop");
   if (d.moved) {
     if (d.over) { if (swap(d.name, d.over.dataset.p)) toast(`🔁 ${d.name} ⇄ ${d.over.dataset.p}`); }
-    else {
+    else if (dentroCancha(e)) {
       const r = $("pitch").getBoundingClientRect();
-      move(d.name, e.clientY < r.top + r.height / 2 ? "A" : "B");
+      move(d.name, e.clientY < r.top + r.height / 2 ? "A" : "B", ((e.clientX - r.left) / r.width) * 100, ((e.clientY - r.top) / r.height) * 100);
     }
     selected = null; renderEquipos(); return;
   }
-  if (!selected || !teamOf(selected)) { deseleccionar(); selected = d.name; d.el.classList.add("sel"); return; }
+  if (!selected || !teamOf(selected)) {
+    deseleccionar(); selected = d.name; d.el.classList.add("sel");
+    toast(`👆 ${d.name}: toca a otro jugador para intercambiarlos`); // el nombre completo, aunque en la cancha no quepa
+    return;
+  }
   if (selected !== d.name && swap(selected, d.name)) toast(`🔁 ${selected} ⇄ ${d.name}`);
   renderEquipos();
 });
-// Si el arrastre se interrumpe (segundo dedo, llamada), el jugador vuelve a su lugar
-$("pitch").addEventListener("pointercancel", () => { if (drag) { drag = null; $("zoneA").classList.remove("drop"); $("zoneB").classList.remove("drop"); renderEquipos(); } });
+// Si el arrastre se interrumpe (segundo dedo, llamada, el sistema toma el gesto), el jugador vuelve a su lugar
+const cancelarArrastre = () => { if (drag) { drag = null; $("zoneA").classList.remove("drop"); $("zoneB").classList.remove("drop"); renderEquipos(); } };
+$("pitch").addEventListener("pointercancel", (e) => { if (drag && e.pointerId === drag.id) cancelarArrastre(); });
+$("pitch").addEventListener("lostpointercapture", (e) => { if (drag && e.pointerId === drag.id) cancelarArrastre(); });
 
 // Exportar imagen de la cancha (mismo diseño que la pantalla)
+const FUENTE = (f) => f + ", system-ui, sans-serif"; // si las fuentes web no cargaron, sans-serif (nunca Times)
+// Rectángulo redondeado también en navegadores sin ctx.roundRect (iOS 15 o anterior)
+function rr(ctx, x, y, w, h, r) {
+  if (ctx.roundRect) return ctx.roundRect(x, y, w, h, r);
+  r = Math.min(r, w / 2, h / 2);
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+// Corta un texto con "…" para que no pase de `max` px
+function cortar(ctx, txt, max) {
+  if (ctx.measureText(txt).width <= max) return txt;
+  let t = txt;
+  while (t.length > 1 && ctx.measureText(t + "…").width > max) t = t.slice(0, -1);
+  return t.trimEnd() + "…";
+}
+// Reparte un texto en renglones de hasta `max` px (por palabras; una palabra larga se corta con "…")
+function renglones(ctx, txt, max, tope) {
+  const out = [];
+  let linea = "";
+  txt.split(" ").forEach((w) => {
+    const prueba = linea ? linea + " " + w : w;
+    if (!linea || ctx.measureText(prueba).width <= max) linea = prueba;
+    else { out.push(linea); linea = w; }
+  });
+  if (linea) out.push(linea);
+  const r = out.slice(0, tope);
+  if (out.length > tope) r[tope - 1] = cortar(ctx, out.slice(tope - 1).join(" ") + " ", max - 1).replace(/\s…$/, "…");
+  return r.map((l) => cortar(ctx, l, max));
+}
 function cancha() {
-  const W = 1080, px = 70, py = 280, pw = W - 140, ph = pw * 108 / 68, H = py + ph + 150;
+  const W = 1080, px = 70, py = 280, pw = W - 140, ph = pw * 108 / 68;
+  // Banca en varios renglones: el alto de la imagen crece con ella
+  const medir = document.createElement("canvas").getContext("2d");
+  medir.font = FUENTE("800 28px Nunito");
+  const s = suplentes(), banca = s.length ? renglones(medir, "🪑 Banca: " + s.join(", "), W - 120, 6) : [];
+  const H = py + ph + 40 + banca.length * 40 + 90;
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const ctx = c.getContext("2d");
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#102a43"); g.addColorStop(1, "#0b1d2e");
@@ -1117,21 +1470,21 @@ function cancha() {
     ctx.save(); ctx.translate(x - 48, y - 48); ctx.scale(1.5, 1.5);
     const p = new Path2D("M32 3 L57 11 L55 36 Q52 52 32 61 Q12 52 9 36 L7 11 Z");
     ctx.fillStyle = bg; ctx.fill(p); ctx.lineWidth = 3; ctx.strokeStyle = fg; ctx.stroke(p);
-    ctx.fillStyle = fg; ctx.font = "26px 'Lilita One'"; ctx.fillText(l, 32, 42); ctx.restore();
+    ctx.fillStyle = fg; ctx.font = FUENTE("26px 'Lilita One'"); ctx.fillText(l, 32, 42); ctx.restore();
   };
   crest(170, 110, bgA, fgA, "A"); crest(W - 170, 110, bgB, fgB, "B");
-  ctx.fillStyle = "#fff"; ctx.font = "34px 'Lilita One'";
+  ctx.fillStyle = "#fff"; ctx.font = FUENTE("34px 'Lilita One'");
   ctx.fillText("EQUIPO A", 170, 200); ctx.fillText("EQUIPO B", W - 170, 200);
-  ctx.font = "800 24px Nunito"; ctx.fillStyle = "#9fb3c8";
+  ctx.font = FUENTE("800 24px Nunito"); ctx.fillStyle = "#9fb3c8";
   ctx.fillText(S.colorA.replace(/^\S+\s/, ""), 170, 234); ctx.fillText(S.colorB.replace(/^\S+\s/, ""), W - 170, 234);
-  ctx.fillStyle = "#ffc107"; ctx.font = "64px 'Lilita One'";
+  ctx.fillStyle = "#ffc107"; ctx.font = FUENTE("64px 'Lilita One'");
   ctx.fillText(`${S.equipos.A.length} vs ${S.equipos.B.length}`, W / 2, 130);
-  ctx.fillStyle = "#fff"; ctx.font = "800 26px Nunito";
-  ctx.fillText(fechaBonita() + (S.hora ? ` · ${S.hora}` : ""), W / 2, 180);
-  ctx.fillStyle = "#9fb3c8"; ctx.font = "800 22px Nunito";
-  ctx.fillText((S.lugar || "").slice(0, 40), W / 2, 214);
+  ctx.fillStyle = "#fff"; ctx.font = FUENTE("800 26px Nunito");
+  ctx.fillText(cortar(ctx, fechaBonita() + (S.hora ? ` · ${S.hora}` : ""), 470), W / 2, 180);
+  ctx.fillStyle = "#9fb3c8"; ctx.font = FUENTE("800 22px Nunito");
+  ctx.fillText(cortar(ctx, lugar(), 470), W / 2, 214);
   // Cancha
-  ctx.save(); ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 22); ctx.clip();
+  ctx.save(); ctx.beginPath(); rr(ctx, px, py, pw, ph, 22); ctx.clip();
   for (let i = 0; i < 16; i++) { ctx.fillStyle = i % 2 ? "#279046" : "#2e9e4f"; ctx.fillRect(px, py + (ph / 16) * i, pw, ph / 16 + 1); }
   const vg = ctx.createRadialGradient(W / 2, py + ph / 2, ph * .3, W / 2, py + ph / 2, ph * .75);
   vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.35)"); ctx.fillStyle = vg; ctx.fillRect(px, py, pw, ph);
@@ -1146,43 +1499,52 @@ function cancha() {
   ctx.beginPath(); ctx.ellipse(X(34), Y(12), 8.5 * sx, 8.5 * sy, 0, Math.PI * .2, Math.PI * .8); ctx.stroke();
   ctx.beginPath(); ctx.ellipse(X(34), Y(88), 8.5 * sx, 8.5 * sy, 0, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke();
   ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(X(34), Y(50), 6, 0, Math.PI * 2); ctx.fill();
-  // Jugadores
-  const nA = S.equipos.A.length, nB = S.equipos.B.length;
-  layout().forEach((p) => {
-    const x = X(p.x * 0.68), y = Y(p.y);
-    const [bg, fg] = p.gk ? GK : COLORS[p.team === "A" ? S.colorA : S.colorB];
+  // Jugadores: camiseta (96 px) con la posición en una placa al costado y el nombre debajo, hasta 2 renglones
+  // del ancho que le toca en su línea, así ninguna placa tapa a la del lado
+  const nA = S.equipos.A.length, nB = S.equipos.B.length, gk = gkColor(), KIT = 96, LH = 28;
+  const alto = KIT + 8 + 2 * LH + 10; // camiseta + nombre en 2 renglones
+  layout((alto / 2 / ph) * 100).forEach((p) => {
+    const x = px + (p.x / 100) * pw, top = py + (p.y / 100) * ph - alto / 2;
+    const [bg, fg] = p.gk ? gk : COLORS[p.team === "A" ? S.colorA : S.colorB];
     const [tb, tf] = COLORS[p.team === "A" ? S.colorA : S.colorB];
-    ctx.save(); ctx.translate(x - 48, y - 70); ctx.scale(1.5, 1.5);
+    ctx.save(); ctx.translate(x - KIT / 2, top - 4); ctx.scale(KIT / 64, KIT / 64);
     ctx.shadowColor = "rgba(0,0,0,.45)"; ctx.shadowBlur = 6; ctx.shadowOffsetY = 4;
     const sp = new Path2D(SHIRT); ctx.fillStyle = bg; ctx.fill(sp);
     ctx.shadowColor = "transparent"; ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.stroke(sp);
     ctx.lineWidth = 2.4; ctx.strokeStyle = fg; ctx.stroke(new Path2D("M27 3 Q32 9 37 3"));
-    ctx.fillStyle = fg; ctx.font = "22px 'Lilita One'"; ctx.fillText(String(p.i + 1), 32, 46);
+    ctx.fillStyle = fg; ctx.font = FUENTE("22px 'Lilita One'"); ctx.fillText(String(p.i + 1), 32, 46);
     ctx.restore();
+    // Posición: placa chica al costado de la camiseta
     const pos = posLabel(p.i, p.team === "A" ? nA : nB);
-    ctx.font = "800 24px Nunito"; const nw = Math.min(ctx.measureText(p.n).width, 170) + 20;
-    ctx.font = "800 18px Nunito"; const pw2 = ctx.measureText(pos).width + 14;
-    const tw = nw + pw2, bx = x - tw / 2, by = y + 26;
-    ctx.save(); ctx.beginPath(); ctx.roundRect(bx, by, tw, 36, 8); ctx.clip();
-    ctx.fillStyle = tb; ctx.fillRect(bx, by, pw2, 36);
-    ctx.fillStyle = "rgba(10,22,34,.9)"; ctx.fillRect(bx + pw2, by, nw, 36); ctx.restore();
-    ctx.fillStyle = tf; ctx.fillText(pos, bx + pw2 / 2, by + 25);
-    ctx.fillStyle = "#fff"; ctx.font = "800 24px Nunito"; ctx.fillText(p.n, bx + pw2 + nw / 2, by + 26, 170);
+    ctx.font = FUENTE("800 17px Nunito"); const pw2 = ctx.measureText(pos).width + 12;
+    ctx.save(); ctx.beginPath(); rr(ctx, x + KIT / 2 - 14, top + 2, pw2, 24, 6); ctx.fillStyle = tb; ctx.fill(); ctx.restore();
+    ctx.fillStyle = tf; ctx.fillText(pos, x + KIT / 2 - 14 + pw2 / 2, top + 20);
+    // Nombre
+    ctx.font = FUENTE("800 23px Nunito");
+    const max = (p.ancho / 100) * pw - 16, ls = renglones(ctx, p.n, max, 2);
+    const nw = Math.max(...ls.map((l) => ctx.measureText(l).width)) + 16, nh = ls.length * LH + 8, by = top + KIT + 6;
+    ctx.save(); ctx.beginPath(); rr(ctx, x - nw / 2, by, nw, nh, 8); ctx.fillStyle = "rgba(10,22,34,.9)"; ctx.fill(); ctx.restore();
+    ctx.fillStyle = "#fff"; ls.forEach((l, k) => ctx.fillText(l, x, by + 26 + k * LH));
   });
   // Pie
-  const s = suplentes();
-  ctx.fillStyle = "#9fb3c8"; ctx.font = "800 24px Nunito";
-  if (s.length) ctx.fillText("🪑 Banca: " + s.join(", "), W / 2, py + ph + 50, W - 100);
-  ctx.fillStyle = "#fff"; ctx.font = "30px 'Lilita One'"; ctx.fillText("⚽ pichanga.app", W / 2, H - 30);
+  ctx.fillStyle = "#9fb3c8"; ctx.font = FUENTE("800 28px Nunito");
+  banca.forEach((l, k) => ctx.fillText(l, W / 2, py + ph + 56 + k * 40));
+  ctx.fillStyle = "#fff"; ctx.font = FUENTE("30px 'Lilita One'"); ctx.fillText("⚽ pichanga.app", W / 2, H - 30);
   return c;
 }
 $("compartirCancha").addEventListener("click", async () => {
   syncEquipos(); renderEquipos(); // la imagen debe coincidir con lo que se ve
   if (!titulares().length) return toast("Primero inscribe jugadores 🏃");
-  try { await document.fonts.ready; } catch {}
-  const blob = await new Promise((r) => cancha().toBlob(r, "image/png"));
+  let blob;
+  try {
+    // Espera las fuentes (máximo 1,5 s: sin internet se dibuja con la de respaldo)
+    await Promise.race([Promise.all(["26px 'Lilita One'", "800 24px Nunito"].map((f) => document.fonts.load(f))).catch(() => {}), new Promise((r) => setTimeout(r, 1500))]);
+    blob = await new Promise((r, no) => { try { cancha().toBlob((b) => (b ? r(b) : no(new Error("sin imagen"))), "image/png"); } catch (e) { no(e); } });
+  } catch {
+    return toast("⚠️ No se pudo armar la imagen en este teléfono. Comparte los equipos con un pantallazo 📸");
+  }
   const file = new File([blob], "planteamiento.png", { type: "image/png" });
-  const texto = `⚽ Equipos para la pichanga\n${S.colorA}: ${S.equipos.A.join(", ")}\n${S.colorB}: ${S.equipos.B.join(", ")}`;
+  const texto = `⚽ Equipos para la pichanga\nEquipo A (${S.colorA}): ${S.equipos.A.map(waSafe).join(", ")}\nEquipo B (${S.colorB}): ${S.equipos.B.map(waSafe).join(", ")}`;
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file], text: texto }); return; } catch (e) { if (e.name === "AbortError") return; }
   }
@@ -1192,19 +1554,45 @@ $("compartirCancha").addEventListener("click", async () => {
 /* ---------- Pantalla 3: Pagos ---------- */
 const bankMap = { bNombre: "nombre", bRut: "rut", bBanco: "banco", bTipo: "tipo", bCuenta: "cuenta", bMail: "mail", bLink: "link" };
 Object.entries(bankMap).forEach(([id, k]) => {
-  $(id).addEventListener("input", () => { S.banco[k] = $(id).value; save(); renderBank(); });
+  $(id).addEventListener("input", () => { S.banco[k] = $(id).value; saveLuego(); renderBank(); });
 });
 $("bQr").addEventListener("change", () => {
   const f = $("bQr").files[0]; if (!f) return;
-  const img = new Image(); const url = URL.createObjectURL(f);
+  const img = new Image(), url = URL.createObjectURL(f);
+  const fin = () => { URL.revokeObjectURL(url); $("bQr").value = ""; }; // elegir la misma imagen otra vez vuelve a funcionar
   img.onload = () => {
-    // Reducimos el QR para que quepa en el almacenamiento del teléfono
-    const s = Math.min(1, 400 / Math.max(img.width, img.height));
-    const c = document.createElement("canvas"); c.width = img.width * s; c.height = img.height * s;
+    fin();
+    // Reducimos el QR para que quepa en el almacenamiento del teléfono (PNG: un JPEG puede volverlo ilegible)
+    const s = Math.min(1, 360 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(img.width * s)); c.height = Math.max(1, Math.round(img.height * s));
     c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-    S.banco.qr = c.toDataURL("image/png"); save(); renderBank();
+    S.banco.qr = c.toDataURL("image/png"); save(); guardarYa(); renderBank();
+    if ($("avisoGuardar").hidden) toast("🖼️ QR guardado");
   };
+  img.onerror = () => { fin(); toast("⚠️ No pude leer esa imagen. Súbela como JPG o PNG (una captura del QR sirve)"); };
   img.src = url;
+});
+// Imagen del QR como archivo, para compartirla o descargarla
+function qrArchivo() {
+  const [cab, b64] = S.banco.qr.split(","), bin = atob(b64), u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  const tipo = (cab.match(/data:([^;]+)/) || [])[1] || "image/png";
+  return new File([u], "qr-pago." + (tipo.split("/")[1] || "png"), { type: tipo });
+}
+$("compartirQr").addEventListener("click", async () => {
+  if (!S.banco.qr) return;
+  let file;
+  try { file = qrArchivo(); } catch { return toast("⚠️ El QR guardado está dañado: súbelo otra vez"); }
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], text: bankText() || undefined }); return; } catch (e) { if (e.name === "AbortError") return; }
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+  toast("🖼️ QR descargado: mándalo al grupo desde tu galería");
+});
+$("quitarQr").addEventListener("click", () => {
+  const qr = S.banco.qr; if (!qr) return;
+  S.banco.qr = ""; save(); renderBank();
+  conDeshacer("🗑️ QR quitado", () => S.banco.qr, () => { S.banco.qr = qr; save(); renderBank(); toast("↩️ QR de vuelta"); });
 });
 function bankText() {
   const b = S.banco;
@@ -1213,18 +1601,36 @@ function bankText() {
 }
 function renderBank() {
   $("bankView").textContent = bankText() || "Agrega tus datos en ✏️ Editar datos";
-  $("qrView").hidden = !S.banco.qr; if (S.banco.qr) $("qrView").src = S.banco.qr;
+  $("qrView").hidden = $("qrAcciones").hidden = !S.banco.qr;
+  if (S.banco.qr) { if ($("qrView").getAttribute("src") !== S.banco.qr) $("qrView").src = S.banco.qr; } else $("qrView").removeAttribute("src");
 }
 $("copiarBanco").addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText(bankText()); toast("📋 Datos copiados"); } catch { toast("No se pudo copiar"); }
+  const t = bankText();
+  if (!t) { // nada que copiar: no se toca el portapapeles
+    $("bNombre").closest("details").open = true; $("bNombre").focus();
+    return toast("✏️ Primero agrega tus datos en Editar datos");
+  }
+  try { await navigator.clipboard.writeText(t); return toast("📋 Datos copiados"); } catch {}
+  // Sin la API del portapapeles (o sin permiso): copia con un campo de texto escondido
+  const ta = document.createElement("textarea");
+  ta.value = t; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;font-size:16px";
+  document.body.append(ta); ta.select();
+  let ok = false; try { ok = document.execCommand("copy"); } catch {}
+  ta.remove();
+  toast(ok ? "📋 Datos copiados" : "No se pudo copiar: mantén presionados los datos para copiarlos");
 });
-["costoCancha", "costoTercer"].forEach((k) => campoPlata($(k), (v) => { S[k] = v; save(); renderPagos(); }));
+["costoCancha", "costoTercer"].forEach((k) => campoPlata($(k), (v) => { S[k] = v; saveLuego(); renderPagos(); }));
 const costo = (k) => +S[k] || 0;
-const quedan = () => titulares().filter((n) => S.tercer[n]);
-// Lo que le toca hoy: la cancha entre los titulares y el 🍻 entre quienes se quedan, en pesos enteros
+// Pagan cancha los titulares y los suplentes que entraron a jugar (⚽); el 🍻 lo pagan los que se quedan (titulares o suplentes)
+const jugadores = () => titulares().concat(suplentes().filter((n) => S.jugo[n]));
+const quedan = () => S.inscritos.filter((n) => S.tercer[n]);
+const cobrados = () => { const j = jugadores(); return S.inscritos.filter((n) => j.includes(n) || S.tercer[n]); }; // tienen cuota hoy
+// Lo que le toca hoy: la cancha entre los que juegan y el 🍻 entre quienes se quedan, en pesos enteros
 // que suman exacto el total (las primeras de la lista pagan $1 más si no da justo; ver parte)
-const deuda = (n) => parte(costo("costoCancha"), titulares().length, titulares().indexOf(n)) +
-  (S.tercer[n] ? parte(costo("costoTercer"), quedan().length, quedan().indexOf(n)) : 0);
+const deuda = (n) => {
+  const j = jugadores(), q = quedan();
+  return (j.includes(n) ? parte(costo("costoCancha"), j.length, j.indexOf(n)) : 0) + (S.tercer[n] ? parte(costo("costoTercer"), q.length, q.indexOf(n)) : 0);
+};
 // "Cancha por persona": $3.769 y, si no da justo, cuántos pagan $1 más para completar el total
 function cuotaTxt(total, k) {
   if (!k) return plata(0);
@@ -1239,8 +1645,8 @@ const porPagar = (n) => falta(n) - cubre(n);        // lo que de verdad le falta
 const sinRepartir = () => (costo("costoTercer") > 0 && !quedan().length ? costo("costoTercer") : 0);
 
 function renderPagos() {
-  const t = titulares();
-  $("porCancha").innerHTML = cuotaTxt(costo("costoCancha"), t.length);
+  const t = cobrados();
+  $("porCancha").innerHTML = cuotaTxt(costo("costoCancha"), jugadores().length);
   $("porTercer").innerHTML = cuotaTxt(costo("costoTercer"), quedan().length);
   const sr = sinRepartir();
   $("avisoTercer").hidden = !sr;
@@ -1249,29 +1655,36 @@ function renderPagos() {
   const cub = t.reduce((s, n) => s + cubre(n), 0), pend = t.reduce((s, n) => s + porPagar(n), 0);
   $("recaudado").hidden = !total;
   $("recaudado").textContent = `💵 Recaudado ${plata(rec)} de ${plata(total)}` + (cub ? ` · 💚 ${plata(cub)} con saldo a favor` : "") + (pend ? ` · falta ${plata(pend)}` : " 🎉");
-  $("pagos").innerHTML = t.map((n, i) => {
-    const d = deuda(n), p = pagoDe(n), f = falta(n), c = cubre(n), pp = f - c;
+  const fila = (n, i, sup) => {
+    const d = deuda(n), p = pagoDe(n), f = falta(n), c = cubre(n), pp = f - c, cobra = t.includes(n);
     let cls = "pending", st;
-    if (!d && !S.pagos[n]) st = `<small>sin costo</small>`;
+    if (sup && !cobra && !S.pagos[n]) { cls = ""; st = `<small>no paga</small>`; }
+    else if (!d && !S.pagos[n]) st = `<small>sin costo</small>`;
     else if (!f) { cls = "paid"; st = "✅ PAGADO" + (p > d ? `<small>a favor ${plata(p - d)}</small>` : ""); }
     else if (!pp) { cls = "paid"; st = p ? `✅ PAGADO<small>+ 💚 ${plata(c)} a favor</small>` : `💚 CUBIERTO<small>con su saldo a favor</small>`; }
     else if (p) { cls = "partial"; st = `<small>pagó ${plata(p)}${c ? ` · 💚 ${plata(c)}` : ""}</small>falta ${plata(pp)}`; }
     else st = (c ? `<small>💚 usa ${plata(c)} a favor</small>` : "") + `⏳ ${plata(pp)}`;
     const resto = aFavor(n) - c;
     const tag = debe(n) ? `<span class="tag debt">⚠️ ${saldo(n) > 0 ? "debe " + deudaCorta(n) : "deuda anterior"}</span>` : resto > 0 ? `<span class="tag favor">💚 ${plata(resto)} a favor</span>` : "";
-    return `<li class="${cls}">
+    return `<li class="${cls}${sup ? " sup" : ""}">
       <button class="pname" data-pay="${esc(n)}">${i + 1}. ${esc(n)}${tag ? "<br>" + tag : ""}</button>
+      ${sup ? `<button class="beer ${S.jugo[n] ? "on" : ""}" data-jugo="${esc(n)}" aria-pressed="${!!S.jugo[n]}" aria-label="${esc(n)} entró a jugar (paga cancha)">⚽</button>` : ""}
       <button class="beer ${S.tercer[n] ? "on" : ""}" data-beer="${esc(n)}" aria-pressed="${!!S.tercer[n]}" aria-label="${esc(n)} se queda al tercer tiempo">🍻</button>
-      <button class="state" data-pay="${esc(n)}">${st}</button>
+      <button class="state ${cls ? "" : "nada"}" data-pay="${esc(n)}">${st}</button>
     </li>`;
-  }).join("") || `<li class="empty">Sin jugadores inscritos</li>`;
+  };
+  $("pagos").innerHTML = titulares().map((n, i) => fila(n, i, false)).join("") || `<li class="empty">Sin jugadores inscritos</li>`;
+  const sp = suplentes();
+  $("pagosSupBox").hidden = !sp.length;
+  $("pagosSup").innerHTML = sp.map((n, i) => fila(n, i, true)).join("");
   renderDeudas();
   renderBank();
 }
 // Toque en la fila: marca pagado lo que falta; en una fila ya pagada, deshace ese pago (con ↩️ Deshacer)
 function togglePago(n) {
   const p = pagoDe(n), f = falta(n), pp = porPagar(n), antes = JSON.stringify([S.pagos, S.deudas]);
-  if (!f && !S.pagos[n]) return toast("🏟️ Primero escribe el costo de la cancha");
+  if (!cobrados().includes(n) && !S.pagos[n]) return toast(`⏳ ${n} es suplente: marca ⚽ si entró a jugar o 🍻 si se queda al tercer tiempo`);
+  if (!f && !S.pagos[n]) return toast(S.tercer[n] && !costo("costoTercer") && !jugadores().includes(n) ? "🍻 Primero escribe el costo del tercer tiempo" : "🏟️ Primero escribe el costo de la cancha");
   if (!f || (!pp && p)) return desmarcarPago(n);
   if (!pp) { // la cuota la cubre su saldo a favor: solo si pagó igual en efectivo
     if (!confirm(`💚 ${n} tiene la cuota cubierta con su saldo a favor (${plata(aFavor(n))}). ¿Pagó en efectivo igual? El saldo a favor le queda para la próxima.`)) return;
@@ -1310,8 +1723,8 @@ function desmarcarPago(n) {
     huellaPagos, () => restaurarPagos(antes));
 }
 let toquePago = { n: "", t: 0 };
-$("pagos").addEventListener("click", (e) => {
-  const p = e.target.closest("[data-pay]"), b = e.target.closest("[data-beer]");
+["pagos", "pagosSup"].forEach((id) => $(id).addEventListener("click", (e) => {
+  const p = e.target.closest("[data-pay]"), b = e.target.closest("[data-beer]"), j = e.target.closest("[data-jugo]");
   if (p) {
     // Un doble toque no marca y desmarca (ni borra lo que ya había pagado)
     if (p.dataset.pay === toquePago.n && Date.now() - toquePago.t < 450) return;
@@ -1319,18 +1732,19 @@ $("pagos").addEventListener("click", (e) => {
     toquePago = { n: p.dataset.pay, t: Date.now() };
   }
   if (b) { const n = b.dataset.beer; if (S.tercer[n]) delete S.tercer[n]; else S.tercer[n] = true; }
-  if (p || b) { save(); renderPagos(); }
-});
+  if (j) { const n = j.dataset.jugo; if (S.jugo[n]) delete S.jugo[n]; else S.jugo[n] = true; }
+  if (p || b || j) { save(); renderPagos(); }
+}));
 
 /* Libreta: ⚠️ Deudas pendientes */
 // Cuánto de su saldo a favor se usa hoy (solo titulares)
-const usoHoy = (n) => (!titulares().includes(n) || !cubre(n) ? "" : cubre(n) === falta(n) ? " (cubre su cuota de hoy)" : ` (usa ${plata(cubre(n))} en su cuota de hoy)`);
+const usoHoy = (n) => (!cobrados().includes(n) || !cubre(n) ? "" : cubre(n) === falta(n) ? " (cubre su cuota de hoy)" : ` (usa ${plata(cubre(n))} en su cuota de hoy)`);
 const notaFavor = (n) => (saldo(n) < 0 ? `💚 Tiene ${plata(aFavor(n))} a favor` + usoHoy(n) : "");
 function lineaDeuda(n) {
-  const abiertas = pendientesDe(n).filter((e) => e.monto != null);
-  if (saldo(n) <= 0) return `• ${n}: deuda anterior, monto por confirmar` + (saldo(n) < 0 ? ` (tiene ${plata(aFavor(n))} a favor)` : "");
+  const abiertas = pendientesDe(n).filter((e) => e.monto != null), nw = waSafe(n);
+  if (saldo(n) <= 0) return `• ${nw}: deuda anterior, monto por confirmar` + (saldo(n) < 0 ? ` (tiene ${plata(aFavor(n))} a favor)` : "");
   const det = abiertas.length > 1 ? abiertas.map((e) => `${fechaCorta(e.fecha)} ${plata(e.monto)}`).join(" · ") : abiertas.map((e) => fechaCorta(e.fecha)).join("");
-  return `• ${n}: ${plata(saldo(n))}` + (det ? ` (${det})` : "") + (sinMonto(n) ? " + deuda anterior por confirmar" : "");
+  return `• ${nw}: ${plata(saldo(n))}` + (det ? ` (${det})` : "") + (sinMonto(n) ? " + deuda anterior por confirmar" : "");
 }
 function renderDeudas() {
   const ds = deudores(), fs = conSaldoAFavor(), tot = ds.reduce((s, n) => s + Math.max(0, saldo(n)), 0);
@@ -1436,10 +1850,10 @@ function abrirSaldar(n) {
 }
 // Mensaje de cobro para una sola persona (se elige el contacto en WhatsApp)
 function recordatorio(n) {
-  const det = pendientesDe(n).map((e) => `• ${e.fecha ? fechaCorta(e.fecha) + " · " : ""}${e.concepto}: ${e.monto == null ? "monto por confirmar" : plata(e.monto)}`).join("\n");
+  const det = pendientesDe(n).map((e) => `• ${e.fecha ? fechaCorta(e.fecha) + " · " : ""}${waSafe(e.concepto)}: ${e.monto == null ? "monto por confirmar" : plata(e.monto)}`).join("\n");
   const cuanto = saldo(n) > 0 ? plata(saldo(n)) + (sinMonto(n) ? " más una deuda anterior (¿me confirmas cuánto era?)" : "")
     : "una deuda anterior de la pichanga (¿me confirmas cuánto era?)";
-  let msg = `Hola ${n} 👋 Te escribo por la pichanga ⚽\n\nTienes pendiente ${cuanto}:\n${det}`;
+  let msg = `Hola ${waSafe(n)} 👋 Te escribo por la pichanga ⚽\n\nTienes pendiente ${cuanto}:\n${det}`;
   if (saldo(n) < 0) msg += `\n\n💚 Tienes ${plata(aFavor(n))} a favor.`;
   const bt = bankText(); if (bt) msg += `\n\n*Datos para transferir:*\n${bt}`;
   return msg + `\n\n¡Gracias, crack! 🙌`;
@@ -1460,9 +1874,10 @@ $("mAnotar").addEventListener("click", () => {
 });
 
 $("waCobrar").addEventListener("click", () => {
-  const t = titulares(), faltan = t.filter((n) => porPagar(n) > 0), ds = deudores();
+  const t = cobrados(), faltan = t.filter((n) => porPagar(n) > 0), ds = deudores();
   if (!faltan.length && !ds.length) {
-    if (t.length && !costo("costoCancha") && !costo("costoTercer")) return toast("🏟️ Primero escribe el costo de la cancha");
+    if (!S.inscritos.length) return toast("No hay jugadores inscritos 🏃");
+    if (!costo("costoCancha") && !costo("costoTercer")) return toast("🏟️ Primero escribe el costo de la cancha");
     return toast("🎉 ¡Todos pagaron!");
   }
   const sr = sinRepartir();
@@ -1470,13 +1885,14 @@ $("waCobrar").addEventListener("click", () => {
   let msg = `💰 *COBRANZA PICHANGA* 💸\n📅 ${fechaBonita()}\n\nCracks, la cancha no se paga sola 😅⚽\n`;
   if (faltan.length) msg += `\n*Faltan por pagar:*\n` + faltan.map((n) => {
     const extra = [pagoDe(n) && `ya pagó ${plata(pagoDe(n))}`, S.tercer[n] && "incluye 🍻", cubre(n) && `usa ${plata(cubre(n))} a favor`].filter(Boolean);
-    return `⏳ ${n}: ${plata(porPagar(n))}` + (extra.length ? ` (${extra.join(", ")})` : "");
+    return `⏳ ${waSafe(n)}: ${plata(porPagar(n))}` + (extra.length ? ` (${extra.join(", ")})` : "");
   }).join("\n");
   if (ds.length) msg += `\n\n⚠️ *Deudas de fechas anteriores:*\n` + ds.map(lineaDeuda).join("\n");
   const bt = bankText(); if (bt) msg += `\n\n*Datos para transferir:*\n${bt}`;
   if (S.banco.qr) msg += `\n\n📲 (Te mando el QR en el próximo mensaje)`;
   msg += `\n\n¡Gracias! 🙌`;
   openWhatsApp(msg);
+  if (S.banco.qr) toast("📲 Después toca “📲 Compartir QR” (arriba, en Datos de pago) para mandarlo");
 });
 
 /* ---------- Pantalla 4: Post-partido ---------- */
@@ -1489,12 +1905,24 @@ document.querySelectorAll("[data-gol]").forEach((b) => b.addEventListener("click
 }));
 const AWARDS = [["aMvp", "mvp"], ["aGol", "goleador"], ["aRus", "rustico"]];
 AWARDS.forEach(([id, k]) => $(id).addEventListener("change", () => { S.post[k] = $(id).value; save(); estadoGuardar(); }));
+// Fecha del partido: la de la convocatoria, la del partido ya guardado o hoy; se puede corregir antes de guardar
+const fechaPartido = () => { const g = guardado(); return S.post.fecha || S.fecha || (g && g.fecha) || hoyISO(); };
+$("pFecha").addEventListener("change", () => {
+  if (!esISO($("pFecha").value)) { $("pFecha").value = fechaPartido(); return; }
+  S.post.fecha = $("pFecha").value; save(); estadoGuardar();
+});
 
+// Tres números de ejemplo que existan en la lista (y distintos si hay al menos 3 jugadores)
+function ejemploVoto(n) {
+  if (n >= 3) return [Math.ceil(n / 2), n, 1].join(", ");
+  return n === 2 ? "1, 2, 1" : "1, 1, 1";
+}
 $("waVotar").addEventListener("click", () => {
-  const t = titulares(); if (!t.length) return toast("Primero inscribe jugadores 🏃");
-  const msg = `🗳️ *VOTACIÓN POST-PICHANGA* ⚽\n📅 ${fechaBonita()}\n🏁 Resultado: Equipo A ${S.post.golesA || 0} - ${S.post.golesB || 0} Equipo B\n\n` +
+  const t = enCancha().length ? enCancha() : titulares(); if (!t.length) return toast("Primero inscribe jugadores 🏃");
+  const p = partidoActual();
+  const msg = `🗳️ *VOTACIÓN POST-PICHANGA* ⚽\n📅 ${fechaBonita(p.fecha)}\n🏁 Resultado: Equipo A ${p.golesA} - ${p.golesB} Equipo B\n\n` +
     `Responde con 3 números:\n⭐ *MVP* (el mejor)\n👟 *Goleador*\n🪓 *El Rústico* (el más pierna 😂)\n\n` +
-    t.map((n, i) => `${i + 1}. ${n}`).join("\n") + `\n\nEjemplo: *3, 5, 7*`;
+    t.map((n, i) => `${i + 1}. ${waSafe(n)}`).join("\n") + `\n\nEjemplo: *${ejemploVoto(t.length)}*`;
   openWhatsApp(msg);
 });
 
@@ -1504,7 +1932,7 @@ const guardado = () => (S.post.guardadoId && S.historial.find((p) => p.id === S.
 function partidoActual() {
   const g = guardado(), premio = (k) => (enCancha().includes(S.post[k]) ? S.post[k] : "");
   return {
-    fecha: S.fecha || (g && g.fecha) || hoyISO(), lugar: S.lugar,
+    fecha: S.post.fecha || S.fecha || (g && g.fecha) || hoyISO(), lugar: lugar(),
     golesA: S.post.golesA || 0, golesB: S.post.golesB || 0,
     colorA: S.colorA, colorB: S.colorB, A: S.equipos.A.slice(), B: S.equipos.B.slice(),
     mvp: premio("mvp"), goleador: premio("goleador"), rustico: premio("rustico"),
@@ -1550,9 +1978,9 @@ $("guardarPartido").addEventListener("click", () => {
     !confirm(`¿Guardar un 0–0 sin premios del ${fechaCorta(act.fecha)}?`)) return;
   const antes = JSON.stringify({ historial: S.historial, post: S.post }), mv = new Date(mesVista);
   const r = guardarPartido(); if (!r) return;
-  renderPost();
+  protegerDatos(); renderPost();
   const { p } = r, res = p.golesA === p.golesB ? "🤝 ¡Empate!" : `🏆 ¡Ganó el Equipo ${p.golesA > p.golesB ? "A" : "B"}!`;
-  conDeshacer(r.accion === "guardado" ? `${res} Partido guardado` : `✏️ Partido actualizado: ${p.golesA}–${p.golesB}`,
+  conDeshacer(r.accion === "guardado" ? `${res} Partido guardado · 📆 ${fechaCorta(p.fecha)}` : `✏️ Partido actualizado: ${p.golesA}–${p.golesB} · 📆 ${fechaCorta(p.fecha)}`,
     () => JSON.stringify([S.historial, S.post, S.equipos, S.inscritos, S.fecha]), () => {
       const a = JSON.parse(antes); S.historial = a.historial; S.post = a.post; mesVista = mv;
       save(); renderTab(); toast(r.accion === "guardado" ? "↩️ Partido sin guardar" : "↩️ Partido como estaba");
@@ -1561,7 +1989,10 @@ $("guardarPartido").addEventListener("click", () => {
 $("mesAnt").addEventListener("click", () => { mesVista.setMonth(mesVista.getMonth() - 1); renderPost(); });
 $("mesSig").addEventListener("click", () => { mesVista.setMonth(mesVista.getMonth() + 1); renderPost(); });
 
-function delMes() { return S.historial.filter((p) => p.fecha.slice(0, 7) === mesKey(mesVista)); }
+// Partidos del mes en orden de fecha (no en el que se guardaron)
+function delMes() {
+  return S.historial.filter((p) => p.fecha.slice(0, 7) === mesKey(mesVista)).sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
+}
 function resumen(ps) {
   const r = { A: 0, B: 0, E: 0, mvp: dic(), goleador: dic(), rustico: dic() };
   ps.forEach((p) => {
@@ -1570,7 +2001,9 @@ function resumen(ps) {
   });
   return r;
 }
-const ranked = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
+const ranked = (o) => Object.entries(o).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"));
+// Los 3 primeros, más los que empatan con el tercero (igual en pantalla y en WhatsApp)
+const podio = (o) => { const r = ranked(o); return r.filter(([, c], i) => i < 3 || (r[2] && c === r[2][1])); };
 
 function renderPost() {
   const [bgA, fgA] = COLORS[S.colorA], [bgB, fgB] = COLORS[S.colorB];
@@ -1585,39 +2018,68 @@ function renderPost() {
   }
   const opts = `<option value="">— Elegir —</option>` + titulares().map((n) => `<option>${esc(n)}</option>`).join("");
   AWARDS.forEach(([id, k]) => { $(id).innerHTML = opts; $(id).value = S.post[k] || ""; });
+  $("pFecha").value = fechaPartido();
+  renderRespaldo();
   estadoGuardar();
 
   const mtxt = mesVista.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
   $("mesTxt").textContent = mtxt.charAt(0).toUpperCase() + mtxt.slice(1);
   const ps = delMes(), r = resumen(ps), tot = ps.length;
   $("kA").textContent = r.A; $("kE").textContent = r.E; $("kB").textContent = r.B;
-  const seg = (n, bg, fg, l) => n ? `<span style="width:${(n / tot) * 100}%;background:${bg};color:${fg}">${l} ${n}</span>` : "";
-  $("statsBar").innerHTML = tot ? seg(r.A, bgA, fgA, "A") + seg(r.E, "#cfd8df", "#14212b", "=") + seg(r.B, bgB, fgB, "B")
+  // Victorias por color de camiseta de cada partido (el "Equipo A" no es el mismo grupo cada semana)
+  const porColor = new Map();
+  ps.forEach((p) => { if (p.golesA !== p.golesB) { const c = p.golesA > p.golesB ? p.colorA : p.colorB; porColor.set(c, (porColor.get(c) || 0) + 1); } });
+  const seg = (n, bg, fg, l, t) => n ? `<span style="width:${(n / tot) * 100}%;background:${bg};color:${fg}" title="${esc(t)}">${l} ${n}</span>` : "";
+  $("statsBar").innerHTML = tot ? [...porColor].map(([c, n]) => seg(n, COLORS[c][0], COLORS[c][1], c.split(" ")[0], `${c}: ${plural(n, "victoria", "victorias")}`)).join("") + seg(r.E, "#cfd8df", "#14212b", "🤝", "Empates")
     : `<span style="width:100%;background:#eef3f7;color:var(--muted)">Sin partidos este mes</span>`;
 
   const filas = [["⭐", "MVP", r.mvp], ["👟", "Goleador", r.goleador], ["🪓", "Rústico", r.rustico]]
-    .map(([ic, lb, o]) => { const t = ranked(o)[0]; return t ? `<li><span style="font-size:20px">${ic}</span><span class="name">${esc(t[0])} <span style="color:var(--muted);font-weight:600;font-size:12px">${lb}</span></span><span class="count">${t[1]}×</span></li>` : ""; })
+    .map(([ic, lb, o]) => {
+      const t = podio(o); if (!t.length) return "";
+      const quien = t.map(([n, c]) => `${esc(n)} <small>${c}×</small>`).join(" · ");
+      return `<li><span style="font-size:20px">${ic}</span><span class="name"><span style="color:var(--muted);font-weight:600;font-size:12px">${lb}</span><br><span class="who">${quien}</span></span></li>`;
+    })
     .join("");
   $("ranking").innerHTML = filas || `<li class="empty">Guarda un partido para ver el ranking</li>`;
 
   $("historial").innerHTML = ps.slice().reverse().map((p) => {
     const d = new Date(p.fecha + "T12:00:00").toLocaleDateString("es-CL", { weekday: "short", day: "numeric" });
     const w = p.golesA === p.golesB ? "🤝" : p.golesA > p.golesB ? "🅰️" : "🅱️";
-    return `<li><span style="width:56px;flex:none;color:var(--muted);font-weight:800;font-size:13px">${esc(d)}</span><span class="res">${+p.golesA || 0} – ${+p.golesB || 0}</span><span class="name" style="font-size:12px;color:var(--muted)">${p.mvp ? "⭐ " + esc(p.mvp) : ""}</span><span class="w">${w}</span><button class="x" data-delpartido="${esc(p.id)}" aria-label="Borrar partido">✖</button></li>`;
+    return `<li><button class="fecha" data-fechapartido="${esc(p.id)}" aria-label="Cambiar la fecha del partido del ${esc(d)}">${esc(d)}</button><span class="res">${+p.golesA || 0} – ${+p.golesB || 0}</span><span class="name" style="font-size:12px;color:var(--muted)">${p.mvp ? "⭐ " + esc(p.mvp) : ""}</span><span class="w">${w}</span><button class="x" data-delpartido="${esc(p.id)}" aria-label="Borrar partido">✖</button></li>`;
   }).join("") || `<li class="empty">—</li>`;
 }
 $("historial").addEventListener("click", (e) => {
+  const f = e.target.closest("[data-fechapartido]"); if (f) return abrirFechaPartido(+f.dataset.fechapartido);
   const b = e.target.closest("[data-delpartido]"); if (!b) return;
   if (!confirm("¿Borrar este partido del historial?")) return;
   S.historial = S.historial.filter((p) => p.id !== +b.dataset.delpartido); save(); renderPost();
 });
+// Corregir la fecha de un partido ya guardado
+function abrirFechaPartido(id) {
+  const p = S.historial.find((h) => h.id === id); if (!p) return;
+  sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>📆 Fecha del partido</h2>
+    <p class="sub">A ${+p.golesA || 0} – ${+p.golesB || 0} B${p.mvp ? " · ⭐ " + esc(p.mvp) : ""}</p>
+    <input type="date" id="hFecha" value="${esc(p.fecha)}" aria-label="Fecha del partido">
+    <button class="btn block" id="hOk">💾 Guardar fecha</button>
+    <button class="btn ghost block" data-cerrar-sheet>Cancelar</button>`);
+  $("hOk").addEventListener("click", () => {
+    const v = $("hFecha").value; if (!esISO(v)) return toast("📆 Elige una fecha");
+    const antes = p.fecha, mv = new Date(mesVista);
+    p.fecha = v; if (p.id === S.post.guardadoId) S.post.fecha = v;
+    mesVista = new Date(v + "T12:00:00"); mesVista.setDate(1);
+    save(); cerrarSheet(); renderPost();
+    conDeshacer(`📆 Partido movido al ${fechaCorta(v)}`, () => JSON.stringify(S.historial), () => {
+      p.fecha = antes; if (p.id === S.post.guardadoId) S.post.fecha = antes; mesVista = mv; save(); renderPost(); toast("↩️ Fecha como estaba");
+    });
+  });
+}
 $("waStats").addEventListener("click", () => {
   const ps = delMes(), r = resumen(ps);
   if (!ps.length) return toast("No hay partidos este mes");
   const mtxt = mesVista.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
   const lider = r.A === r.B ? "🤝 ¡Mes empatado!" : `🔥 *Manda el Equipo ${r.A > r.B ? "A" : "B"}*`;
-  let msg = `📊 *TABLA DE ${mtxt.toUpperCase()}* ⚽\n\n🅰️ Equipo A: ${r.A} victorias\n🅱️ Equipo B: ${r.B} victorias\n🤝 Empates: ${r.E}\n\n${lider}\n`;
-  const l = (ic, lb, o) => { const t = ranked(o).slice(0, 3); return t.length ? `\n${ic} *${lb}:* ` + t.map(([n, c]) => `${n} (${c})`).join(", ") : ""; };
+  let msg = `📊 *TABLA DE ${mtxt.toUpperCase()}* ⚽\n\n🅰️ Equipo A: ${plural(r.A, "victoria", "victorias")}\n🅱️ Equipo B: ${plural(r.B, "victoria", "victorias")}\n🤝 Empates: ${r.E}\n\n${lider}\n`;
+  const l = (ic, lb, o) => { const t = podio(o); return t.length ? `\n${ic} *${lb}:* ` + t.map(([n, c]) => `${waSafe(n)} (${c})`).join(", ") : ""; };
   msg += l("⭐", "MVP", r.mvp) + l("👟", "Goleadores", r.goleador) + l("🪓", "Rústicos", r.rustico);
   msg += `\n\n*Últimos partidos:*\n` + ps.slice(-5).reverse().map((p) => `• ${p.fecha.slice(8)}/${p.fecha.slice(5, 7)}: A ${p.golesA} – ${p.golesB} B`).join("\n");
   openWhatsApp(msg);
@@ -1628,7 +2090,7 @@ document.querySelectorAll("[data-cerrar]").forEach((b) => b.addEventListener("cl
 function abrirCierre() {
   syncEquipos(false);
   if (!S.inscritos.length) return toast("No hay nada que cerrar: inscribe jugadores 🏃");
-  const t = titulares(), est = estadoPartido(), p = partidoActual(), fecha = S.fecha || hoyISO();
+  const t = cobrados(), est = estadoPartido(), p = partidoActual(), fecha = S.fecha || hoyISO();
   const sinResultado = !p.golesA && !p.golesB && !p.mvp && !p.goleador && !p.rustico;
   const deben = t.filter((n) => porPagar(n) > 0), deMas = t.filter((n) => sobra(n) > 0), cubiertos = t.filter((n) => cubre(n) > 0);
   const totDeben = deben.reduce((s, n) => s + porPagar(n), 0), sr = sinRepartir();
@@ -1657,7 +2119,7 @@ function abrirCierre() {
     <h3>2️⃣ Cuentas</h3>${paso2}
     <h3>3️⃣ Próxima fecha</h3>
     <input type="date" id="cFecha" value="${masDias(fecha, 7)}" aria-label="Fecha de la próxima pichanga">
-    <p class="sub" style="margin-top:6px">Se mantienen ⏰ ${esc(S.hora || "hora por definir")} · 📍 ${esc(S.lugar || "lugar por definir")}${costo("costoCancha") ? ` · 🏟️ ${plata(costo("costoCancha"))}` : ""}. La lista queda vacía: usa <b>🔁 Misma lista</b> en Convocatoria para repetirla.</p>
+    <p class="sub" style="margin-top:6px">Se mantienen ⏰ ${esc(S.hora || "hora por definir")} · 📍 ${esc(lugar() || "lugar por definir")}${costo("costoCancha") ? ` · 🏟️ ${plata(costo("costoCancha"))}` : ""}. La lista queda vacía: usa <b>🔁 Misma lista</b> en Convocatoria para repetirla.</p>
     <button class="btn orange block" id="cOk">🏁 Cerrar y preparar la próxima</button>
     <button class="btn ghost block" data-cerrar-sheet>Cancelar</button>`);
   if ($("cEditar")) $("cEditar").addEventListener("click", () => { cerrarSheet(); goTab("s-post"); });
@@ -1668,35 +2130,52 @@ function abrirCierre() {
   }));
 }
 function cerrarPichanga({ guardar, deudas, prox }) {
-  const antes = JSON.stringify(S), fecha = S.fecha || hoyISO(), t = titulares();
+  const antes = JSON.stringify(S), fecha = S.fecha || hoyISO(), t = cobrados(), j = jugadores();
   if (guardar && !guardarPartido()) return; // canceló el reemplazo: no se cierra nada
   let anotadas = 0;
   t.forEach((n) => {
-    const c = cubre(n), pp = porPagar(n), s = sobra(n), concepto = S.tercer[n] ? "Cancha + 🍻" : "Cancha";
+    const c = cubre(n), pp = porPagar(n), s = sobra(n), concepto = !j.includes(n) ? "🍻 Tercer tiempo" : S.tercer[n] ? "Cancha + 🍻" : "Cancha";
     if (c) anotar(n, { fecha, concepto: `${concepto} (pagada con saldo a favor)`, monto: c }); // el saldo a favor se usa siempre
     if (deudas && pp > 0) { anotar(n, { fecha, concepto: concepto + (pagoDe(n) || c ? " (saldo)" : ""), monto: pp }); anotadas++; }
     if (s > 0) anotar(n, { fecha, concepto: "Pagó de más (a favor)", monto: -s });
   });
   Object.keys(S.pagos).forEach((n) => { if (!t.includes(n)) liberarPago(n, fecha); });
   S.ultimaLista = S.inscritos.slice();
-  Object.assign(S, { fecha: prox || masDias(fecha, 7), inscritos: [], equipos: { A: [], B: [] }, pagos: dic(), tercer: dic(), costoTercer: "", post: postVacio() });
+  Object.assign(S, { fecha: prox || masDias(fecha, 7), inscritos: [], equipos: { A: [], B: [] }, pagos: dic(), tercer: dic(), jugo: dic(), promovidos: [], costoTercer: "", post: postVacio() });
   save(); cargarCampos(); cerrarSheet();
   if (tab === "s-convocatoria") renderConvocatoria(); else goTab("s-convocatoria");
   conDeshacer(`🏁 Pichanga cerrada` + (anotadas ? ` · 📒 ${anotadas} ${anotadas === 1 ? "deuda anotada" : "deudas anotadas"}` : "") + ` · Próxima: ${fechaCorta(S.fecha)}`,
-    () => JSON.stringify(S), () => { S = migrar(JSON.parse(antes)); save(); cargarCampos(); renderTab(); toast("↩️ Pichanga reabierta"); });
+    serial, () => { S = migrar(JSON.parse(antes)); save(); cargarCampos(); renderTab(); toast("↩️ Pichanga reabierta"); });
 }
 
 /* ---------- Respaldo ---------- */
+// Pide al navegador que no borre los datos solo (vale sobre todo en Android); se pide al guardar algo importante
+const protegerDatos = () => { try { navigator.storage?.persist?.().catch(() => {}); } catch {} };
+const respaldado = () => { S.ultimoRespaldo = new Date().toISOString(); save(); guardarYa(); if (tab === "s-post") renderRespaldo(); };
 $("exportar").addEventListener("click", async () => {
+  protegerDatos();
   const blob = new Blob([JSON.stringify({ app: "pichanga", version: SCHEMA, fecha: new Date().toISOString(), datos: S }, null, 1)], { type: "application/json" });
   const nombre = `pichanga-respaldo-${hoyISO()}.json`;
   const file = new File([blob], nombre, { type: "application/json" });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: "Respaldo Pichanga" }); return; } catch (e) { if (e.name === "AbortError") return; }
+    try { await navigator.share({ files: [file], title: "Respaldo Pichanga" }); respaldado(); return; } catch (e) { if (e.name === "AbortError") return; }
   }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; a.click();
+  respaldado();
   toast("💾 Respaldo descargado");
 });
+// Recordatorio de respaldo: Safari puede borrar los datos de un sitio que no se abre en 7 días
+function renderRespaldo() {
+  const el = $("respaldoInfo"), hay = S.historial.length || Object.keys(S.deudas).length;
+  const dias = S.ultimoRespaldo ? Math.floor((Date.now() - new Date(S.ultimoRespaldo)) / 864e5) : null;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) && !(navigator.standalone || matchMedia("(display-mode: standalone)").matches);
+  let txt = "", alerta = false;
+  if (dias === null || !(dias >= 0)) { if (hay) { txt = "⚠️ Todavía no guardas ningún respaldo: si el teléfono borra los datos, se pierden el historial y las deudas."; alerta = true; } }
+  else { alerta = dias > 14; txt = `${alerta ? "⚠️" : "✅"} Último respaldo: ${dias === 0 ? "hoy" : dias === 1 ? "ayer" : `hace ${dias} días`}`; }
+  if (ios) { txt += (txt ? " " : "") + "📱 En iPhone, la app instalada en la pantalla de inicio no ve lo guardado en Safari: guarda un respaldo y restáuralo ahí."; alerta = true; }
+  el.hidden = !txt; el.textContent = txt;
+  el.className = "note " + (alerta ? "alerta" : "recaudado");
+}
 $("importar").addEventListener("change", async () => {
   const f = $("importar").files[0]; if (!f) return;
   try {
@@ -1704,10 +2183,10 @@ $("importar").addEventListener("change", async () => {
     if (j.app !== "pichanga" || !j.datos) throw new Error();
     if (!confirm("¿Reemplazar los datos de este teléfono con el respaldo?")) return;
     // Se aplica sin recargar: recargar justo después de guardar podía abrir con los datos de antes
-    S = migrar(j.datos); save();
+    S = migrar(j.datos); save(); guardarYa();
     mesVista = new Date(); mesVista.setDate(1);
     cargarCampos(); renderTab();
-    toast("✅ Respaldo restaurado");
+    if ($("avisoGuardar").hidden) toast("✅ Respaldo restaurado");
   } catch { toast("⚠️ Ese archivo no es un respaldo de Pichanga"); }
   finally { $("importar").value = ""; }
 });
@@ -1720,8 +2199,13 @@ function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 
 cargarCampos();
 {
-  // Abre en la pestaña de la URL (al recargar) y deja la entrada actual marcada para el botón Atrás
-  const t0 = tabDeHash(), st = history.state || {}, raiz = location.pathname + location.search;
+  // Abre en la pestaña de la URL (al recargar) y deja la entrada actual marcada para el botón Atrás.
+  // Sin pestaña en la URL (el sistema cerró la app mientras estabas en WhatsApp): vuelve a la última, si fue hace poco
+  let t0 = tabDeHash();
+  const st = history.state || {}, raiz = location.pathname + location.search;
+  if (!location.hash) {
+    try { const u = JSON.parse(localStorage.getItem(KEY + "-tab")); if (u && TABS.includes(u.tab) && Date.now() - u.t < 2 * 3600e3) t0 = u.tab; } catch {}
+  }
   if (pilaValida(st.pila) && st.pila[st.pila.length - 1] === t0) pila = st.pila; // recarga: se mantiene
   else if (t0 !== TABS[0]) { // entrada directa a otra pestaña: Atrás pasa primero por Convocatoria
     history.replaceState({ tab: TABS[0], pila: [TABS[0]] }, "", raiz);

@@ -1,6 +1,6 @@
 // Modo sin conexión: la app se sirve desde la caché si no hay internet,
 // y se actualiza sola cuando hay conexión.
-const CACHE = "pichanga-v5";
+const CACHE = "pichanga-v6";
 const APP = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 const ESPERA_RED = 3000; // con señal débil, pasados 3 s se abre la copia guardada
 
@@ -12,7 +12,8 @@ self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(APP)).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  // Solo se borran las versiones antiguas de esta app: en github.io el origen se comparte con otros proyectos
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith("pichanga-") && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener("fetch", (e) => {
   const req = e.request;
@@ -33,7 +34,7 @@ self.addEventListener("fetch", (e) => {
       return r;
     });
     e.waitUntil(red.then(() => guardar, () => {}));
-    const copia = () => caches.match("./index.html");
+    const copia = () => caches.open(CACHE).then((c) => c.match("./index.html"));
     const timeout = new Promise((ok) => setTimeout(ok, ESPERA_RED, "timeout"));
     const app = esApp(url);
     e.respondWith(Promise.race([red, app ? timeout : red]).then(
@@ -57,5 +58,5 @@ self.addEventListener("fetch", (e) => {
     return r;
   });
   e.waitUntil(red.then(() => guardar, () => {}));
-  e.respondWith(caches.match(req).then((hit) => hit || red));
+  e.respondWith(caches.open(CACHE).then((c) => c.match(req)).then((hit) => hit || red));
 });
