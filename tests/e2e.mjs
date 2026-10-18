@@ -12,7 +12,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const servidor = http.createServer((req, res) => {
   const rel = decodeURIComponent(new URL(req.url, "http://x").pathname.slice(1)) || "index.html", f = path.join(ROOT, rel);
   if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
-  const tipos = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".webmanifest": "application/manifest+json", ".png": "image/png" };
+  const tipos = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".webmanifest": "application/manifest+json", ".png": "image/png", ".svg": "image/svg+xml" };
   res.writeHead(200, { "content-type": tipos[path.extname(f)] || "application/octet-stream" });
   fs.createReadStream(f).pipe(res);
 });
@@ -1799,7 +1799,7 @@ await prueba("R2 bug 77: el service worker solo borra cachés viejas de Pichanga
   const vm = await import("node:vm");
   const borradas = [], h = {};
   const ctx = { self: { addEventListener: (ev, fn) => (h[ev] = fn), location: new URL("https://x.github.io/Mi_Pichanga/sw.js"), clients: { claim: async () => {} }, skipWaiting: () => {} },
-    caches: { keys: async () => ["otra-app-v3", "pichanga-v1", "pichanga-v7", "pichangas-de-otro"], delete: async (k) => borradas.push(k) }, URL, location: { origin: "https://x.github.io" } };
+    caches: { keys: async () => ["otra-app-v3", "pichanga-v1", "pichanga-v8", "pichangas-de-otro"], delete: async (k) => borradas.push(k) }, URL, location: { origin: "https://x.github.io" } };
   vm.default.runInNewContext(fs.readFileSync(path.join(ROOT, "sw.js"), "utf8"), ctx);
   let p; h.activate({ waitUntil: (x) => (p = x) }); await p;
   igual(borradas, ["pichanga-v1"], "solo la versión vieja de esta app");
@@ -2063,6 +2063,35 @@ await prueba("F15: sugiere subir o bajar el nivel según los últimos 30 días",
   ok(await t.page.isHidden("#sugerencias") || !(await t.txt("#sugerencias")).includes("Beto"), "no lo vuelve a sugerir");
 });
 
+await prueba("Inicio: la animación sale al abrir, se salta con un toque y no se repite al volver", async (abrir) => {
+  const t = await abrir();
+  const { page } = t;
+  // Las pruebas automáticas no la ven; aquí se hace pasar por un teléfono y se parte sin aperturas previas
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false });
+    if (!sessionStorage.getItem("__intro")) { sessionStorage.setItem("__intro", "1"); localStorage.removeItem("pichanga-v1-intro"); }
+  });
+  const hay = () => page.evaluate(() => !!document.getElementById("intro") && document.documentElement.classList.contains("con-intro"));
+  await page.goto(FILE);
+  ok(await hay(), "sale al abrir la app");
+  ok(await page.isVisible("#intro .marca"), "se ve el nombre");
+  await page.locator("#intro").click();
+  await page.waitForSelector("#intro", { state: "detached", timeout: 1500 });
+  await t.ir("pagos");
+  ok(await page.isVisible("#s-pagos"), "después del toque la app responde");
+  await page.goto(FILE);
+  ok(!(await hay()), "no se repite al volver al rato (p. ej. desde WhatsApp)");
+  const hace20 = () => page.evaluate(() => localStorage.setItem("pichanga-v1-intro", Date.now() - 20 * 60e3));
+  await hace20();
+  await page.goto(FILE + "#pagos");
+  ok(!(await hay()), "no sale al recargar una pestaña");
+  await hace20();
+  await page.goto(FILE);
+  ok(await hay(), "vuelve a salir pasados 15 minutos");
+  await page.waitForSelector("#intro", { state: "detached", timeout: 4000 });
+  ok(await page.evaluate(() => fetch(document.querySelector('link[rel=icon][type="image/svg+xml"]').href).then((r) => r.ok)), "el ícono SVG existe");
+});
+
 await prueba("B12: el SW no guarda páginas de error y abre desde la caché con red lenta o caída", async () => {
   // Servidor local que imita GitHub Pages (/Mi_Pichanga/) con perillas para fallar
   const ctl = { caido: false, demora: 0, status500: false };
@@ -2092,7 +2121,7 @@ await prueba("B12: el SW no guarda páginas de error y abre desde la caché con 
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.reload();
     ok(await page.evaluate(() => !!navigator.serviceWorker.controller), "SW controla la página");
-    igual(await page.evaluate(() => caches.keys()), ["pichanga-v7"], "caché nueva (pichanga-v7)");
+    igual(await page.evaluate(() => caches.keys()), ["pichanga-v8"], "caché nueva (pichanga-v7)");
     const copia = () => page.evaluate(() => caches.match("./index.html").then((r) => r && r.text()));
     await page.goto(raiz + "jugadores");
     ok((await page.title()) === "404", "la página 404 se muestra tal cual");

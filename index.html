@@ -5,13 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b7a3b">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pichanga">
 <title>Pichanga.app</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<script>
+  // Animación de inicio: solo al abrir la app de cero, no al recargar una pestaña ni al volver de WhatsApp
+  try {
+    const k = "pichanga-v1-intro", u = +localStorage.getItem(k) || 0;
+    if (!navigator.webdriver && !location.hash && Date.now() - u > 15 * 60e3) document.documentElement.classList.add("con-intro");
+    localStorage.setItem(k, Date.now());
+  } catch {}
+</script>
 <style>
   :root {
     --grass: #0b7a3b; --grass2: #12a150; --sky: #1565c0; --sky2: #42a5f5;
@@ -276,9 +285,54 @@
   }
   .manual, .manual2 { margin-top: 10px; }
   .manual summary, .manual2 summary { min-height: 44px; display: flex; align-items: center; font-size: 14px; }
+
+  /* Animación de inicio (dura 2,5 s; un toque la salta) */
+  .intro { display: none; }
+  html.con-intro .intro { display: block; position: fixed; inset: 0; z-index: 100; overflow: hidden; cursor: pointer;
+    background: repeating-linear-gradient(180deg, #0e8f45 0 9%, #12a150 9% 18%);
+    animation: intSalir .45s ease-in 3.5s forwards; } /* respaldo: se va sola aunque falle el script */
+  .intro .lineas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .intro .lineas * { fill: none; stroke: rgba(255,255,255,.85); stroke-width: .95; stroke-dasharray: 1; stroke-dashoffset: 1; animation: intTrazar .7s ease-out forwards; }
+  .intro .lineas .c { animation-delay: .15s; }
+  .intro .pelota { position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px; opacity: 0; filter: drop-shadow(0 6px 0 rgba(0,0,0,.25));
+    animation: intRodar .85s cubic-bezier(.2,.7,.3,1) .3s forwards, intRebote .4s ease-out 1.15s; }
+  .intro .onda { position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; border: 4px solid var(--gold); opacity: 0; animation: intOnda .7s ease-out 1.15s; }
+  .intro .marca { position: absolute; left: 0; right: 0; top: calc(50% + 72px); display: flex; justify-content: center; white-space: nowrap;
+    font: 400 40px/1 "Lilita One", Nunito, sans-serif; color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,.28); }
+  .intro .marca span { display: inline-block; opacity: 0; transform: translateY(18px) scale(.6); animation: intLetra .38s cubic-bezier(.3,1.6,.5,1) forwards; animation-delay: calc(1.3s + var(--i) * .045s); }
+  .intro .marca .pt { color: var(--gold); }
+  .intro .lema, .intro .saltar { position: absolute; left: 0; right: 0; text-align: center; opacity: 0; font: 800 13px Nunito, sans-serif; color: rgba(255,255,255,.9); }
+  .intro .lema { top: calc(50% + 124px); letter-spacing: .1em; text-transform: uppercase; animation: intAparecer .4s ease-out 1.85s forwards; }
+  .intro .saltar { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); font-size: 12px; color: rgba(255,255,255,.65); animation: intAparecer .3s ease-out .6s forwards; }
+  html.con-intro .intro.salir { animation: intSalir .45s ease-in forwards; }
+  @keyframes intTrazar { to { stroke-dashoffset: 0; } }
+  @keyframes intRodar { 0% { opacity: 1; transform: translateX(-60vw) rotate(-540deg); } 100% { opacity: 1; transform: none; } }
+  @keyframes intRebote { 0% { transform: scale(1); } 40% { transform: scale(1.12, .9); } 70% { transform: scale(.96, 1.05); } 100% { transform: scale(1); } }
+  @keyframes intOnda { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(2.4); } }
+  @keyframes intLetra { to { opacity: 1; transform: none; } }
+  @keyframes intAparecer { to { opacity: 1; } }
+  @keyframes intSalir { to { opacity: 0; transform: scale(1.08); visibility: hidden; } }
+  @media (prefers-reduced-motion: reduce) {
+    /* sin rodar ni rebotar: aparece todo de una vez y se desvanece */
+    .intro .lineas *, .intro .pelota, .intro .marca span, .intro .lema, .intro .saltar { animation: intAparecer .2s forwards !important; stroke-dashoffset: 0; transform: none; }
+    .intro .onda { display: none; }
+    html.con-intro .intro.salir { animation: intSalir .3s forwards; }
+  }
 </style>
 </head>
 <body>
+<div class="intro" id="intro" aria-hidden="true">
+  <svg class="lineas" viewBox="0 0 100 200" preserveAspectRatio="xMidYMid slice">
+    <rect x="8" y="10" width="84" height="180" rx="2" pathLength="1"/><path d="M8 100 H92" pathLength="1"/>
+    <circle class="c" cx="50" cy="100" r="18" pathLength="1"/>
+    <path d="M30 10 V34 H70 V10" pathLength="1"/><path d="M30 190 V166 H70 V190" pathLength="1"/>
+  </svg>
+  <div class="onda"></div>
+  <svg class="pelota" viewBox="0 0 100 100"><defs></defs><clipPath id="introBall"><circle cx="50" cy="50" r="47"/></clipPath><circle cx="50" cy="50" r="47" fill="#fff"/><g clip-path="url(#introBall)"><path d="M50.00,34.02 L65.20,45.06 L59.39,62.93 L40.61,62.93 L34.80,45.06Z" fill="#1d2a33"/><path d="M50.00,19.92 L35.25,9.20 L40.88,-8.14 L59.12,-8.14 L64.75,9.20Z" fill="#1d2a33"/><path d="M78.61,40.70 L84.24,23.36 L102.48,23.36 L108.11,40.70 L93.36,51.42Z" fill="#1d2a33"/><path d="M67.68,74.34 L85.91,74.34 L91.55,91.68 L76.80,102.39 L62.05,91.68Z" fill="#1d2a33"/><path d="M32.32,74.34 L37.95,91.68 L23.20,102.39 L8.45,91.68 L14.09,74.34Z" fill="#1d2a33"/><path d="M21.39,40.70 L6.64,51.42 L-8.11,40.70 L-2.48,23.36 L15.76,23.36Z" fill="#1d2a33"/><path d="M50.00,34.02 L50.00,19.92 M65.20,45.06 L78.61,40.70 M59.39,62.93 L67.68,74.34 M40.61,62.93 L32.32,74.34 M34.80,45.06 L21.39,40.70" stroke="#1d2a33" stroke-width="3.29" stroke-linecap="round" fill="none"/><circle cx="35.9" cy="35.0" r="42.3" fill="rgba(255,255,255,.0)"/></g><circle cx="50" cy="50" r="45.35" fill="none" stroke="#1d2a33" stroke-width="3.29"/></svg>
+  <div class="marca"><span style="--i:0">p</span><span style="--i:1">i</span><span style="--i:2">c</span><span style="--i:3">h</span><span style="--i:4">a</span><span style="--i:5">n</span><span style="--i:6">g</span><span style="--i:7">a</span><span style="--i:8" class="pt">.</span><span style="--i:9">a</span><span style="--i:10">p</span><span style="--i:11">p</span></div>
+  <div class="lema">Convoca · Arma · Cobra</div>
+  <div class="saltar">Toca para saltar</div>
+</div>
 <header class="top"><h1>⚽ pichanga.app ⚽</h1></header>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -2622,6 +2676,21 @@ $("importar").addEventListener("change", async () => {
   } catch { toast("⚠️ Ese archivo no es un respaldo de Pichanga"); }
   finally { $("importar").value = ""; }
 });
+
+// Animación de inicio: se va sola a los 2,5 s o con un toque; después se saca del todo
+if (document.documentElement.classList.contains("con-intro")) {
+  const intro = $("intro");
+  const fin = () => { document.documentElement.classList.remove("con-intro"); intro.remove(); };
+  const salir = () => {
+    if (intro.classList.contains("salir")) return;
+    clearTimeout(salir.t); intro.classList.add("salir");
+    intro.addEventListener("animationend", (e) => { if (e.target === intro) fin(); });
+    setTimeout(fin, 700); // por si la animación no termina (pestaña en segundo plano)
+  };
+  salir.t = setTimeout(salir, 2500);
+  intro.addEventListener("pointerdown", (e) => { e.preventDefault(); salir(); });
+  intro.addEventListener("click", (e) => e.stopPropagation());
+} else $("intro").remove();
 
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   navigator.serviceWorker.register("sw.js").catch(() => {});

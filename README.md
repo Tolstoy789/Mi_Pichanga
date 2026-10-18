@@ -15,6 +15,8 @@ Organizador de pichangas para el celular: convocatoria, armado de equipos y cobr
 
 Ábrela en https://tolstoy789.github.io/Mi_Pichanga/ desde el celular y usa **"Agregar a pantalla de inicio"** para instalarla como app. Funciona sin conexión.
 
+Al abrirla de cero aparece una animación corta (la pelota entra rodando a la cancha y salta "pichanga.app"). Un toque la salta, no se repite si vuelves a la app antes de 15 minutos (por ejemplo, desde WhatsApp) y con "reducir movimiento" activado aparece sin rodar ni rebotar. El ícono es la P de pelota (`icons/icon.svg`, con sus versiones PNG para Android e iPhone).
+
 Las acciones importantes (bajar a alguien, cerrar la pichanga, saldar o anotar una deuda, marcar un pago, 🔁 Misma lista, armar equipos, guardar el partido) muestran **↩️ Deshacer** por unos segundos. El botón se va apenas se hace otra cosa, para que nunca parezca que deshace lo último.
 
 Los datos se guardan en el mismo teléfono. En la pestaña 🏆 Post-Partido puedes guardar un respaldo (archivo `.json`) y restaurarlo en otro celular; la app recuerda cuándo fue el último respaldo y avisa si el teléfono se queda sin espacio para guardar. Si la app está abierta en dos ventanas a la vez, cada una carga lo que guarda la otra.
