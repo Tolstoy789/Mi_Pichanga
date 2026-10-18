@@ -239,7 +239,7 @@ await prueba("B2/F1: Cerrar pichanga guarda el partido pendiente, anota deudas y
   const S = await t.S();
   igual(S.historial.length, 1, "partido guardado");
   igual([S.historial[0].golesA, S.historial[0].golesB, S.historial[0].mvp, S.historial[0].fecha], [3, 1, "Ana", "2026-10-17"], "resultado y premio");
-  igual(S.post, { golesA: 0, golesB: 0, mvp: "", goleador: "", rustico: "", guardadoId: null, fecha: "" }, "marcador y premios limpios");
+  igual(S.post, { golesA: 0, golesB: 0, mvp: "", goleador: "", rustico: "", guardadoId: null, fecha: "", votoLista: [] }, "marcador y premios limpios");
   igual(S.deudas.Ana, [{ fecha: "2026-10-17", concepto: "Cancha", monto: 5000 }], "deuda de Ana con monto y fecha");
   igual([S.fecha, S.hora, S.lugar, S.costoCancha, S.costoTercer], ["2026-10-24", "21:00", "Cancha 3", "30000", ""], "próxima fecha con la misma hora, lugar y costo");
   igual([S.inscritos, S.pagos, S.tercer, S.equipos], [[], {}, {}, { A: [], B: [] }], "lista y pagos limpios");
@@ -484,6 +484,7 @@ await prueba("B8: Armado Equilibrado da la menor diferencia y no manda a los mej
   await t.ir("equipos");
   let ambos5 = 0;
   for (let i = 0; i < 20; i++) {
+    await t.page.waitForTimeout(470); // un toque doble (< 450 ms) arma una sola vez: sin la pausa se cuenta el mismo reparto varias veces
     await t.page.click("#equilibrar");
     const { A, B } = (await t.S()).equipos;
     const s = (x) => x.reduce((a, n) => a + niveles[n], 0);
@@ -1322,8 +1323,8 @@ await prueba("Pantallas: sin scroll horizontal, toques ≥ 44px e inputs ≥ 16p
     const tactiles = {
       convocatoria: [".x", ".chip:not(.in)", "#mismaLista", "#menos", "#mas", "#agregar", "#titulares .ren", "#editarCaseros", "#avisarSuben", "#cerrarSuben", "#pegarLista"],
       equipos: ["#azar", "#equilibrar", "#colorA", "#colorB", ".levels summary", ".levels .seg button", ".levels [data-arq]"],
-      pagos: [".beer", ".state", ".pname", "[data-saldar]", "#waCobrar", "#waUno", "[data-cerrar]", "#s-pagos summary", "#copiarBanco", "#compartirQr", "#quitarQr", "[data-jugo]", "[data-igual]"],
-      post: ["[data-gol]", "#guardarPartido", "[data-cerrar]", "#mesAnt", "#mesSig", "#aMvp", "#waStats", "#pFecha", "#historial .fecha", "#historial .x"],
+      pagos: [".beer", ".state", ".pname", "[data-saldar]", "#waCobrar", "#waUno", "[data-cerrar]", "#s-pagos summary", "#copiarBanco", "#compartirQr", "#quitarQr", "[data-jugo]", "[data-igual]", "#redondeo", "#cajaBtn", "#acompDet summary"],
+      post: ["[data-gol]", "#guardarPartido", "[data-cerrar]", "#mesAnt", "#mesSig", "#aMvp", "#waStats", "#pFecha", "#historial .fecha", "#historial .x", "#contarVotos", "#statsRango button"],
     };
     for (const [tab, sels] of Object.entries(tactiles)) {
       await t.ir(tab);
@@ -1466,6 +1467,7 @@ await prueba("R2 bugs 21, 22: soltar fuera de la cancha cancela; un equipo no pa
   await t.page.locator("#bench").scrollIntoViewIfNeeded();
   await arrastrar('.player[data-p="J02"]', { x: banca.x + 20, y: (await t.page.locator("#bench").boundingBox()).y + 10 });
   igual((await t.S()).equipos, antes, "soltar en la banca no cambia nada");
+  await t.page.evaluate(() => document.getElementById("pitch").scrollIntoView({ block: "center" }));
   const pitch = await t.page.locator("#pitch").boundingBox();
   await arrastrar('.player[data-p="J02"]', { x: pitch.x + 6, y: pitch.y + pitch.height * 0.97 });
   igual((await t.S()).equipos, antes, "con 7 vs 7 no se puede pasar a 6 vs 8");
@@ -1797,7 +1799,7 @@ await prueba("R2 bug 77: el service worker solo borra cachés viejas de Pichanga
   const vm = await import("node:vm");
   const borradas = [], h = {};
   const ctx = { self: { addEventListener: (ev, fn) => (h[ev] = fn), location: new URL("https://x.github.io/Mi_Pichanga/sw.js"), clients: { claim: async () => {} }, skipWaiting: () => {} },
-    caches: { keys: async () => ["otra-app-v3", "pichanga-v1", "pichanga-v6", "pichangas-de-otro"], delete: async (k) => borradas.push(k) }, URL, location: { origin: "https://x.github.io" } };
+    caches: { keys: async () => ["otra-app-v3", "pichanga-v1", "pichanga-v7", "pichangas-de-otro"], delete: async (k) => borradas.push(k) }, URL, location: { origin: "https://x.github.io" } };
   vm.default.runInNewContext(fs.readFileSync(path.join(ROOT, "sw.js"), "utf8"), ctx);
   let p; h.activate({ waitUntil: (x) => (p = x) }); await p;
   igual(borradas, ["pichanga-v1"], "solo la versión vieja de esta app");
@@ -1934,6 +1936,133 @@ await prueba("F8: 💬 cobro individual directo al teléfono del jugador", async
   ok(!(await t.page.locator('[data-uno="J03"]').count()), "quien pagó no aparece");
 });
 
+/* ================= Ronda 3 ================= */
+const PARTIDO = (id, fecha, gA, gB, A, B, x = {}) => Object.assign({ id, fecha, lugar: "", golesA: gA, golesB: gB, colorA: "⚫ Negro", colorB: "🟢 Peto Flúor", A, B, mvp: "", goleador: "", rustico: "" }, x);
+const hoyR3 = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+
+await prueba("F9: estadísticas por jugador del mes y del año", async (abrir) => {
+  const m = hoyR3().slice(0, 7), otroMes = (+m.slice(5) === 1 ? m.slice(0, 5) + "02" : m.slice(0, 5) + "01");
+  const t = await abrir(base({ historial: [
+    PARTIDO(1, m + "-01", 2, 1, ["Ana", "Beto"], ["Caro", "Dani"], { mvp: "Ana", goleador: "Ana" }),
+    PARTIDO(2, m + "-02", 0, 0, ["Ana", "Caro"], ["Beto", "Dani"], { rustico: "Beto" }),
+    PARTIDO(3, otroMes + "-03", 0, 3, ["Ana"], ["Caro"], { mvp: "Caro" }),
+  ] }));
+  await t.ir("post");
+  const fila = (n) => t.page.evaluate((n) => [...document.querySelectorAll("#statsTabla tbody tr")].find((r) => r.cells[0].textContent === n)?.innerText.split("\t").slice(1).map(Number), n);
+  igual(await fila("Ana"), [2, 1, 1, 0, 1, 1, 0], "Ana en el mes: PJ G E P ⭐ 👟 🪓");
+  igual(await fila("Beto"), [2, 1, 1, 0, 0, 0, 1], "Beto en el mes");
+  await t.tap('[data-rango="anio"]');
+  igual(await fila("Ana"), [3, 1, 1, 1, 1, 1, 0], "Ana en el año");
+  ok((await t.txt("#statsSub")).includes("3 partidos"), "cuenta partidos del año");
+});
+
+await prueba("F10: contar votos pegados del grupo (último voto vale, empates no se eligen solos)", async (abrir) => {
+  const t = await abrir(base({ porLado: 3, inscritos: ["Ana", "Beto", "Caro", "Dani", "Eli", "Fede"], equipos: { A: ["Ana", "Beto", "Caro"], B: ["Dani", "Eli", "Fede"] } }));
+  await t.ir("post");
+  await t.tap("#waVotar");
+  igual((await t.S()).post.votoLista, ["Ana", "Beto", "Caro", "Dani", "Eli", "Fede"], "guarda la lista de la votación");
+  await t.tap("#contarVotos");
+  await t.page.fill("#vTxt", [
+    "[17/10/26, 21:03:15] Pato: 2, 5, 6",
+    "17/10/26, 21:05 - Memo: 2 4 6",
+    "17/10/26, 21:06 - Pato: 1 4 3",
+    "Seba: 2-4-5",
+    "Ejemplo: *4, 6, 1*",
+    "Lucho: 9 9 9",
+    "jaja buena",
+  ].join("\n"));
+  await t.page.dispatchEvent("#vTxt", "input");
+  const res = await t.txt("#vRes");
+  ok(res.includes("3 votos") && res.includes("1 respuesta sin entender"), "cuenta votos válidos: " + res);
+  ok(res.includes("Beto (2)") && res.includes("Dani (3)") && res.includes("empate"), "MVP Beto, Goleador Dani, Rústico empatado");
+  await t.tap("#vOk");
+  const S = await t.S();
+  igual([S.post.mvp, S.post.goleador, S.post.rustico], ["Beto", "Dani", ""], "usa los ganadores y deja el empate para elegir");
+});
+
+await prueba("F11: un suplente entra desde la banca (tocar o arrastrar) en el lugar del titular", async (abrir) => {
+  const t = await abrir(base({ porLado: 3, inscritos: ["Ana", "Beto", "Caro", "Dani", "Eli", "Fede", "Gabi", "Hugo"], equipos: { A: ["Ana", "Beto", "Caro"], B: ["Dani", "Eli", "Fede"] } }));
+  await t.ir("equipos");
+  await t.tap('[data-banca="Gabi"]');
+  await t.toast("toca al jugador");
+  await t.tap('.player[data-p="Beto"]');
+  let S = await t.S();
+  igual([S.equipos.A, S.inscritos.slice(6)], [["Ana", "Gabi", "Caro"], ["Beto", "Hugo"]], "Gabi entra por Beto y Beto va a la banca");
+  // Arrastrar a Hugo sobre Dani (el arquero del B)
+  await t.page.waitForTimeout(470);
+  const de = await t.page.locator('[data-banca="Hugo"]').boundingBox(), a = await t.page.locator('.player[data-p="Dani"]').boundingBox();
+  await t.page.mouse.move(de.x + de.width / 2, de.y + de.height / 2); await t.page.mouse.down();
+  await t.page.mouse.move(de.x + 30, de.y - 30, { steps: 4 });
+  await t.page.mouse.move(a.x + a.width / 2, a.y + a.height / 3, { steps: 6 });
+  await t.page.mouse.up();
+  S = await t.S();
+  igual(S.equipos.B[0], "Hugo", "Hugo entra al arco del B");
+  ok(S.inscritos.slice(6).includes("Dani") && !(await t.page.locator(".fantasma").count()), "Dani a la banca y sin fantasma");
+  await t.tap("#toast .tbtn");
+  igual((await t.S()).equipos.B[0], "Dani", "↩️ Deshacer");
+});
+
+await prueba("F11: acompañantes al 🍻 pagan solo el tercer tiempo", async (abrir) => {
+  const t = await abrir(base({ porLado: 3, inscritos: J(6), costoCancha: "30000", costoTercer: "9000", tercer: { J01: true, J02: true } }));
+  await t.ir("pagos");
+  await t.page.click("#acompDet summary");
+  await t.page.fill("#acompNombre", "Polola de J01");
+  await t.tap("#acompOk");
+  ok((await t.txt("#pagosAcomp")).includes("$3.000"), "le toca un tercio del 🍻");
+  ok((await t.txt("#porCancha")).startsWith("$5.000"), "la cancha no cambia");
+  await t.tap("[data-cerrar]"); await t.tap("#cOk");
+  igual((await t.S()).deudas["Polola de J01"], [{ fecha: "2026-10-17", concepto: "🍻 Tercer tiempo", monto: 3000 }], "su 🍻 queda en la libreta");
+});
+
+await prueba("F13: editar un partido del historial (marcador, premios y fecha)", async (abrir) => {
+  const f = hoyR3();
+  const t = await abrir(base({ historial: [PARTIDO(7, f, 1, 0, ["Ana", "Beto"], ["Caro", "Dani"], { mvp: "Ana" })] }));
+  await t.ir("post");
+  await t.tap("#historial .fecha");
+  await t.hoja();
+  await t.page.fill("#hGA", "2"); await t.page.fill("#hGB", "3");
+  await t.page.selectOption("#hMvp", "Caro"); await t.page.selectOption("#hGol", "Dani");
+  await t.tap("#hOk");
+  const p = (await t.S()).historial[0];
+  igual([p.golesA, p.golesB, p.mvp, p.goleador, p.fecha], [2, 3, "Caro", "Dani", f], "partido corregido");
+  ok((await t.txt("#historial")).includes("2 – 3"), "se ve en el historial");
+});
+
+await prueba("F14: cuota redondeada y lo que sobra va a la 📦 caja; la caja paga parte de la cancha", async (abrir) => {
+  const t = await abrir(base({ porLado: 7, inscritos: J(14), costoCancha: "50000" }));
+  await t.ir("pagos");
+  await t.page.selectOption("#redondeo", "500");
+  ok((await t.txt("#porCancha")).startsWith("$4.000"), "50.000 / 14 = 3.572 → $4.000");
+  await t.tap("[data-cerrar]");
+  ok((await t.txt("#sheet")).includes("+$6.000 del redondeo"), "el cierre muestra lo que va a la caja");
+  await t.tap("#cOk");
+  let S = await t.S();
+  igual([S.caja, S.deudas.J01[0].monto], [6000, 4000], "caja con $6.000 y cuotas de $4.000");
+  // La semana siguiente: la caja paga $6.000 de la cancha
+  await t.tap("#mismaLista");
+  await t.ir("pagos");
+  await t.tap("#cajaBtn"); await t.tap("#cjUsar");
+  ok((await t.txt("#porCancha")).startsWith("$3.500"), "44.000 / 14 = 3.143 → $3.500");
+  await t.tap("[data-cerrar]"); await t.tap("#cOk");
+  S = await t.S();
+  igual([S.caja, S.usaCaja], [5000, 0], "usó $6.000 y sobraron $5.000");
+});
+
+await prueba("F15: sugiere subir o bajar el nivel según los últimos 30 días", async (abrir) => {
+  const d = (n) => { const x = new Date(Date.now() - n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+  const hist = [1, 2, 3].map((i) => PARTIDO(i, d(i * 3), 3, 0, ["Ana", "Beto"], ["Caro", "Dani"]));
+  const t = await abrir(base({ inscritos: ["Ana", "Beto", "Caro", "Dani"], niveles: { Ana: 5 }, historial: hist }));
+  await t.ir("equipos");
+  const txt = await t.txt("#sugerencias");
+  ok(txt.includes("Beto ganó 3 de 3") && txt.includes("Caro perdió 3 de 3") && !txt.includes("Ana"), "sugiere a Beto y Caro (Ana ya es 5): " + txt);
+  await t.tap('[data-sug="Beto"]');
+  await t.page.waitForTimeout(470);
+  await t.tap('[data-nosug="Caro"]');
+  const S = await t.S();
+  igual([S.niveles.Beto, S.niveles.Caro || 3], [4, 3], "Beto sube, Caro queda igual");
+  ok(await t.page.isHidden("#sugerencias") || !(await t.txt("#sugerencias")).includes("Beto"), "no lo vuelve a sugerir");
+});
+
 await prueba("B12: el SW no guarda páginas de error y abre desde la caché con red lenta o caída", async () => {
   // Servidor local que imita GitHub Pages (/Mi_Pichanga/) con perillas para fallar
   const ctl = { caido: false, demora: 0, status500: false };
@@ -1963,7 +2092,7 @@ await prueba("B12: el SW no guarda páginas de error y abre desde la caché con 
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.reload();
     ok(await page.evaluate(() => !!navigator.serviceWorker.controller), "SW controla la página");
-    igual(await page.evaluate(() => caches.keys()), ["pichanga-v6"], "caché nueva (pichanga-v6)");
+    igual(await page.evaluate(() => caches.keys()), ["pichanga-v7"], "caché nueva (pichanga-v7)");
     const copia = () => page.evaluate(() => caches.match("./index.html").then((r) => r && r.text()));
     await page.goto(raiz + "jugadores");
     ok((await page.title()) === "404", "la página 404 se muestra tal cual");

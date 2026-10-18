@@ -157,12 +157,21 @@
   .plate { margin-top: 1px; display: flex; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 3px rgba(0,0,0,.35); max-width: 100%; background: rgba(10,22,34,.85); }
   .plate .nm { color: #fff; font: 800 var(--nm)/1.15 Nunito, sans-serif; padding: 1px 4px; text-align: center; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
   .pitch .empty-msg { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-weight: 800; text-align: center; padding: 20px; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
-  .bench { display: flex; align-items: center; gap: 8px; margin-top: 14px; background: rgba(10,22,34,.55); color: #fff; padding: 8px 10px; border-radius: 12px; font: 800 12px Nunito; overflow-x: auto; }
+  .bench { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-top: 14px; background: rgba(10,22,34,.55); color: #fff; padding: 8px 10px; border-radius: 12px; font: 800 12px Nunito; }
   .bench .tag { color: var(--gold); white-space: nowrap; }
-  .bench span.b { background: rgba(255,255,255,.12); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .bench .b { background: rgba(255,255,255,.12); color: #fff; border: 2px solid transparent; font: 800 13px Nunito, sans-serif; min-height: 44px; padding: 0 12px; border-radius: 999px; max-width: 100%; overflow-wrap: anywhere; cursor: grab; touch-action: none; user-select: none; }
+  .bench .b.sel { border-color: var(--gold); background: rgba(255,193,7,.25); }
+  body.arrastrando { -webkit-user-select: none; user-select: none; } /* arrastrar no selecciona texto (un texto seleccionado corta el arrastre siguiente) */
+  .fantasma { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -50%); background: var(--gold); color: #3a2a00; font: 800 13px Nunito, sans-serif; padding: 8px 12px; border-radius: 999px; box-shadow: 0 6px 14px rgba(0,0,0,.4); }
   .hint { color: #fff; font-size: 12px; text-align: center; opacity: .85; margin: 10px 0; }
   .levels .list li { flex-wrap: wrap; row-gap: 4px; }
   .levels .list li .name { flex: 1 1 auto; max-width: 100%; } /* si el nombre no cabe al lado, los botones bajan */
+  .sug { background: #f1f7ff; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; }
+  .sug ul { list-style: none; margin: 6px 0 0; padding: 0; }
+  .sug li { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px dashed var(--line); }
+  .sug li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .sug .btn.small { min-height: 44px; flex: none; }
+  .sug .x { flex: none; }
   .levels .tag.sup { background: #fff8e1; color: #8a5a00; }
   .levels .tag.cas { background: #eef3f7; color: var(--muted); }
   .levels .list li .seg { display: flex; flex: none; border: 2px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -187,7 +196,7 @@
   @media (max-width: 380px) { .pfecha { flex-wrap: wrap; gap: 4px; } .pfecha label { flex-basis: 100%; } }
   .rank .who { font-weight: 800; }
   .rank .who small { color: var(--muted); font-weight: 600; font-size: 12px; }
-  .hist .fecha { width: 64px; flex: none; color: var(--sky); font-weight: 800; font-size: 13px; background: none; border: 0; min-height: 44px; padding: 0; text-align: left; cursor: pointer; text-decoration: underline dotted; }
+  .hist .fecha { width: 80px; flex: none; color: var(--sky); font-weight: 800; font-size: 13px; background: none; border: 0; min-height: 44px; padding: 0; text-align: left; cursor: pointer; text-decoration: underline dotted; }
   .award { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .award:last-child { border-bottom: 0; }
   .award .ic { font-size: 28px; width: 40px; text-align: center; }
@@ -208,10 +217,20 @@
   .hist .name { overflow-wrap: break-word; }
   @media (max-width: 380px) { /* el MVP baja a su propia línea en vez de cortarse */
     .hist li { flex-wrap: wrap; row-gap: 0; }
-    .hist .name { order: 1; flex-basis: 100%; padding-left: 64px; margin-top: -6px; }
+    .hist .name { order: 1; flex-basis: 100%; padding-left: 80px; margin-top: -6px; }
     .hist .w { margin-left: auto; }
   }
   .hist .res { font-family: "Lilita One"; font-size: 18px; min-width: 54px; text-align: center; }
+  .seg2 { display: flex; border: 2px solid var(--line); border-radius: 10px; overflow: hidden; flex: none; }
+  .seg2 button { border: 0; background: #fff; font: 800 14px Nunito, sans-serif; min-width: 56px; min-height: 44px; cursor: pointer; color: var(--muted); }
+  .seg2 button.on { background: var(--sky); color: #fff; }
+  .tabla { overflow-x: auto; }
+  .tabla table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tabla th { font-size: 12px; color: var(--muted); font-weight: 800; padding: 4px 3px; text-align: center; border-bottom: 2px solid var(--line); }
+  .tabla td { padding: 7px 3px; text-align: center; border-bottom: 1px solid var(--line); font-weight: 700; }
+  .tabla th:first-child, .tabla td:first-child { text-align: left; overflow-wrap: anywhere; }
+  .tabla td:first-child { font-weight: 800; }
+  .tabla td.cero { color: #c3ccd3; }
   .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
   .month-nav b { font-family: "Lilita One"; font-weight: 400; font-size: 18px; }
   .month-nav .btn { min-width: 44px; }
@@ -255,8 +274,8 @@
     .debts li { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name btn" "amt btn" "det det"; }
     .debts .amt { justify-self: start; line-height: 1.1; }
   }
-  .manual { margin-top: 10px; }
-  .manual summary { min-height: 44px; display: flex; align-items: center; font-size: 14px; }
+  .manual, .manual2 { margin-top: 10px; }
+  .manual summary, .manual2 summary { min-height: 44px; display: flex; align-items: center; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -344,8 +363,9 @@
       <div id="players"></div>
     </div>
     <div class="bench" id="bench"></div>
-    <p class="hint">Arrastra un jugador sobre otro para intercambiarlos, o a la otra mitad para cambiarlo de equipo. El primero de cada equipo va al arco 🧤.</p>
+    <p class="hint">Arrastra un jugador sobre otro para intercambiarlos, o a la otra mitad para cambiarlo de equipo. El primero de cada equipo va al arco 🧤. Para un cambio, arrastra (o toca) a un suplente de la banca y suéltalo sobre el que sale.</p>
     <div class="card levels">
+      <div id="sugerencias" hidden></div>
       <details>
         <summary>🔒 Niveles ocultos (1 a 5)</summary>
         <ul class="list" id="niveles" style="margin-top:8px"></ul>
@@ -390,6 +410,10 @@
         <div>Cancha por persona<b id="porCancha">$0</b></div>
         <div>🍻 Por persona extra<b id="porTercer">$0</b></div>
       </div>
+      <div class="row" style="align-items:flex-end;margin-top:4px">
+        <div><label for="redondeo">🔄 Redondear cuota</label><select id="redondeo"><option value="0">No (exacta)</option><option value="100">A $100</option><option value="500">A $500</option><option value="1000">A $1.000</option></select></div>
+        <div><label for="cajaBtn">📦 Caja</label><button type="button" class="btn ghost" id="cajaBtn" style="width:100%;min-height:48px">$0</button></div>
+      </div>
       <p class="note alerta" id="avisoTercer" hidden></p>
       <p class="note recaudado" id="recaudado" hidden></p>
     </div>
@@ -408,6 +432,15 @@
         <p style="margin:0 0 6px;font-size:13px;color:var(--muted)">💸 = se bajó y paga igual su parte de la cancha (así a los demás no les sube la cuota).</p>
         <ul class="list pay" id="pagosBaja"></ul>
       </div>
+      <div class="subs" id="pagosAcompBox" hidden>
+        <h2 style="margin:8px 0 2px;font-size:16px">🍻 Acompañantes</h2>
+        <p style="margin:0 0 6px;font-size:13px;color:var(--muted)">No juegan, solo pagan su parte del tercer tiempo.</p>
+        <ul class="list pay" id="pagosAcomp"></ul>
+      </div>
+      <details class="manual2" id="acompDet">
+        <summary>🍻 Sumar acompañante al tercer tiempo</summary>
+        <div class="row"><input id="acompNombre" list="listaNombres" autocomplete="off" autocapitalize="words" maxlength="30" placeholder="Nombre" style="flex:3"><button class="btn" id="acompOk" style="flex:1" aria-label="Sumar acompañante">+</button></div>
+      </details>
     </div>
 
     <div class="card">
@@ -445,7 +478,7 @@
 
     <div class="card" style="margin-top:12px">
       <h2>🗳️ Premios del partido</h2>
-      <button class="btn green" id="waVotar" style="width:100%;margin-bottom:8px">📲 Enviar votación al grupo</button>
+      <div class="toolbar" style="margin:0 0 8px"><button class="btn green" id="waVotar">📲 Enviar votación</button><button class="btn ghost" id="contarVotos">🧮 Contar votos</button></div>
       <p style="margin:0 0 4px;font-size:13px;color:var(--muted)">Con los votos del grupo, elige a los ganadores:</p>
       <div class="award"><span class="ic">⭐</span><span class="lb">MVP</span><select id="aMvp"></select></div>
       <div class="award"><span class="ic">👟</span><span class="lb">Goleador</span><select id="aGol"></select></div>
@@ -466,6 +499,13 @@
       <ul class="list hist" id="historial"></ul>
     </div>
     <button class="btn green block" id="waStats">💬 Compartir tabla del mes</button>
+
+    <div class="card" style="margin-top:14px">
+      <div class="lbl-row"><h2 style="margin:0">📈 Jugadores</h2>
+        <div class="seg2" id="statsRango" role="group" aria-label="Período"><button type="button" data-rango="mes" class="on" aria-pressed="true">Mes</button><button type="button" data-rango="anio" aria-pressed="false">Año</button></div></div>
+      <p id="statsSub" style="margin:4px 0 8px;font-size:13px;color:var(--muted)"></p>
+      <div class="tabla"><table id="statsTabla"></table></div>
+    </div>
 
     <div class="card" style="margin-top:14px">
       <h2>💾 Respaldo</h2>
@@ -501,11 +541,11 @@ const COLORS = {
 };
 const KEY = "pichanga-v1";
 const SCHEMA = 5;           // versión de la forma de los datos (ver migrar). v3: pagos[n].libreta. v4: promovidos, jugo, post.fecha, 🍻 de suplentes.
-                            // v5: arqueros, telefonos, bajas y pagaIgual
+                            // v5: arqueros, telefonos, bajas, pagaIgual, acomp, redondeo, caja, usaCaja y ajustes
 const KEY_QR = KEY + "-qr"; // el QR (imagen pesada) se guarda aparte: si no cabe, el resto de los datos igual se guarda
 const $ = (id) => document.getElementById(id);
 
-const postVacio = () => ({ golesA: 0, golesB: 0, mvp: "", goleador: "", rustico: "", guardadoId: null, fecha: "" });
+const postVacio = () => ({ golesA: 0, golesB: 0, mvp: "", goleador: "", rustico: "", guardadoId: null, fecha: "", votoLista: [] });
 // Diccionario sin prototipo: un jugador llamado "constructor" o "__proto__" es una clave más
 const dic = (x) => Object.assign(Object.create(null), x && typeof x === "object" && !Array.isArray(x) ? x : {});
 const tiene = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -528,6 +568,11 @@ const defaults = () => ({
   jugo: dic(),              // suplente -> true si entró a jugar (paga cancha)
   bajas: [],                // titulares que se bajaron de esta pichanga (orden en que se bajaron)
   pagaIgual: dic(),         // de ellos, quienes pagan igual su parte de la cancha (💸)
+  acomp: [],                // acompañantes que no juegan pero se quedan al 🍻 (pagan solo el tercer tiempo)
+  redondeo: 0,              // cuota redondeada hacia arriba a 0 (exacta), 100, 500 o 1000 pesos; lo que sobra va a la caja
+  caja: 0,                  // 📦 plata que sobró de redondeos (o anotada a mano), para pagar canchas futuras
+  usaCaja: 0,               // cuánto de la caja se usa en la cancha de esta pichanga
+  ajustes: dic(),           // nombre -> fecha del último cambio de nivel sugerido (💡), para no volver a sugerirlo
   promovidos: [],           // suplentes que subieron a titular y falta avisarles (📲 Avisar)
   ultimoRespaldo: "",       // fecha ISO del último ⬇️ Guardar respaldo
   deudas: dic(),            // libreta: nombre -> [{ fecha, concepto, monto }] (monto > 0 debe, < 0 abono o a favor, null = sin monto)
@@ -581,7 +626,7 @@ function migrar(o) {
   S.post = Object.assign(postVacio(), {
     golesA: Math.max(0, parseInt(po.golesA, 10) || 0), golesB: Math.max(0, parseInt(po.golesB, 10) || 0),
     mvp: str(po.mvp), goleador: str(po.goleador), rustico: str(po.rustico), guardadoId: Number.isSafeInteger(gid) && gid > 0 ? gid : null,
-    fecha: esISO(po.fecha) ? po.fecha : "",
+    fecha: esISO(po.fecha) ? po.fecha : "", votoLista: nombres(po.votoLista),
   });
   // Historial: id numérico y único (se usa en el HTML y para borrar), goles enteros
   const ids = new Set();
@@ -637,6 +682,12 @@ function migrar(o) {
   Object.keys(S.jugo).forEach((n) => { if (S.jugo[n] && S.inscritos.includes(n)) S.jugo[n] = true; else delete S.jugo[n]; });
   S.promovidos = nombres(S.promovidos).filter((n) => t.includes(n));
   S.bajas = nombres(S.bajas).filter((n) => !S.inscritos.includes(n));
+  S.acomp = nombres(S.acomp).filter((n) => !S.inscritos.includes(n));
+  S.redondeo = [0, 100, 500, 1000].includes(+S.redondeo) ? +S.redondeo : 0;
+  S.caja = Math.max(0, Math.round(+S.caja) || 0);
+  S.usaCaja = Math.min(S.caja, Math.max(0, Math.round(+S.usaCaja) || 0));
+  S.ajustes = obj(S.ajustes);
+  Object.keys(S.ajustes).forEach((n) => { if (!esISO(S.ajustes[n])) delete S.ajustes[n]; });
   S.pagaIgual = obj(S.pagaIgual);
   Object.keys(S.pagaIgual).forEach((n) => { if (S.pagaIgual[n] === true && S.bajas.includes(n)) return; delete S.pagaIgual[n]; });
   delete S.morosos; delete S.pagado;
@@ -959,6 +1010,7 @@ function addPlayer(name, callado) {
   if (S.inscritos.some((n) => mismo(n, name))) { if (!callado) toast("Ya está inscrito 😉"); return false; }
   S.inscritos.push(name);
   S.bajas = S.bajas.filter((n) => n !== name); delete S.pagaIgual[name]; // volvió: ya no es una baja
+  S.acomp = S.acomp.filter((n) => n !== name); // venía solo al 🍻 y ahora juega
   if (!S.caseros.some((n) => mismo(n, name))) S.caseros.push(name);
   if (!callado) {
     const d = debe(name) ? `⚠️ ${name} debe ${deudaLarga(name)}` : "";
@@ -971,8 +1023,8 @@ function addPlayer(name, callado) {
 // Suplentes que pasan a titular: quedan en el aviso "📲 Avisar" hasta que se les avise
 function promover(ns) { ns.forEach((n) => { delete S.jugo[n]; if (!S.promovidos.includes(n)) S.promovidos.push(n); }); }
 // Foto de lo que cambia al bajar a alguien, para poder deshacer
-const foto = () => JSON.stringify({ inscritos: S.inscritos, pagos: S.pagos, tercer: S.tercer, jugo: S.jugo, deudas: S.deudas, equipos: S.equipos, porLado: S.porLado, promovidos: S.promovidos, bajas: S.bajas, pagaIgual: S.pagaIgual, caseros: S.caseros });
-const huellaLista = () => JSON.stringify([S.inscritos, S.pagos, S.tercer, S.jugo, S.deudas, S.porLado, S.bajas, S.pagaIgual]);
+const foto = () => JSON.stringify({ inscritos: S.inscritos, pagos: S.pagos, tercer: S.tercer, jugo: S.jugo, deudas: S.deudas, equipos: S.equipos, porLado: S.porLado, promovidos: S.promovidos, bajas: S.bajas, pagaIgual: S.pagaIgual, caseros: S.caseros, acomp: S.acomp });
+const huellaLista = () => JSON.stringify([S.inscritos, S.pagos, S.tercer, S.jugo, S.deudas, S.porLado, S.bajas, S.pagaIgual, S.acomp]);
 function restaurar(f) {
   const r = JSON.parse(f);
   Object.assign(S, r, { pagos: dic(r.pagos), tercer: dic(r.tercer), jugo: dic(r.jugo), deudas: dic(r.deudas), pagaIgual: dic(r.pagaIgual) });
@@ -1141,9 +1193,9 @@ $("pegarLista").addEventListener("click", () => {
 /* Renombrar a un jugador o quitarlo de los caseros */
 function renombrar(viejo, nuevo) {
   const uniq = (a) => [...new Set(a.map((n) => (n === viejo ? nuevo : n)))];
-  ["inscritos", "caseros", "ultimaLista", "promovidos", "bajas"].forEach((k) => (S[k] = uniq(S[k])));
+  ["inscritos", "caseros", "ultimaLista", "promovidos", "bajas", "acomp"].forEach((k) => (S[k] = uniq(S[k])));
   S.equipos = { A: uniq(S.equipos.A), B: uniq(S.equipos.B) };
-  [S.niveles, S.pagos, S.tercer, S.jugo, S.arqueros, S.telefonos, S.pagaIgual].forEach((o) => { if (tiene(o, viejo)) { if (!tiene(o, nuevo)) o[nuevo] = o[viejo]; delete o[viejo]; } });
+  [S.niveles, S.pagos, S.tercer, S.jugo, S.arqueros, S.telefonos, S.pagaIgual, S.ajustes].forEach((o) => { if (tiene(o, viejo)) { if (!tiene(o, nuevo)) o[nuevo] = o[viejo]; delete o[viejo]; } });
   if (tiene(S.deudas, viejo)) {
     S.deudas[nuevo] = S.deudas[nuevo] ? S.deudas[nuevo].concat(S.deudas[viejo]).sort((a, b) => (a.fecha || "").localeCompare(b.fecha || "")) : S.deudas[viejo];
     delete S.deudas[viejo]; limpiar(nuevo);
@@ -1429,7 +1481,7 @@ function renderEquipos() {
   const diff = a - b;
   $("balance").textContent = !a && !b ? "—" : Math.abs(diff) <= 1 ? "✔ Parejo" : `Ventaja ${diff > 0 ? "A" : "B"} +${Math.abs(diff)}`;
   const s = suplentes();
-  $("bench").innerHTML = `<span class="tag">🪑 BANCA</span>` + (s.length ? s.map((n) => `<span class="b">${esc(n)}</span>`).join("") : `<span style="opacity:.7">Sin suplentes</span>`);
+  $("bench").innerHTML = `<span class="tag">🪑 BANCA</span>` + (s.length ? s.map((n) => `<button type="button" class="b" data-banca="${esc(n)}" aria-label="${esc(n)}: arrástralo sobre el jugador que sale">${esc(n)}</button>`).join("") : `<span style="opacity:.7">Sin suplentes</span>`);
   // Niveles de todos los conocidos: titulares, suplentes y caseros que no vienen esta vez
   const fila = (n, tag) => `<li><span class="name">${esc(n)}${tag}</span><button class="beer gk ${S.arqueros[n] ? "on" : ""}" data-arq="${esc(n)}" aria-pressed="${!!S.arqueros[n]}" aria-label="${esc(n)} juega de arquero">🧤</button><span class="seg">${
     [1, 2, 3, 4, 5].map((k) => `<button data-lvl="${k}" data-n="${esc(n)}" class="${k === nivel(n) ? "on" : ""}" aria-label="${esc(n)}: nivel ${k}">${k}</button>`).join("")
@@ -1438,7 +1490,40 @@ function renderEquipos() {
   $("niveles").innerHTML = titulares().map((n) => fila(n, "")).join("")
     + s.map((n) => fila(n, ` <span class="tag sup">⏳ suplente</span>`)).join("")
     + otros.map((n) => fila(n, ` <span class="tag cas">🏠 casero</span>`)).join("") || `<li class="empty">Sin jugadores</li>`;
+  renderSugerencias();
 }
+/* 💡 Equipos parejos en el tiempo: quien gana (o pierde) casi siempre en los últimos 30 días sube (o baja) un nivel */
+function sugerenciasNivel() {
+  const desde = masDias(hoyISO(), -30), st = Object.create(null), cerca = new Set(conocidos());
+  S.historial.filter((p) => p.fecha >= desde).forEach((p) => ["A", "B"].forEach((k) => (p[k] || []).forEach((n) => {
+    if (S.ajustes[n] && p.fecha <= S.ajustes[n]) return; // solo partidos después del último ajuste
+    const x = (st[n] = st[n] || { pj: 0, g: 0, e: 0 }), mio = k === "A" ? p.golesA : p.golesB, otro = k === "A" ? p.golesB : p.golesA;
+    x.pj++; if (mio > otro) x.g++; else if (mio === otro) x.e++;
+  })));
+  return Object.entries(st).filter(([n, x]) => cerca.has(n) && x.pj >= 3).map(([n, x]) => {
+    const r = (x.g + x.e / 2) / x.pj, d = r >= 0.75 && nivel(n) < 5 ? 1 : r <= 0.25 && nivel(n) > 1 ? -1 : 0;
+    return { n, ...x, d };
+  }).filter((x) => x.d).sort((a, b) => b.pj - a.pj || a.n.localeCompare(b.n, "es"));
+}
+function renderSugerencias() {
+  const ss = sugerenciasNivel(), el = $("sugerencias");
+  el.hidden = !ss.length; if (!ss.length) return void (el.innerHTML = "");
+  el.className = "sug";
+  el.innerHTML = `<b>💡 Para que los equipos queden parejos</b><div style="font-size:12px;color:var(--muted)">Según los partidos de los últimos 30 días</div><ul>` +
+    ss.map((x) => `<li><span>${x.d > 0 ? "📈" : "📉"} <b>${esc(x.n)}</b> ${x.d > 0 ? "ganó" : "perdió"} ${x.d > 0 ? x.g : x.pj - x.g - x.e} de ${x.pj}${x.e ? ` (${plural(x.e, "empate", "empates")})` : ""} · nivel ${nivel(x.n)} → ${nivel(x.n) + x.d}</span>` +
+      `<button class="btn small" data-sug="${esc(x.n)}">${x.d > 0 ? "Subir" : "Bajar"}</button><button class="x" data-nosug="${esc(x.n)}" aria-label="No cambiar el nivel de ${esc(x.n)}">✖</button></li>`).join("") +
+    `</ul>` + (ss.length > 1 ? `<button class="btn small ghost" id="sugTodas" style="width:100%;margin-top:6px">✅ Aplicar todas</button>` : "");
+}
+$("sugerencias").addEventListener("click", (e) => {
+  const a = e.target.closest("[data-sug]"), no = e.target.closest("[data-nosug]"), todas = e.target.closest("#sugTodas");
+  if (!a && !no && !todas) return;
+  const ss = sugerenciasNivel(), antes = JSON.stringify([S.niveles, S.ajustes]);
+  const elegidas = todas ? ss : ss.filter((x) => x.n === (a || no).dataset[a ? "sug" : "nosug"]);
+  elegidas.forEach((x) => { if (!no) S.niveles[x.n] = nivel(x.n) + x.d; S.ajustes[x.n] = hoyISO(); });
+  save(); renderEquipos();
+  conDeshacer(no ? `💡 El nivel de ${elegidas[0].n} queda igual` : elegidas.length === 1 ? `💡 ${elegidas[0].n} ahora es nivel ${nivel(elegidas[0].n)}` : `💡 ${plural(elegidas.length, "nivel ajustado", "niveles ajustados")}`,
+    () => JSON.stringify([S.niveles, S.ajustes]), () => { const [nv, aj] = JSON.parse(antes); S.niveles = dic(nv); S.ajustes = dic(aj); save(); renderEquipos(); });
+});
 $("niveles").addEventListener("click", (e) => {
   const g = e.target.closest("[data-arq]");
   if (g) {
@@ -1485,7 +1570,49 @@ function swap(a, b) {
   S.equipos[ta][ia] = b; S.equipos[tb][ib] = a; save();
   return true;
 }
-function deseleccionar() { selected = null; document.querySelectorAll(".player.sel").forEach((x) => x.classList.remove("sel")); }
+function deseleccionar() { selected = null; document.querySelectorAll(".player.sel, .bench .b.sel").forEach((x) => x.classList.remove("sel")); }
+
+// 🪑 Banca a la cancha: el suplente entra en el lugar (equipo y posición) del titular, que pasa a la banca
+function entraBanca(sup, tit) {
+  const k = teamOf(tit), ia = S.inscritos.indexOf(tit), ib = S.inscritos.indexOf(sup);
+  if (!k || ia < 0 || ib < 0 || ia >= cupo() || ib < cupo()) return renderEquipos();
+  const antes = foto();
+  S.inscritos[ia] = sup; S.inscritos[ib] = tit;
+  S.equipos[k][S.equipos[k].indexOf(tit)] = sup;
+  delete S.jugo[sup]; S.promovidos = S.promovidos.filter((n) => n !== tit);
+  save(); renderEquipos();
+  conDeshacer(`🔁 ${sup} entra por ${tit} en el Equipo ${k}` + (S.equipos[k][0] === sup ? " (🧤 al arco)" : "") + ` · Si ${tit} alcanzó a jugar, márcalo ⚽ en Pagos`,
+    huellaLista, () => { restaurar(antes); toast(`↩️ ${tit} vuelve a la cancha`); });
+}
+// Arrastrar desde la banca (o tocar el suplente y después al titular que sale)
+let bdrag = null;
+const finBanca = () => { document.body.classList.remove("arrastrando"); if (bdrag && bdrag.ghost) bdrag.ghost.remove(); document.querySelectorAll(".player.target").forEach((x) => x.classList.remove("target")); bdrag = null; };
+$("bench").addEventListener("pointerdown", (e) => {
+  const b = e.target.closest("[data-banca]"); if (!b || bdrag || !e.isPrimary) return;
+  try { getSelection().removeAllRanges(); } catch {}
+  document.body.classList.add("arrastrando");
+  bdrag = { name: b.dataset.banca, el: b, x: e.clientX, y: e.clientY, moved: false, ghost: null, id: e.pointerId };
+  try { b.setPointerCapture(e.pointerId); } catch {}
+});
+$("bench").addEventListener("pointermove", (e) => {
+  if (!bdrag || e.pointerId !== bdrag.id) return;
+  if (!bdrag.moved && Math.hypot(e.clientX - bdrag.x, e.clientY - bdrag.y) < 8) return;
+  if (!bdrag.moved) { bdrag.moved = true; bdrag.ghost = document.createElement("div"); bdrag.ghost.className = "fantasma"; bdrag.ghost.textContent = "🔁 " + bdrag.name; document.body.append(bdrag.ghost); }
+  bdrag.ghost.style.left = e.clientX + "px"; bdrag.ghost.style.top = e.clientY + "px";
+  const over = targetAt(e.clientX, e.clientY, null);
+  document.querySelectorAll(".player.target").forEach((x) => x !== over && x.classList.remove("target"));
+  if (over) over.classList.add("target");
+});
+$("bench").addEventListener("pointerup", (e) => {
+  if (!bdrag || e.pointerId !== bdrag.id) return;
+  const d = bdrag; finBanca();
+  if (d.moved) { const over = targetAt(e.clientX, e.clientY, null); if (over) entraBanca(d.name, over.dataset.p); return; }
+  const ya = selected === d.name; deseleccionar();
+  if (ya) return;
+  selected = d.name; d.el.classList.add("sel");
+  toast(`🪑 ${d.name}: toca al jugador de la cancha que sale`);
+});
+["pointercancel", "lostpointercapture"].forEach((ev) => $("bench").addEventListener(ev, (e) => { if (bdrag && e.pointerId === bdrag.id && ev === "pointercancel") finBanca(); }));
 
 // Drag & drop con pointer events (funciona con el dedo). Toque simple: selecciona, segundo toque: intercambia.
 let drag = null, selected = null;
@@ -1496,6 +1623,8 @@ const dentroCancha = (e) => { const r = $("pitch").getBoundingClientRect(); retu
 $("pitch").addEventListener("pointerdown", (e) => {
   if (drag || !e.isPrimary) return; // un segundo dedo no empieza otro arrastre
   const p = e.target.closest(".player"); if (!p) return deseleccionar(); // tocar el pasto cancela la selección
+  try { getSelection().removeAllRanges(); } catch {}
+  document.body.classList.add("arrastrando");
   drag = { name: p.dataset.p, el: p, x: e.clientX, y: e.clientY, moved: false, over: null, id: e.pointerId };
   try { p.setPointerCapture(e.pointerId); } catch {}
 });
@@ -1514,7 +1643,7 @@ $("pitch").addEventListener("pointermove", (e) => {
 });
 $("pitch").addEventListener("pointerup", (e) => {
   if (!drag || e.pointerId !== drag.id) return;
-  const d = drag; drag = null;
+  const d = drag; drag = null; document.body.classList.remove("arrastrando");
   $("zoneA").classList.remove("drop"); $("zoneB").classList.remove("drop");
   if (d.moved) {
     if (d.over) { if (swap(d.name, d.over.dataset.p)) toast(`🔁 ${d.name} ⇄ ${d.over.dataset.p}`); }
@@ -1524,6 +1653,7 @@ $("pitch").addEventListener("pointerup", (e) => {
     }
     selected = null; renderEquipos(); return;
   }
+  if (selected && suplentes().includes(selected)) { const sup = selected; selected = null; entraBanca(sup, d.name); return; }
   if (!selected || !teamOf(selected)) {
     deseleccionar(); selected = d.name; d.el.classList.add("sel");
     toast(`👆 ${d.name}: toca a otro jugador para intercambiarlos`); // el nombre completo, aunque en la cancha no quepa
@@ -1533,7 +1663,7 @@ $("pitch").addEventListener("pointerup", (e) => {
   renderEquipos();
 });
 // Si el arrastre se interrumpe (segundo dedo, llamada, el sistema toma el gesto), el jugador vuelve a su lugar
-const cancelarArrastre = () => { if (drag) { drag = null; $("zoneA").classList.remove("drop"); $("zoneB").classList.remove("drop"); renderEquipos(); } };
+const cancelarArrastre = () => { document.body.classList.remove("arrastrando"); if (drag) { drag = null; $("zoneA").classList.remove("drop"); $("zoneB").classList.remove("drop"); renderEquipos(); } };
 $("pitch").addEventListener("pointercancel", (e) => { if (drag && e.pointerId === drag.id) cancelarArrastre(); });
 $("pitch").addEventListener("lostpointercapture", (e) => { if (drag && e.pointerId === drag.id) cancelarArrastre(); });
 
@@ -1741,17 +1871,22 @@ const costo = (k) => +S[k] || 0;
 const jugadores = () => titulares().concat(suplentes().filter((n) => S.jugo[n]));
 const pagaIgual = () => S.bajas.filter((n) => S.pagaIgual[n] && !S.inscritos.includes(n));
 const pagadores = () => jugadores().concat(pagaIgual());
-const quedan = () => S.inscritos.filter((n) => S.tercer[n]);
-const cobrados = () => { const j = jugadores(); return S.inscritos.filter((n) => j.includes(n) || S.tercer[n]).concat(pagaIgual()); }; // tienen cuota hoy
+const quedan = () => S.inscritos.filter((n) => S.tercer[n]).concat(S.acomp);
+const cobrados = () => { const j = jugadores(); return S.inscritos.filter((n) => j.includes(n) || S.tercer[n]).concat(pagaIgual(), S.acomp); }; // tienen cuota hoy
+// Cancha a repartir: el total menos lo que pone la 📦 caja
+const canchaRepartir = () => Math.max(0, costo("costoCancha") - S.usaCaja);
+// Parte de cada uno: exacta (ver parte) o redondeada hacia arriba a S.redondeo (lo que sobra va a la caja)
+const cuota = (total, k, i) => (!S.redondeo || !k || !total ? parte(total, k, i) : Math.ceil(total / k / S.redondeo) * S.redondeo);
 // Lo que le toca hoy: la cancha entre los que juegan y el 🍻 entre quienes se quedan, en pesos enteros
 // que suman exacto el total (las primeras de la lista pagan $1 más si no da justo; ver parte)
 const deuda = (n) => {
   const j = pagadores(), q = quedan();
-  return (j.includes(n) ? parte(costo("costoCancha"), j.length, j.indexOf(n)) : 0) + (S.tercer[n] ? parte(costo("costoTercer"), q.length, q.indexOf(n)) : 0);
+  return (j.includes(n) ? cuota(canchaRepartir(), j.length, j.indexOf(n)) : 0) + (q.includes(n) ? cuota(costo("costoTercer"), q.length, q.indexOf(n)) : 0);
 };
 // "Cancha por persona": $3.769 y, si no da justo, cuántos pagan $1 más para completar el total
 function cuotaTxt(total, k) {
   if (!k) return plata(0);
+  if (S.redondeo && total) { const c = cuota(total, k, 0), x = c * k - total; return plata(c) + (x ? `<small>redondeada · 📦 ${plata(x)} a la caja</small>` : ""); }
   const r = total % k;
   return plata(Math.floor(total / k)) + (r ? `<small>${r === 1 ? "1 paga" : r + " pagan"} ${plata(Math.floor(total / k) + 1)} para cuadrar</small>` : "");
 }
@@ -1764,7 +1899,7 @@ const sinRepartir = () => (costo("costoTercer") > 0 && !quedan().length ? costo(
 
 function renderPagos() {
   const t = cobrados();
-  $("porCancha").innerHTML = cuotaTxt(costo("costoCancha"), pagadores().length);
+  $("porCancha").innerHTML = cuotaTxt(canchaRepartir(), pagadores().length);
   $("porTercer").innerHTML = cuotaTxt(costo("costoTercer"), quedan().length);
   const sr = sinRepartir();
   $("avisoTercer").hidden = !sr;
@@ -1772,8 +1907,8 @@ function renderPagos() {
   const total = t.reduce((s, n) => s + deuda(n), 0), rec = t.reduce((s, n) => s + pagoDe(n), 0);
   const cub = t.reduce((s, n) => s + cubre(n), 0), pend = t.reduce((s, n) => s + porPagar(n), 0);
   $("recaudado").hidden = !total;
-  $("recaudado").textContent = `💵 Recaudado ${plata(rec)} de ${plata(total)}` + (cub ? ` · 💚 ${plata(cub)} con saldo a favor` : "") + (pend ? ` · falta ${plata(pend)}` : " 🎉");
-  const fila = (n, i, sup, baja) => {
+  $("recaudado").textContent = (S.usaCaja ? `📦 ${plata(S.usaCaja)} de la caja · ` : "") + `💵 Recaudado ${plata(rec)} de ${plata(total)}` + (cub ? ` · 💚 ${plata(cub)} con saldo a favor` : "") + (pend ? ` · falta ${plata(pend)}` : " 🎉");
+  const fila = (n, i, sup, baja, acomp) => {
     const d = deuda(n), p = pagoDe(n), f = falta(n), c = cubre(n), pp = f - c, cobra = t.includes(n);
     let cls = "pending", st;
     if ((sup || baja) && !cobra && !S.pagos[n]) { cls = ""; st = `<small>no paga</small>`; }
@@ -1784,10 +1919,11 @@ function renderPagos() {
     else st = (c ? `<small>💚 usa ${plata(c)} a favor</small>` : "") + `⏳ ${plata(pp)}`;
     const resto = aFavor(n) - c;
     const tag = debe(n) ? `<span class="tag debt">⚠️ ${saldo(n) > 0 ? "debe " + deudaCorta(n) : "deuda anterior"}</span>` : resto > 0 ? `<span class="tag favor">💚 ${plata(resto)} a favor</span>` : "";
-    return `<li class="${cls}${sup || baja ? " sup" : ""}">
+    return `<li class="${cls}${sup || baja || acomp ? " sup" : ""}">
       <button class="pname" data-pay="${esc(n)}">${i + 1}. ${esc(n)}${tag ? "<br>" + tag : ""}</button>
       ${sup ? `<button class="beer ${S.jugo[n] ? "on" : ""}" data-jugo="${esc(n)}" aria-pressed="${!!S.jugo[n]}" aria-label="${esc(n)} entró a jugar (paga cancha)">⚽</button>` : ""}
-      ${baja ? `<button class="beer ${S.pagaIgual[n] ? "on" : ""}" data-igual="${esc(n)}" aria-pressed="${!!S.pagaIgual[n]}" aria-label="${esc(n)} se bajó y paga igual">💸</button>`
+      ${acomp ? `<button class="beer on" data-sinacomp="${esc(n)}" aria-label="Quitar a ${esc(n)} del tercer tiempo">✖</button>`
+        : baja ? `<button class="beer ${S.pagaIgual[n] ? "on" : ""}" data-igual="${esc(n)}" aria-pressed="${!!S.pagaIgual[n]}" aria-label="${esc(n)} se bajó y paga igual">💸</button>`
         : `<button class="beer ${S.tercer[n] ? "on" : ""}" data-beer="${esc(n)}" aria-pressed="${!!S.tercer[n]}" aria-label="${esc(n)} se queda al tercer tiempo">🍻</button>`}
       <button class="state ${cls ? "" : "nada"}" data-pay="${esc(n)}">${st}</button>
     </li>`;
@@ -1798,6 +1934,10 @@ function renderPagos() {
   $("pagosSup").innerHTML = sp.map((n, i) => fila(n, i, true)).join("");
   $("pagosBajaBox").hidden = !S.bajas.length;
   $("pagosBaja").innerHTML = S.bajas.map((n, i) => fila(n, i, false, true)).join("");
+  $("pagosAcompBox").hidden = !S.acomp.length;
+  $("pagosAcomp").innerHTML = S.acomp.map((n, i) => fila(n, i, false, false, true)).join("");
+  $("redondeo").value = String(S.redondeo);
+  $("cajaBtn").textContent = `${plata(S.caja)}` + (S.usaCaja ? ` · usa ${plata(S.usaCaja)}` : "");
   renderDeudas();
   renderBank();
 }
@@ -1805,7 +1945,7 @@ function renderPagos() {
 function togglePago(n) {
   const p = pagoDe(n), f = falta(n), pp = porPagar(n), antes = JSON.stringify([S.pagos, S.deudas]);
   if (!cobrados().includes(n) && !S.pagos[n]) return toast(S.bajas.includes(n) ? `✖ ${n} se bajó: marca 💸 si paga igual su parte` : `⏳ ${n} es suplente: marca ⚽ si entró a jugar o 🍻 si se queda al tercer tiempo`);
-  if (!f && !S.pagos[n]) return toast(S.tercer[n] && !costo("costoTercer") && !pagadores().includes(n) ? "🍻 Primero escribe el costo del tercer tiempo" : "🏟️ Primero escribe el costo de la cancha");
+  if (!f && !S.pagos[n]) return toast(S.tercer[n] && !costo("costoTercer") && !pagadores().includes(n) && quedan().includes(n) ? "🍻 Primero escribe el costo del tercer tiempo" : "🏟️ Primero escribe el costo de la cancha");
   if (!f || (!pp && p)) return desmarcarPago(n);
   if (!pp) { // la cuota la cubre su saldo a favor: solo si pagó igual en efectivo
     if (!confirm(`💚 ${n} tiene la cuota cubierta con su saldo a favor (${plata(aFavor(n))}). ¿Pagó en efectivo igual? El saldo a favor le queda para la próxima.`)) return;
@@ -1844,7 +1984,13 @@ function desmarcarPago(n) {
     huellaPagos, () => restaurarPagos(antes));
 }
 let toquePago = { n: "", t: 0 };
-["pagos", "pagosSup", "pagosBaja"].forEach((id) => $(id).addEventListener("click", (e) => {
+["pagos", "pagosSup", "pagosBaja", "pagosAcomp"].forEach((id) => $(id).addEventListener("click", (e) => {
+  const x = e.target.closest("[data-sinacomp]");
+  if (x) {
+    const n = x.dataset.sinacomp, antes = foto();
+    liberarPago(n); S.acomp = S.acomp.filter((a) => a !== n); save(); renderPagos();
+    return conDeshacer(`🍻 ${n} ya no está en el tercer tiempo`, huellaLista, () => { restaurar(antes); toast(`↩️ ${n} volvió al 🍻`); });
+  }
   const p = e.target.closest("[data-pay]"), b = e.target.closest("[data-beer]"), j = e.target.closest("[data-jugo]"), g = e.target.closest("[data-igual]");
   if (p) {
     // Un doble toque no marca y desmarca (ni borra lo que ya había pagado)
@@ -1985,7 +2131,7 @@ function recordatorio(n) {
 }
 // Cobro de la cuota de hoy para una sola persona (directo a su chat si tiene teléfono)
 function cobroIndividual(n) {
-  const j = pagadores().includes(n), cc = j ? parte(costo("costoCancha"), pagadores().length, pagadores().indexOf(n)) : 0, ct = deuda(n) - cc;
+  const j = pagadores().includes(n), cc = j ? cuota(canchaRepartir(), pagadores().length, pagadores().indexOf(n)) : 0, ct = deuda(n) - cc;
   const det = [cc && `🏟️ Cancha: ${plata(cc)}`, ct && `🍻 Tercer tiempo: ${plata(ct)}`, pagoDe(n) && `✅ Ya pagaste: −${plata(pagoDe(n))}`, cubre(n) && `💚 Saldo a favor: −${plata(cubre(n))}`].filter(Boolean);
   let msg = `Hola ${waSafe(n)} 👋 Te escribo por la pichanga del ${fechaBonita()} ⚽\n\n` + (S.bajas.includes(n) ? "Te bajaste, pero quedamos en que pagabas igual tu parte 🙏\n" : "") +
     `*Te toca pagar ${plata(porPagar(n))}*` + (det.length > 1 ? `\n${det.join("\n")}` : "");
@@ -2013,6 +2159,36 @@ function abrirCobroUno() {
     b.textContent = "✅ Enviado"; b.classList.replace("green", "ghost");
   });
 }
+// 🍻 Acompañantes: solo pagan el tercer tiempo
+function sumarAcomp() {
+  let n = limpiarNombre($("acompNombre").value);
+  if (!nombreValido(n)) return toast("✍️ Escribe el nombre del acompañante");
+  n = conocido(n);
+  if (S.inscritos.some((x) => mismo(x, n))) { S.tercer[S.inscritos.find((x) => mismo(x, n))] = true; $("acompNombre").value = ""; save(); renderPagos(); return toast(`🍻 ${n} ya estaba inscrito: quedó marcado al tercer tiempo`); }
+  if (S.acomp.some((x) => mismo(x, n))) return toast("Ya está en el tercer tiempo 😉");
+  S.acomp.push(n); $("acompNombre").value = ""; save(); renderPagos();
+  toast(`🍻 ${n} se suma al tercer tiempo` + (costo("costoTercer") ? "" : " · escribe el costo del 🍻"));
+}
+$("acompOk").addEventListener("click", sumarAcomp);
+$("acompNombre").addEventListener("keydown", (e) => { if (e.key === "Enter") sumarAcomp(); });
+// 🔄 Redondeo y 📦 caja
+$("redondeo").addEventListener("change", () => { S.redondeo = +$("redondeo").value || 0; save(); renderPagos(); });
+$("cajaBtn").addEventListener("click", () => {
+  const usar = Math.min(S.caja, costo("costoCancha"));
+  sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>📦 Caja: ${plata(S.caja)}</h2>
+    <p class="sub">Lo que sobra al redondear las cuotas se suma a la caja al cerrar cada pichanga. Sirve para pagar parte de una cancha más adelante.</p>
+    ${S.usaCaja ? `<p class="okbox">Esta pichanga usa ${plata(S.usaCaja)} de la caja: la cancha se reparte con ${plata(canchaRepartir())}.</p><button class="btn ghost block" id="cjNo">↩️ No usar la caja esta vez</button>`
+      : usar ? `<button class="btn green block" id="cjUsar">🏟️ Usar ${plata(usar)} en la cancha de hoy</button>` : ""}
+    <label for="cjMonto">✏️ Corregir el saldo de la caja ($)</label>
+    <input id="cjMonto" type="text" inputmode="numeric" autocomplete="off" value="${miles(S.caja)}">
+    <button class="btn block" id="cjOk">💾 Guardar saldo</button>
+    <button class="btn ghost block" data-cerrar-sheet>Cerrar</button>`);
+  campoPlata($("cjMonto"), () => {});
+  const listo = (antes, msg) => { save(); cerrarSheet(); renderPagos(); conDeshacer(msg, () => JSON.stringify([S.caja, S.usaCaja]), () => { [S.caja, S.usaCaja] = JSON.parse(antes); save(); renderPagos(); }); };
+  if ($("cjUsar")) $("cjUsar").addEventListener("click", () => { const a = JSON.stringify([S.caja, S.usaCaja]); S.usaCaja = usar; listo(a, `📦 ${plata(usar)} de la caja para la cancha`); });
+  if ($("cjNo")) $("cjNo").addEventListener("click", () => { const a = JSON.stringify([S.caja, S.usaCaja]); S.usaCaja = 0; listo(a, "📦 La caja no se usa esta vez"); });
+  $("cjOk").addEventListener("click", () => { const a = JSON.stringify([S.caja, S.usaCaja]); S.caja = +digitos($("cjMonto").value) || 0; S.usaCaja = Math.min(S.usaCaja, S.caja); listo(a, `📦 Caja: ${plata(S.caja)}`); });
+});
 campoPlata($("mMonto"), () => {});
 $("mAnotar").addEventListener("click", () => {
   let n = $("mNombre").value.trim().replace(/\s+/g, " ");
@@ -2039,7 +2215,7 @@ $("waCobrar").addEventListener("click", () => {
   if (sr && !confirm(`Hay ${plata(sr)} de tercer tiempo sin repartir: nadie está marcado 🍻. ¿Enviar el cobro igual?`)) return;
   let msg = `💰 *COBRANZA PICHANGA* 💸\n📅 ${fechaBonita()}\n\nCracks, la cancha no se paga sola 😅⚽\n`;
   if (faltan.length) msg += `\n*Faltan por pagar:*\n` + faltan.map((n) => {
-    const extra = [pagoDe(n) && `ya pagó ${plata(pagoDe(n))}`, S.tercer[n] && "incluye 🍻", cubre(n) && `usa ${plata(cubre(n))} a favor`].filter(Boolean);
+    const extra = [pagoDe(n) && `ya pagó ${plata(pagoDe(n))}`, quedan().includes(n) && (S.acomp.includes(n) ? "🍻" : "incluye 🍻"), cubre(n) && `usa ${plata(cubre(n))} a favor`].filter(Boolean);
     return `⏳ ${waSafe(n)}: ${plata(porPagar(n))}` + (extra.length ? ` (${extra.join(", ")})` : "");
   }).join("\n");
   if (ds.length) msg += `\n\n⚠️ *Deudas de fechas anteriores:*\n` + ds.map(lineaDeuda).join("\n");
@@ -2078,7 +2254,58 @@ $("waVotar").addEventListener("click", () => {
   const msg = `🗳️ *VOTACIÓN POST-PICHANGA* ⚽\n📅 ${fechaBonita(p.fecha)}\n🏁 Resultado: Equipo A ${p.golesA} - ${p.golesB} Equipo B\n\n` +
     `Responde con 3 números:\n⭐ *MVP* (el mejor)\n👟 *Goleador*\n🪓 *El Rústico* (el más pierna 😂)\n\n` +
     t.map((n, i) => `${i + 1}. ${waSafe(n)}`).join("\n") + `\n\nEjemplo: *${ejemploVoto(t.length)}*`;
+  S.post.votoLista = t.slice(); save(); // los números de las respuestas se leen con esta misma lista
   openWhatsApp(msg);
+});
+
+/* 🧮 Contar votos: se pegan las respuestas del grupo ("3, 7, 1") y se cuentan MVP, Goleador y Rústico */
+const listaVotos = () => (S.post.votoLista.length ? S.post.votoLista : enCancha().length ? enCancha() : titulares());
+function contarVotos(txt, lista) {
+  const votos = new Map(); let sueltos = 0, raros = 0;
+  // "[17/10/26, 21:03:15] Carlos: 3 7 1" (iPhone) o "17/10/26, 21:03 - Carlos: 3 7 1" (Android)
+  const chat = /^\[?\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4},?\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[ap]\.?\s?m\.?)?\]?\s*(?:-\s*)?([^:]{1,40}):\s*(.*)$/i;
+  String(txt ?? "").split(/\r?\n/).forEach((l) => {
+    l = l.trim(); if (!l || /ejemplo|votaci[oó]n|resultado:/i.test(l)) return;
+    let quien = null, cuerpo = l;
+    const m = l.match(chat) || l.match(/^([^:\d]{1,40}):\s*(.*)$/);
+    if (m) { quien = clave(m[1]); cuerpo = m[2]; }
+    const ns = (cuerpo.match(/\d{1,2}/g) || []).map(Number);
+    if (ns.length < 3) { if (ns.length && m) raros++; return; }
+    const v = ns.slice(0, 3);
+    if (v.some((x) => x < 1 || x > lista.length)) return void raros++;
+    votos.set(quien || `#${sueltos++}`, v.map((x) => lista[x - 1])); // si alguien vota dos veces, vale la última
+  });
+  const r = { votos: votos.size, raros, mvp: dic(), goleador: dic(), rustico: dic() };
+  votos.forEach(([a, b, c]) => { r.mvp[a] = (r.mvp[a] || 0) + 1; r.goleador[b] = (r.goleador[b] || 0) + 1; r.rustico[c] = (r.rustico[c] || 0) + 1; });
+  // Ganador: el más votado; con empate no hay ganador automático
+  ["mvp", "goleador", "rustico"].forEach((k) => { const o = ranked(r[k]); r[k + "Gana"] = o.length && (o.length === 1 || o[0][1] > o[1][1]) ? o[0][0] : ""; r[k + "Top"] = o; });
+  return r;
+}
+$("contarVotos").addEventListener("click", () => {
+  const lista = listaVotos(); if (!lista.length) return toast("Primero inscribe jugadores 🏃");
+  sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>🧮 Contar votos</h2>
+    <p class="sub">Copia las respuestas del grupo (puedes seleccionar varios mensajes) y pégalas aquí. Si alguien vota dos veces, vale su último voto.</p>
+    <textarea id="vTxt" placeholder="Carlos: 3, 7, 1&#10;Seba: 3 5 1"></textarea>
+    <div id="vRes" class="box" style="margin-top:8px"></div>
+    <button class="btn green block" id="vOk" disabled>✅ Usar ganadores</button>
+    <button class="btn ghost block" data-cerrar-sheet>Cancelar</button>`);
+  const ver = () => {
+    const r = contarVotos($("vTxt").value, lista);
+    const linea = (ic, lb, k) => { const o = r[k + "Top"]; return `<div>${ic} <b>${lb}:</b> ${o.length ? o.slice(0, 3).map(([n, c]) => `${esc(n)} (${c})`).join(" · ") + (r[k + "Gana"] ? "" : " <b style='color:#8a4b00'>· empate: elige tú</b>") : "—"}</div>`; };
+    $("vRes").innerHTML = `<div style="margin-bottom:4px"><b>${plural(r.votos, "voto", "votos")}</b>${r.raros ? ` · ${plural(r.raros, "respuesta", "respuestas")} sin entender` : ""}</div>` +
+      linea("⭐", "MVP", "mvp") + linea("👟", "Goleador", "goleador") + linea("🪓", "Rústico", "rustico");
+    $("vOk").disabled = !(r.mvpGana || r.goleadorGana || r.rusticoGana);
+    return r;
+  };
+  ver();
+  $("vTxt").addEventListener("input", ver);
+  $("vOk").addEventListener("click", () => {
+    const r = ver(), antes = JSON.stringify(S.post), puestos = [];
+    [["mvp", "⭐"], ["goleador", "👟"], ["rustico", "🪓"]].forEach(([k, ic]) => { if (r[k + "Gana"] && enCancha().includes(r[k + "Gana"])) { S.post[k] = r[k + "Gana"]; puestos.push(`${ic} ${r[k + "Gana"]}`); } });
+    if (!puestos.length) return toast("⚠️ Los ganadores ya no están en la cancha: elígelos a mano");
+    save(); cerrarSheet(); renderPost();
+    conDeshacer(`🧮 ${puestos.join(" · ")}`, () => JSON.stringify(S.post), () => { S.post = JSON.parse(antes); save(); renderPost(); });
+  });
 });
 
 // Un partido por pichanga: se guarda una vez y después solo se actualiza (nunca se duplica)
@@ -2200,31 +2427,73 @@ function renderPost() {
   $("historial").innerHTML = ps.slice().reverse().map((p) => {
     const d = new Date(p.fecha + "T12:00:00").toLocaleDateString("es-CL", { weekday: "short", day: "numeric" });
     const w = p.golesA === p.golesB ? "🤝" : p.golesA > p.golesB ? "🅰️" : "🅱️";
-    return `<li><button class="fecha" data-fechapartido="${esc(p.id)}" aria-label="Cambiar la fecha del partido del ${esc(d)}">${esc(d)}</button><span class="res">${+p.golesA || 0} – ${+p.golesB || 0}</span><span class="name" style="font-size:12px;color:var(--muted)">${p.mvp ? "⭐ " + esc(p.mvp) : ""}</span><span class="w">${w}</span><button class="x" data-delpartido="${esc(p.id)}" aria-label="Borrar partido">✖</button></li>`;
+    return `<li><button class="fecha" data-fechapartido="${esc(p.id)}" aria-label="Editar el partido del ${esc(d)}">✏️ ${esc(d)}</button><span class="res">${+p.golesA || 0} – ${+p.golesB || 0}</span><span class="name" style="font-size:12px;color:var(--muted)">${p.mvp ? "⭐ " + esc(p.mvp) : ""}</span><span class="w">${w}</span><button class="x" data-delpartido="${esc(p.id)}" aria-label="Borrar partido">✖</button></li>`;
   }).join("") || `<li class="empty">—</li>`;
+  renderStats();
 }
+/* 📈 Estadísticas por jugador: partidos jugados, ganados, empatados, perdidos y premios (del mes o del año) */
+let rangoStats = "mes";
+function statsJugadores(ps) {
+  const st = Object.create(null), de = (n) => (st[n] = st[n] || { pj: 0, g: 0, e: 0, p: 0, mvp: 0, goleador: 0, rustico: 0 });
+  ps.forEach((p) => {
+    ["A", "B"].forEach((k) => (p[k] || []).forEach((n) => {
+      const r = de(n), mio = k === "A" ? p.golesA : p.golesB, otro = k === "A" ? p.golesB : p.golesA;
+      r.pj++; r[mio > otro ? "g" : mio < otro ? "p" : "e"]++;
+    }));
+    ["mvp", "goleador", "rustico"].forEach((k) => { if (p[k]) de(p[k])[k]++; });
+  });
+  return Object.entries(st).sort(([a, x], [b, y]) => y.pj - x.pj || (y.g * 3 + y.e) - (x.g * 3 + x.e) || y.mvp - x.mvp || a.localeCompare(b, "es"));
+}
+function renderStats() {
+  const anio = mesVista.getFullYear();
+  const ps = rangoStats === "anio" ? S.historial.filter((p) => p.fecha.slice(0, 4) === String(anio)) : delMes();
+  document.querySelectorAll("#statsRango button").forEach((b) => { const on = b.dataset.rango === rangoStats; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+  $("statsSub").textContent = (rangoStats === "anio" ? `Año ${anio}` : $("mesTxt").textContent) + ` · ${plural(ps.length, "partido", "partidos")}`;
+  const filas = statsJugadores(ps), c = (v) => `<td${v ? "" : ' class="cero"'}>${v}</td>`;
+  $("statsTabla").innerHTML = filas.length
+    ? `<thead><tr><th>Jugador</th><th title="Partidos jugados">PJ</th><th title="Ganados">G</th><th title="Empatados">E</th><th title="Perdidos">P</th><th title="MVP">⭐</th><th title="Goleador">👟</th><th title="El Rústico">🪓</th></tr></thead><tbody>` +
+      filas.map(([n, r]) => `<tr><td>${esc(n)}</td>${c(r.pj)}${c(r.g)}${c(r.e)}${c(r.p)}${c(r.mvp)}${c(r.goleador)}${c(r.rustico)}</tr>`).join("") + "</tbody>"
+    : `<tbody><tr><td style="text-align:center;color:var(--muted)">Guarda partidos para ver quién juega más y quién gana más</td></tr></tbody>`;
+}
+$("statsRango").addEventListener("click", (e) => { const b = e.target.closest("[data-rango]"); if (!b) return; rangoStats = b.dataset.rango; renderStats(); });
+
 $("historial").addEventListener("click", (e) => {
   const f = e.target.closest("[data-fechapartido]"); if (f) return abrirFechaPartido(+f.dataset.fechapartido);
   const b = e.target.closest("[data-delpartido]"); if (!b) return;
   if (!confirm("¿Borrar este partido del historial?")) return;
   S.historial = S.historial.filter((p) => p.id !== +b.dataset.delpartido); save(); renderPost();
 });
-// Corregir la fecha de un partido ya guardado
+// ✏️ Editar un partido del historial: fecha, marcador y premios (sin tener que borrarlo)
 function abrirFechaPartido(id) {
   const p = S.historial.find((h) => h.id === id); if (!p) return;
-  sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>📆 Fecha del partido</h2>
-    <p class="sub">A ${+p.golesA || 0} – ${+p.golesB || 0} B${p.mvp ? " · ⭐ " + esc(p.mvp) : ""}</p>
-    <input type="date" id="hFecha" value="${esc(p.fecha)}" aria-label="Fecha del partido">
-    <button class="btn block" id="hOk">💾 Guardar fecha</button>
+  const quienes = [...new Set(p.A.concat(p.B))];
+  const sel = (idv, k) => `<select id="${idv}"><option value="">—</option>${quienes.map((n) => `<option ${p[k] === n ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>`;
+  sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>✏️ Editar partido</h2>
+    <label for="hFecha">📆 Fecha</label>
+    <input type="date" id="hFecha" value="${esc(p.fecha)}">
+    <div class="row" style="align-items:flex-end">
+      <div><label for="hGA">Goles A</label><input id="hGA" type="text" inputmode="numeric" maxlength="2" value="${+p.golesA || 0}"></div>
+      <div><label for="hGB">Goles B</label><input id="hGB" type="text" inputmode="numeric" maxlength="2" value="${+p.golesB || 0}"></div>
+    </div>
+    ${quienes.length ? `<label for="hMvp">⭐ MVP</label>${sel("hMvp", "mvp")}<label for="hGol">👟 Goleador</label>${sel("hGol", "goleador")}<label for="hRus">🪓 El Rústico</label>${sel("hRus", "rustico")}` : ""}
+    <button class="btn block" id="hOk">💾 Guardar cambios</button>
     <button class="btn ghost block" data-cerrar-sheet>Cancelar</button>`);
   $("hOk").addEventListener("click", () => {
     const v = $("hFecha").value; if (!esISO(v)) return toast("📆 Elige una fecha");
-    const antes = p.fecha, mv = new Date(mesVista);
-    p.fecha = v; if (p.id === S.post.guardadoId) S.post.fecha = v;
+    const goles = (idv) => Math.min(99, parseInt(digitos($(idv).value), 10) || 0);
+    const nuevo = { fecha: v, golesA: goles("hGA"), golesB: goles("hGB") };
+    if ($("hMvp")) Object.assign(nuevo, { mvp: $("hMvp").value, goleador: $("hGol").value, rustico: $("hRus").value });
+    const antes = JSON.stringify({ historial: S.historial, post: S.post }), mv = new Date(mesVista);
+    const actual = p.id === S.post.guardadoId && firma(p) === firma(partidoActual()); // es el partido de hoy y no se ha tocado
+    Object.assign(p, nuevo);
+    if (p.id === S.post.guardadoId) {
+      S.post.fecha = p.fecha;
+      if (actual) Object.assign(S.post, { golesA: p.golesA, golesB: p.golesB, mvp: p.mvp, goleador: p.goleador, rustico: p.rustico });
+    }
     mesVista = new Date(v + "T12:00:00"); mesVista.setDate(1);
     save(); cerrarSheet(); renderPost();
-    conDeshacer(`📆 Partido movido al ${fechaCorta(v)}`, () => JSON.stringify(S.historial), () => {
-      p.fecha = antes; if (p.id === S.post.guardadoId) S.post.fecha = antes; mesVista = mv; save(); renderPost(); toast("↩️ Fecha como estaba");
+    conDeshacer(`✏️ Partido del ${fechaCorta(v)} actualizado: A ${p.golesA} – ${p.golesB} B`, () => JSON.stringify([S.historial, S.post]), () => {
+      const a = JSON.parse(antes); S.historial = a.historial; S.post = a.post; mesVista = mv; save(); renderPost(); toast("↩️ Partido como estaba");
     });
   });
 }
@@ -2241,6 +2510,12 @@ $("waStats").addEventListener("click", () => {
 });
 
 /* ---------- 🏁 Cerrar pichanga: resultado → cuentas → próxima fecha ---------- */
+// Lo que se cobra de más por redondear las cuotas (va a la 📦 caja al cerrar)
+const sobranteCaja = () => {
+  if (!S.redondeo) return 0;
+  const t = cobrados(), total = t.reduce((s, n) => s + deuda(n), 0);
+  return Math.max(0, total - (pagadores().length ? canchaRepartir() : 0) - (quedan().length ? costo("costoTercer") : 0));
+};
 document.querySelectorAll("[data-cerrar]").forEach((b) => b.addEventListener("click", abrirCierre));
 function abrirCierre() {
   syncEquipos(false);
@@ -2267,6 +2542,8 @@ function abrirCierre() {
     : `<p class="okbox">${!costo("costoCancha") && !costo("costoTercer") ? "Sin costo de cancha: nadie queda debiendo." : "✅ Todos pagaron. ¡Bien ahí!"}</p>`;
   if (cubiertos.length) paso2 += `<p class="sub" style="margin-top:6px">💚 Se descuenta de su saldo a favor: ${cubiertos.map((n) => `${esc(n)} ${plata(cubre(n))}`).join(", ")}</p>`;
   if (deMas.length) paso2 += `<p class="sub" style="margin-top:6px">💚 Pagaron de más (queda a favor): ${deMas.map((n) => `${esc(n)} ${plata(sobra(n))}`).join(", ")}</p>`;
+  const sobraCaja = sobranteCaja();
+  if (sobraCaja || S.usaCaja) paso2 += `<p class="sub" style="margin-top:6px">📦 Caja: ${S.usaCaja ? `−${plata(S.usaCaja)} usados en la cancha` : ""}${S.usaCaja && sobraCaja ? " · " : ""}${sobraCaja ? `+${plata(sobraCaja)} del redondeo` : ""} → queda en ${plata(S.caja - S.usaCaja + sobraCaja)}</p>`;
   if (sr) paso2 += `<p class="warnbox">⚠️ ${plata(sr)} de tercer tiempo sin repartir: nadie está marcado 🍻. Márcalos en Pagos antes de cerrar.</p>`;
   sheet(`<h2 id="sheetTitulo" tabindex="-1" autofocus>🏁 Cerrar pichanga</h2>
     <p class="sub">📅 ${esc(fechaBonita())}</p>
@@ -2285,7 +2562,7 @@ function abrirCierre() {
   }));
 }
 function cerrarPichanga({ guardar, deudas, prox }) {
-  const antes = JSON.stringify(S), fecha = S.fecha || hoyISO(), t = cobrados(), j = jugadores(), pi = pagaIgual();
+  const antes = JSON.stringify(S), fecha = S.fecha || hoyISO(), t = cobrados(), j = jugadores(), pi = pagaIgual(), caja = S.caja - S.usaCaja + sobranteCaja();
   if (guardar && !guardarPartido()) return; // canceló el reemplazo: no se cierra nada
   let anotadas = 0;
   t.forEach((n) => {
@@ -2296,7 +2573,7 @@ function cerrarPichanga({ guardar, deudas, prox }) {
   });
   Object.keys(S.pagos).forEach((n) => { if (!t.includes(n)) liberarPago(n, fecha); });
   S.ultimaLista = S.inscritos.slice();
-  Object.assign(S, { fecha: prox || masDias(fecha, 7), inscritos: [], equipos: { A: [], B: [] }, pagos: dic(), tercer: dic(), jugo: dic(), promovidos: [], bajas: [], pagaIgual: dic(), costoTercer: "", post: postVacio() });
+  Object.assign(S, { fecha: prox || masDias(fecha, 7), inscritos: [], equipos: { A: [], B: [] }, pagos: dic(), tercer: dic(), jugo: dic(), promovidos: [], bajas: [], pagaIgual: dic(), acomp: [], caja: Math.max(0, caja), usaCaja: 0, costoTercer: "", post: postVacio() });
   save(); cargarCampos(); cerrarSheet();
   if (tab === "s-convocatoria") renderConvocatoria(); else goTab("s-convocatoria");
   conDeshacer(`🏁 Pichanga cerrada` + (anotadas ? ` · 📒 ${anotadas} ${anotadas === 1 ? "deuda anotada" : "deudas anotadas"}` : "") + ` · Próxima: ${fechaCorta(S.fecha)}`,
